@@ -3,7 +3,7 @@
     "godot-mcp-pro": {
       "command": "node",
       "args": [
-        "G:/Godot/godot-mcp-pro-master/123234_godotmcpprov1.15.0/server/build/index.js"
+        "G:/Godot/godot-mcp-pro-master/021642_godotmcpprov1.16.0/server/build/index.js"
       ]
     }
   }
