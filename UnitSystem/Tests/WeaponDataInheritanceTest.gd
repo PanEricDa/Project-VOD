@@ -69,8 +69,8 @@ func _run() -> void:
 		_expect(bow.projectile_scene != null, "Bow has a projectile configuration")
 		if _has_property(bow, &"basic_attack_damage_variance") and _has_property(bow, &"basic_attack_threat_multiplier") and _has_property(bow, &"attack_movement_speed_multiplier"):
 			_expect(
-				is_equal_approx(float(bow.get("basic_attack_damage_variance")), 0.13),
-				"Bow uses 13 percent basic attack damage variance"
+				is_equal_approx(float(bow.get("basic_attack_damage_variance")), 0.2),
+				"Bow uses 20 percent basic attack damage variance"
 			)
 			_expect(
 				is_equal_approx(float(bow.get("basic_attack_threat_multiplier")), 1.0),

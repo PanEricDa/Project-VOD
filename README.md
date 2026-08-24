@@ -73,7 +73,6 @@ ProjectVOD/
 
 ## 已知事项 / 待办备忘
 
-- [ ] 弓普攻浮动值三方矛盾待定：测试断言 `0.13` ｜ `BowData.tres` 实值 `0.2` ｜ 设计文档 `10%`
 - [ ] 刷新 CurrentProgressReport（补写 08-02~08-07 威胁系列、测试数 44→73）
 - [ ] 测试 runner 脚本与 CI（73 个测试目前逐个手跑）
 - [ ] 调试残留清理（`TargetSelectionPolicy` 的 print、`debug_hitbox_enabled` 默认值、TestScene2 调试数值、3 个 MCP autoload 的导出摘除）
