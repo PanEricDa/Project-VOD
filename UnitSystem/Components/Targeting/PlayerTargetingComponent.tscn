@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://UnitSystem/Components/Targeting/PlayerTargetingComponent.gd" id="1_targeting"]
+
+[node name="PlayerTargetingComponent" type="Node3D"]
+script = ExtResource("1_targeting")
+
+[node name="TargetLockRangeIndicator" type="MeshInstance3D" parent="."]
+cast_shadow = 0

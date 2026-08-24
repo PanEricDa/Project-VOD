@@ -1,0 +1,89 @@
+[gd_scene format=3 uid="uid://bv6gl81j2ya32"]
+
+[ext_resource type="Material" uid="uid://c40gw7vteanxu" path="res://Materials/MatGridDark.tres" id="1_wo4lw"]
+[ext_resource type="Texture2D" uid="uid://ddqhqbhb1d7we" path="res://Assets/HDR Sky/Sky04.hdr" id="3_f64gm"]
+[ext_resource type="Script" uid="uid://4c7vii5flost" path="res://UnitSystem/Components/Camera/CameraFollowController.gd" id="4_yg4wd"]
+[ext_resource type="PackedScene" uid="uid://hhb1ptr0vdc6" path="res://UnitSystem/Player/Hero/Hero.tscn" id="6_3g3r1"]
+[ext_resource type="PackedScene" uid="uid://dgp6yqvmotjlt" path="res://UnitSystem/AI/Ally/Units/Priest.tscn" id="6_a3nqr"]
+[ext_resource type="PackedScene" uid="uid://cxm75mad5h74p" path="res://UnitSystem/AI/Enemy/Units/GoblinArcher.tscn" id="7_se0ja"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_a3nqr"]
+panorama = ExtResource("3_f64gm")
+energy_multiplier = 0.6
+
+[sub_resource type="Sky" id="Sky_iufkg"]
+sky_material = SubResource("PanoramaSkyMaterial_a3nqr")
+
+[sub_resource type="Environment" id="Environment_3g3r1"]
+background_mode = 2
+sky = SubResource("Sky_iufkg")
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.84, 0.95, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 3
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+glow_enabled = true
+glow_normalized = true
+fog_enabled = true
+fog_light_color = Color(0.72, 0.79, 0.88, 1)
+fog_light_energy = 0.8
+fog_density = 0.003
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_se0ja"]
+cell_size = 0.2
+cell_height = 0.1
+agent_height = 0.5
+agent_radius = 0.25
+
+[node name="TestScene2" type="Node3D" unique_id=763288877]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1023125688]
+environment = SubResource("Environment_3g3r1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=878762547]
+transform = Transform3D(-0.41909057, 0.776274, -0.47091594, -0.667139, 0.088529676, 0.73965406, 0.6158643, 0.6241484, 0.48078066, 0, 4.9189367, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=1713635997]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 6.8)
+script = ExtResource("4_yg4wd")
+look_ahead_distance = 1.2
+debug_resolved_target = NodePath("../Hero")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=1346265488]
+transform = Transform3D(1, 0, 0, 0, 0.64278764, 0.76604444, 0, -0.76604444, 0.64278764, 0, 0, 0)
+current = true
+fov = 45.0
+near = 0.1
+far = 200.0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1738308917]
+navigation_mesh = SubResource("NavigationMesh_se0ja")
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=1737310869]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+material_override = ExtResource("1_wo4lw")
+use_collision = true
+size = Vector3(50, 0.2, 50)
+
+[node name="Hero" parent="." unique_id=1528668348 instance=ExtResource("6_3g3r1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.01667595, 0.49999905, -3.3461437)
+maximum_health = 100.0
+
+[node name="GoblinArcher" parent="." unique_id=1948486579 instance=ExtResource("7_se0ja")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7183204, -2.861023e-06, -15.914448)
+movement_speed = 0.1
+combat_targeting_radius = 0.0
+maximum_health = 10000.0
+
+[node name="ThreatDebugDisplay" parent="GoblinArcher" index="5" unique_id=544040748]
+debug_display_enabled = true
+
+[node name="Priest" parent="." unique_id=1491736132 instance=ExtResource("6_a3nqr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6035438, 0.5, -3.46496)
+combat_targeting_radius = 0.0
+
+[editable path="GoblinArcher"]

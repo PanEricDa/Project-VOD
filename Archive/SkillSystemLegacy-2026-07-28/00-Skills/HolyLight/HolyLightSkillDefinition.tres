@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="IndependentSkillDefinition" format=3 uid="uid://rxbqutolnn8f"]
+
+[ext_resource type="Script" uid="uid://x5ob35i4quxb" path="res://SkillSystem/02-Conditions/AlwaysSkillCondition.gd" id="1_rxp1i"]
+[ext_resource type="Script" uid="uid://bcbpepfl178yi" path="res://SkillSystem/05-Costs/NoSkillCost.gd" id="2_epltt"]
+[ext_resource type="Script" uid="uid://bxu0gmjcnkvhi" path="res://SkillSystem/04-Decisions/BasicRandomDecisionPolicy.gd" id="3_jmiqn"]
+[ext_resource type="Script" uid="uid://bqla6ob4h6pdx" path="res://SkillSystem/01-Core/SkillDefinition.gd" id="4_qpp8m"]
+[ext_resource type="Script" uid="uid://beyyptq5ww1eh" path="res://SkillSystem/03-Targeting/NearestValidTargetSelector.gd" id="5_ub6qs"]
+
+[sub_resource type="Resource" id="Resource_condition"]
+script = ExtResource("1_rxp1i")
+
+[sub_resource type="Resource" id="Resource_cost"]
+script = ExtResource("2_epltt")
+
+[sub_resource type="Resource" id="Resource_decision"]
+script = ExtResource("3_jmiqn")
+
+[sub_resource type="Resource" id="Resource_target"]
+script = ExtResource("5_ub6qs")
+
+[resource]
+script = ExtResource("4_qpp8m")
+skill_id = &"holy_light"
+display_name = "Holy Light"
+target_relation = 2
+condition = SubResource("Resource_condition")
+target_selector = SubResource("Resource_target")
+decision_policy = SubResource("Resource_decision")
+cost = SubResource("Resource_cost")

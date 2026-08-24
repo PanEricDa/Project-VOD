@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="SkillProfile" format=3 uid="uid://dcieb3g033yk"]
+
+[ext_resource type="Script" uid="uid://dok2x468mp5xa" path="res://Scripts/Combat/Skills/SkillProfile.gd" id="1_62ufw"]
+
+[resource]
+script = ExtResource("1_62ufw")
+display_name = "Healing"
+target_faction = 1
+delivery_type = 2
+cast_range = 6.0
+cast_time = 0.6
+skill_cooldown = 4.0
+metadata/_custom_type_script = "uid://dok2x468mp5xa"

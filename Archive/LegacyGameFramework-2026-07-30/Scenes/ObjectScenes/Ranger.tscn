@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://bxu4drevuconp"]
+
+[ext_resource type="PackedScene" uid="uid://dy8mha7fw5p01" path="res://Scenes/ObjectScenes/AllyBase.tscn" id="1_207x2"]
+[ext_resource type="Material" uid="uid://w2oivu8a8563" path="res://Materials/MatGridLamborghiniGreen.tres" id="2_ynysf"]
+[ext_resource type="PackedScene" uid="uid://cdnjpxnjqqcul" path="res://Scenes/Components/AiAttackModules/CrossbowAttack.tscn" id="4_t8c6m"]
+
+[node name="Ranger" unique_id=1791913868 instance=ExtResource("1_207x2")]
+enemy_vision_range = 6.5
+combat_guard_distance = 5.0
+combat_guard_distance_tolerance = 0.3
+attack_module_path = NodePath("VisualRoot/AttackModuleSocket/CrossbowAttack")
+basic_attack_global_cooldown = 2.0
+front_distance = -2.2
+wander_lateral_radius = 1.7
+wander_lateral_minimum = 0.85
+formation_side_mode = 1
+wander_forward_radius = 0.45
+
+[node name="BodyMesh" type="CSGBox3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="0" unique_id=1197644795]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_ynysf")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="CrossbowAttack" parent="VisualRoot/AttackModuleSocket" index="0" unique_id=209134086 instance=ExtResource("4_t8c6m")]
+attack_origin_path = NodePath("WeaponPivot/AttackOrigin")
+loaded_projectile_visual_path = NodePath("WeaponPivot/WeaponVisualRoot/CrossbowRoot/LoadedBolt")

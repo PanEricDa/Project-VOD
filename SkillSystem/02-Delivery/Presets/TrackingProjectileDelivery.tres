@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="TrackingProjectileDeliveryConfig" format=3 uid="uid://beggyww4laik8"]
+
+[ext_resource type="Script" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="1_5k8s7"]
+
+[resource]
+script = ExtResource("1_5k8s7")

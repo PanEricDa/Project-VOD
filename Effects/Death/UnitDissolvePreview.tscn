@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://4msqlnhiso28"]
+
+[ext_resource type="Script" uid="uid://bdynnxeqt7qei" path="res://Effects/Death/UnitDissolvePreview.gd" id="1_script"]
+[ext_resource type="Shader" uid="uid://dkrg1ly53kkx5" path="res://Effects/Death/UnitDissolve.gdshader" id="2_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_preview"]
+render_priority = 0
+shader = ExtResource("2_shader")
+shader_parameter/base_color = Color(0.18, 0.42, 0.9, 1)
+shader_parameter/use_base_texture = false
+shader_parameter/base_uv_scale = Vector3(1, 1, 1)
+shader_parameter/base_uv_offset = Vector3(0, 0, 0)
+shader_parameter/use_triplanar = false
+shader_parameter/use_world_triplanar = false
+shader_parameter/edge_color = Color(1, 0.75, 0.25, 1)
+shader_parameter/dissolve_progress = 0.0
+shader_parameter/edge_width = 0.08
+shader_parameter/noise_scale = 4.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_preview"]
+material = SubResource("ShaderMaterial_preview")
+top_radius = 0.3
+bottom_radius = 0.25
+height = 0.8
+radial_segments = 8
+
+[node name="UnitDissolvePreview" type="Node3D" unique_id=93198931]
+script = ExtResource("1_script")
+
+[node name="PreviewMesh" type="MeshInstance3D" parent="." unique_id=848761641]
+mesh = SubResource("CylinderMesh_preview")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1618290715]
+transform = Transform3D(1, 0, 0, 0, 0.961524, 0.274721, 0, -0.274721, 0.961524, 0, 0.35, 2.6)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1695015225]
+transform = Transform3D(0.90630776, 0.29883623, -0.29883623, 0, 0.70710677, 0.70710677, 0.42261827, -0.6408563, 0.6408563, 0, 0, 0)
+light_energy = 1.5

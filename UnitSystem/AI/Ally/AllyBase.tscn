@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://ceip30yw62vwx"]
+
+[ext_resource type="PackedScene" uid="uid://cmy5rxnbhuv4u" path="res://UnitSystem/Base/AIUnitBase.tscn" id="1_ai"]
+[ext_resource type="Script" uid="uid://ychs763olmhn" path="res://UnitSystem/AI/Ally/AllyBase.gd" id="2_ally"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Behavior/AllyBehaviorStateMachine.tscn" id="3_behavior"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Targeting/AI/AITargetingComponent.tscn" id="4_targeting"]
+
+[node name="AllyBase" unique_id=1491736132 instance=ExtResource("1_ai")]
+collision_layer = 2
+script = ExtResource("2_ally")
+maximum_health = 100.0
+starting_health_percentage = 100.0
+faction_id = "Ally"
+team_id = 1
+
+[node name="UnitState" parent="." index="1"]
+death_mode = 0
+
+[node name="BehaviorStateMachine" parent="." index="3" instance=ExtResource("3_behavior")]
+
+[node name="AITargetingComponent" parent="." index="4" instance=ExtResource("4_targeting")]

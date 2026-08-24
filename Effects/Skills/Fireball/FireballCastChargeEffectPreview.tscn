@@ -1,0 +1,67 @@
+[gd_scene format=3 uid="uid://fvws3o4jcse8"]
+
+[ext_resource type="Script" uid="uid://b7mprj8xduo42" path="res://Effects/Skills/Fireball/FireballCastChargeEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballCastChargeEffect.tscn" id="2_effect"]
+[ext_resource type="Material" uid="uid://ccx73bp1urikv" path="res://Materials/MatGridPurple.tres" id="3_body"]
+[ext_resource type="Material" uid="uid://c6rgg66w6cmn1" path="res://Materials/MatGridLightBrown.tres" id="4_ground"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.018, 0.022, 0.035, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.28, 0.32, 0.42, 1)
+ambient_light_energy = 0.38
+tonemap_mode = 3
+
+[sub_resource type="StandardMaterial3D" id="Material_anchor"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.62, 0.18, 0.16)
+
+[node name="FireballCastChargeEffectPreview" type="Node3D" unique_id=1264949598]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1330184478]
+environment = SubResource("Environment_preview")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1069013072]
+transform = Transform3D(0.88294756, 0.36994863, -0.2890356, 0, 0.6156615, 0.7880107, 0.46947157, -0.6957722, 0.5435968, 0, 0, 0)
+light_energy = 0.42
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=65698023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+material_override = ExtResource("4_ground")
+size = Vector3(4, 0.1, 4)
+
+[node name="PreviewCaster" type="Node3D" parent="." unique_id=1649122448]
+
+[node name="Body" type="CSGBox3D" parent="PreviewCaster" unique_id=658101471]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("3_body")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="CastArm" type="CSGBox3D" parent="PreviewCaster" unique_id=884431983]
+transform = Transform3D(0.8480481, 0.52991927, 0, -0.48410532, 0.77473044, 0.40673664, 0.21553758, -0.34493223, 0.9135454, 0.26, 0.48, -0.08)
+material_override = ExtResource("3_body")
+size = Vector3(0.12, 0.38, 0.12)
+
+[node name="CastAnchor" type="Node3D" parent="PreviewCaster" unique_id=117220370]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.66, -0.22)
+
+[node name="AnchorGuide" type="CSGSphere3D" parent="PreviewCaster/CastAnchor" unique_id=1773354441]
+radius = 0.025
+radial_segments = 8
+rings = 4
+material = SubResource("Material_anchor")
+
+[node name="FireballCastChargeEffect" parent="PreviewCaster/CastAnchor" unique_id=1553846791 instance=ExtResource("2_effect")]
+shell_radius = 0.2
+particle_amount = 50
+gather_spawn_radius = 1.0
+gather_acceleration = 3.0
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=701092297]
+current = true
+fov = 40.0
+far = 50.0

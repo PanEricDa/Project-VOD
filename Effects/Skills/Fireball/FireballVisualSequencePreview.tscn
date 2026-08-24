@@ -1,0 +1,113 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://Effects/Skills/Fireball/FireballVisualSequencePreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballCastChargeEffect.tscn" id="2_charge"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballFlightEffect.tscn" id="3_flight"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballExplosionEffect.tscn" id="4_explosion"]
+[ext_resource type="Material" path="res://Materials/MatGridPurple.tres" id="5_caster"]
+[ext_resource type="Material" path="res://Materials/MatGridTiffanyBlue.tres" id="6_target"]
+[ext_resource type="Material" path="res://Materials/MatGridDark.tres" id="7_ground"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.01, 0.014, 0.025, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.24, 0.28, 0.38, 1)
+ambient_light_energy = 0.32
+tonemap_mode = 3
+
+[sub_resource type="StandardMaterial3D" id="Material_path"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.3, 0.38, 0.52, 0.2)
+emission_enabled = true
+emission = Color(0.2, 0.32, 0.55, 1)
+emission_energy_multiplier = 0.45
+
+[sub_resource type="StandardMaterial3D" id="Material_impact"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.3, 0.08, 0.16)
+emission_enabled = true
+emission = Color(1, 0.2, 0.04, 1)
+emission_energy_multiplier = 0.8
+
+[node name="FireballVisualSequencePreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -25, 0)
+light_energy = 0.34
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+position = Vector3(0, -0.05, 0)
+material_override = ExtResource("7_ground")
+size = Vector3(5, 0.1, 3)
+
+[node name="PreviewCaster" type="Node3D" parent="."]
+position = Vector3(-1.8, 0, 0)
+
+[node name="Body" type="CSGBox3D" parent="PreviewCaster"]
+position = Vector3(0, 0.25, 0)
+material_override = ExtResource("5_caster")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="CastArm" type="CSGBox3D" parent="PreviewCaster"]
+position = Vector3(0.26, 0.48, 0)
+rotation_degrees = Vector3(0, 0, -32)
+material_override = ExtResource("5_caster")
+size = Vector3(0.12, 0.38, 0.12)
+
+[node name="CastAnchor" type="Node3D" parent="PreviewCaster"]
+position = Vector3(0.4, 0.66, 0)
+
+[node name="FireballCastChargeEffect" parent="PreviewCaster/CastAnchor" instance=ExtResource("2_charge")]
+autoplay = false
+
+[node name="PreviewTarget" type="CSGBox3D" parent="."]
+position = Vector3(1.5, 0.25, 0)
+material_override = ExtResource("6_target")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="FlightPath" type="Node3D" parent="."]
+
+[node name="PathGuide" type="CSGBox3D" parent="FlightPath"]
+position = Vector3(0.05, 0.49, 0)
+rotation_degrees = Vector3(0, 0, -6.7)
+material_override = SubResource("Material_path")
+size = Vector3(2.93, 0.012, 0.012)
+
+[node name="StartMarker" type="Marker3D" parent="FlightPath"]
+position = Vector3(-1.4, 0.66, 0)
+
+[node name="EndMarker" type="Marker3D" parent="FlightPath"]
+position = Vector3(1.5, 0.32, 0)
+
+[node name="FlightCarrier" type="Node3D" parent="."]
+rotation_degrees = Vector3(0, -90, 0)
+
+[node name="FireballFlightEffect" parent="FlightCarrier" instance=ExtResource("3_flight")]
+autoplay = false
+
+[node name="ImpactPoint" type="Node3D" parent="."]
+position = Vector3(1.5, 0.32, 0)
+
+[node name="ImpactGuide" type="CSGSphere3D" parent="ImpactPoint"]
+radius = 0.025
+radial_segments = 8
+rings = 4
+material = SubResource("Material_impact")
+
+[node name="FireballExplosionEffect" parent="ImpactPoint" instance=ExtResource("4_explosion")]
+autoplay = false
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 39.0
+near = 0.05
+far = 50.0

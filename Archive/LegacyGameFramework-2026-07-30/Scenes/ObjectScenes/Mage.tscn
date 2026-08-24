@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://bfkq5oxm5hupx"]
+
+[ext_resource type="PackedScene" uid="uid://dy8mha7fw5p01" path="res://Scenes/ObjectScenes/AllyBase.tscn" id="1_ba3b4"]
+[ext_resource type="Material" uid="uid://ccx73bp1urikv" path="res://Materials/MatGridPurple.tres" id="2_body"]
+[ext_resource type="Material" uid="uid://0wc0xq5kfkwy" path="res://Materials/MatGridBlue.tres" id="3_magic"]
+[ext_resource type="Script" uid="uid://cbo3t3mpebim4" path="res://Scripts/AI/MageAlly.gd" id="4_script"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/SkillModules/FireballSkill.tscn" id="5_skill_base"]
+
+[node name="Mage" unique_id=1791913868 instance=ExtResource("1_ba3b4")]
+script = ExtResource("4_script")
+ranger_path = NodePath("../Mage2")
+combat_guard_distance = 5.0
+combat_guard_distance_tolerance = 0.3
+skill_module_path = NodePath("VisualRoot/SkillModuleSocket/FireballSkill")
+front_distance = -2.6
+wander_lateral_radius = 2.1
+wander_lateral_minimum = 1.3
+formation_side_mode = 1
+wander_forward_radius = 0.4
+dash_speed = 6.0
+dash_max_distance = 2.0
+
+[node name="BodyMesh" type="CSGBox3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="0" unique_id=1448791230]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_body")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="HatRoot" type="Node3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="1" unique_id=1951078907]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 0)
+
+[node name="HatBrim" type="CSGCylinder3D" parent="VisualRoot/HatRoot" index="0" unique_id=2136161084]
+material_override = ExtResource("2_body")
+radius = 0.34
+height = 0.045
+sides = 20
+
+[node name="HatCone" type="CSGCylinder3D" parent="VisualRoot/HatRoot" index="1" unique_id=1806452406]
+transform = Transform3D(0.9848077, 0.17364818, 0, -0.17364818, 0.9848077, 0, 0, 0, 1, 0.04, 0.2, 0)
+material_override = ExtResource("2_body")
+radius = 0.2
+height = 0.42
+sides = 20
+cone = true
+
+[node name="MagicFocus" type="CSGSphere3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="2" unique_id=734985588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.45, -0.12)
+material_override = ExtResource("3_magic")
+radius = 0.1
+radial_segments = 16
+rings = 8
+
+[node name="FireballSkill" parent="VisualRoot/SkillModuleSocket" index="0" unique_id=1257659280 instance=ExtResource("5_skill_base")]
+cast_origin_path = NodePath("CastOrigin")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+explosion_radius = 1.2

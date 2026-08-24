@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="RangedWeaponData" format=3 uid="uid://d1ufbct3qqslr"]
+
+[ext_resource type="Script" uid="uid://cl83q3kihtgq" path="res://Item/Weapon/RangedWeaponData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://cbecfr3g8svqm" path="res://Item/Projectiles/Arrow.tscn" id="2_nso7k"]
+[ext_resource type="PackedScene" path="res://Item/Weapon/Bow/BowVisual.tscn" id="2_visual"]
+[ext_resource type="AnimationLibrary" uid="uid://c1weyjsk4rubw" path="res://Item/Weapon/Bow/BowAnimationLibrary.res" id="3_animation"]
+
+[resource]
+script = ExtResource("1_script")
+projectile_scene = ExtResource("2_nso7k")
+display_name = "Bow"
+visual_scene = ExtResource("2_visual")
+animation_library = ExtResource("3_animation")
+attack_range = 6.0
+attack_range_tolerance = 0.2
+attack_movement_speed_multiplier = 0.0
+basic_attack_damage_variance = 0.2

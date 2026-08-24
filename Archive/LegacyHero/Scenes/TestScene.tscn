@@ -1,0 +1,88 @@
+[gd_scene format=3 uid="uid://drcpldv7aecxs"]
+
+[ext_resource type="Material" uid="uid://c6rgg66w6cmn1" path="res://Materials/MatGridLightBrown.tres" id="1_iufkg"]
+[ext_resource type="Texture2D" uid="uid://ddqhqbhb1d7we" path="res://Assets/HDR Sky/Sky04.hdr" id="4_0f5h7"]
+[ext_resource type="Script" uid="uid://4c7vii5flost" path="res://Scripts/CameraFollowController.gd" id="4_iufkg"]
+[ext_resource type="PackedScene" uid="uid://c52wn0q0oqyn8" path="res://Scenes/ObjectScenes/Hero.tscn" id="6_c264a"]
+[ext_resource type="PackedScene" uid="uid://grnftwimvncn" path="res://Scenes/ObjectScenes/Mage2.tscn" id="8_5rbs6"]
+[ext_resource type="PackedScene" uid="uid://bxu4drevuconp" path="res://Scenes/ObjectScenes/Ranger.tscn" id="8_201fe"]
+[ext_resource type="PackedScene" uid="uid://ig35jkhhgiuj" path="res://Scenes/ObjectScenes/Guardian.tscn" id="9_xjl2p"]
+[ext_resource type="PackedScene" uid="uid://ryb0b8uquubx" path="res://Scenes/ObjectScenes/Healer.tscn" id="10_201fe"]
+[ext_resource type="PackedScene" uid="uid://bjaf2qyjstg15" path="res://Scenes/EnemyScenes/Dummy.tscn" id="10_xjl2p"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_wvhbo"]
+panorama = ExtResource("4_0f5h7")
+energy_multiplier = 0.6
+
+[sub_resource type="Sky" id="Sky_iufkg"]
+sky_material = SubResource("PanoramaSkyMaterial_wvhbo")
+
+[sub_resource type="Environment" id="Environment_0f5h7"]
+background_mode = 2
+sky = SubResource("Sky_iufkg")
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.84, 0.95, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 3
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+fog_enabled = true
+fog_light_color = Color(0.72, 0.79, 0.88, 1)
+fog_light_energy = 0.8
+fog_density = 0.003
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_6xh1p"]
+cell_size = 0.2
+cell_height = 0.1
+agent_height = 0.5
+agent_radius = 0.25
+
+[node name="Node3D" type="Node3D" unique_id=1207190093]
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=194035545]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+material_override = ExtResource("1_iufkg")
+use_collision = true
+size = Vector3(50, 0.2, 50)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1528289468]
+environment = SubResource("Environment_0f5h7")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1881731483]
+transform = Transform3D(-0.41909057, 0.77627397, -0.47091594, -0.667139, 0.08852967, 0.73965406, 0.6158643, 0.62414837, 0.48078066, 0, 4.9189367, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=187468262]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 6.8)
+script = ExtResource("4_iufkg")
+target_path = NodePath("../Hero")
+look_ahead_distance = 1.2
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=1766941872]
+transform = Transform3D(1, 0, 0, 0, 0.64278764, 0.76604444, 0, -0.76604444, 0.64278764, 0, 0, 0)
+current = true
+fov = 45.0
+near = 0.1
+far = 200.0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1011815850]
+navigation_mesh = SubResource("NavigationMesh_6xh1p")
+
+[node name="Hero" parent="." unique_id=1391812830 instance=ExtResource("6_c264a")]
+
+[node name="Dummy" parent="." unique_id=232577944 instance=ExtResource("10_xjl2p")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1866941, -14.419407)
+
+[node name="Healer" parent="." unique_id=1791913868 instance=ExtResource("10_201fe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4294677, 0.5, 4.0187774)
+
+[node name="Mage2" parent="." unique_id=919916339 instance=ExtResource("8_5rbs6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8813205, 0, 5)
+
+[node name="Ranger" parent="." unique_id=1505654013 instance=ExtResource("8_201fe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4007227, 0.5, 5.1288195)
+
+[node name="Guardian" parent="." unique_id=50624926 instance=ExtResource("9_xjl2p")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7590711, 0.20000046, 1.5956421)

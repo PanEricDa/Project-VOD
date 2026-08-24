@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Components/Combat/HealthComponent.tscn" id="1_health"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/Combat/FactionComponent.tscn" id="2_faction"]
+
+[node name="TestCombatant" type="Node3D"]
+
+[node name="HealthComponent" parent="." instance=ExtResource("1_health")]
+
+[node name="FactionComponent" parent="." instance=ExtResource("2_faction")]
+faction_id = &"test"
+team_id = 1
+targetable = true

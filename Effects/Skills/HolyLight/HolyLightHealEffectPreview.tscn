@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://r6atyhcabf83" path="res://Effects/Skills/HolyLight/HolyLightHealEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/HolyLight/HolyLightHealEffect.tscn" id="2_effect"]
+[ext_resource type="Material" uid="uid://bbmycyfrgow23" path="res://Materials/MatGridTiffanyBlue.tres" id="3_target"]
+[ext_resource type="Material" uid="uid://c6rgg66w6cmn1" path="res://Materials/MatGridLightBrown.tres" id="4_ground"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.025, 0.03, 0.045, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.42, 0.46, 0.56, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 3
+
+[node name="HolyLightHealEffectPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -30, 0)
+light_energy = 0.55
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+position = Vector3(0, -0.05, 0)
+material_override = ExtResource("4_ground")
+size = Vector3(4, 0.1, 4)
+use_collision = true
+
+[node name="PreviewTarget" type="Node3D" parent="."]
+
+[node name="Body" type="CSGBox3D" parent="PreviewTarget"]
+position = Vector3(0, 0.25, 0)
+material_override = ExtResource("3_target")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="HolyLightHealEffect" parent="PreviewTarget" instance=ExtResource("2_effect")]
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 42.0
+near = 0.05
+far = 50.0

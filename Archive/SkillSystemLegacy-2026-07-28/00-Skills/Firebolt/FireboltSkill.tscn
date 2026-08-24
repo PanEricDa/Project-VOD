@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://uwidg4se2epv"]
+
+[ext_resource type="PackedScene" uid="uid://c8sy8ntuxb36f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_skill_base"]
+[ext_resource type="Resource" uid="uid://dwkctx2mg27n7" path="res://SkillSystem/00-Skills/Firebolt/FireboltSkillDefinition.tres" id="2_definition"]
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/Firebolt/FireboltDelivery.tscn" id="3_delivery"]
+
+[node name="FireboltSkill" unique_id=165098916 instance=ExtResource("1_skill_base")]
+skill_definition = ExtResource("2_definition")
+delivery_agent_scene = ExtResource("3_delivery")
+cast_origin_path = NodePath("CastOrigin")
+presentation_root_path = NodePath("PresentationRoot")
+delivery_socket_path = NodePath("DeliverySocket")
+animation_player_path = NodePath("SkillAnimationPlayer")
+cast_animation_name = &"cast"
+
+[node name="CastOrigin" parent="." index="0" unique_id=601190467]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.45, -0.12)
+
+[node name="DeliverySocket" parent="." index="2" unique_id=579593528]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.45, -0.12)

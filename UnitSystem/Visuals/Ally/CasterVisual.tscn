@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://iy31womyjbj1"]
+
+[ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="1_ally"]
+[ext_resource type="Material" uid="uid://0wc0xq5kfkwy" path="res://Materials/MatGridBlue.tres" id="2_material"]
+
+[node name="CasterVisual" unique_id=1975348072 instance=ExtResource("1_ally")]
+
+[node name="HatRoot" type="Node3D" parent="CharacterRoot/ModelRoot/BodyMesh" index="0" unique_id=250108909]
+transform = Transform3D(1, 0, 0, 0, 0.98943025, -0.14500956, 0, 0.14500956, 0.98943025, 0, 0.29918462, 0.048327625)
+
+[node name="HatBrim" type="CSGCylinder3D" parent="CharacterRoot/ModelRoot/BodyMesh/HatRoot" index="0" unique_id=105943526]
+material_override = ExtResource("2_material")
+radius = 0.34
+height = 0.045
+sides = 20
+
+[node name="HatCone" type="CSGCylinder3D" parent="CharacterRoot/ModelRoot/BodyMesh/HatRoot" index="1" unique_id=1880311344]
+transform = Transform3D(0.9848077, 0.17364818, 0, -0.17364818, 0.98480725, 0, 0, 0, 1, 0.04, 0.2, 0)
+material_override = ExtResource("2_material")
+radius = 0.2
+height = 0.42
+sides = 20
+cone = true

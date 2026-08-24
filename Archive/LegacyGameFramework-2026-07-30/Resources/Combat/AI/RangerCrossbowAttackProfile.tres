@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AIAttackProfile" format=3 uid="uid://cs2yb5x4k4sdb"]
+
+[ext_resource type="Script" uid="uid://dpa5fk2pkbrjj" path="res://Scripts/Combat/AI/AttackProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Ranger Crossbow Shot"
+attack_range = 6.5
+attack_range_tolerance = 0.4

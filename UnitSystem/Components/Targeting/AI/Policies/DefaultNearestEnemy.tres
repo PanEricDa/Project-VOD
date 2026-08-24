@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="TargetSelectionPolicy" format=3 uid="uid://cnxlo3kjy63bk"]
+
+[ext_resource type="Script" uid="uid://ctaymwutl0sbe" path="res://UnitSystem/Components/Targeting/AI/Policies/TargetSelectionPolicy.gd" id="1_policy"]
+
+[resource]
+script = ExtResource("1_policy")

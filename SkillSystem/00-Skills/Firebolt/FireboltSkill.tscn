@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://dofx4arumbdgl"]
+
+[ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballCastChargeEffect.tscn" id="2_cast"]
+[ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="3_projectile"]
+[ext_resource type="Script" uid="uid://d02epfqku0fc0" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="4_delivery"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="5_damage"]
+
+[sub_resource type="Resource" id="Resource_rjchh"]
+resource_local_to_scene = true
+script = ExtResource("4_delivery")
+projectile_scene = ExtResource("3_projectile")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+impact_radius = 1.2
+
+[node name="FireboltSkill" unique_id=279338316 instance=ExtResource("1_template")]
+skill_id = &"firebolt"
+display_name = "Firebolt"
+ai_priority = 10
+cast_range = 6.0
+base_cast_time = 0.75
+skill_cooldown = 3.0
+cast_effect_scene = ExtResource("2_cast")
+delivery = SubResource("Resource_rjchh")
+
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=2138507386]
+script = ExtResource("5_damage")
+operation = 0
+power_ratio = 1.0

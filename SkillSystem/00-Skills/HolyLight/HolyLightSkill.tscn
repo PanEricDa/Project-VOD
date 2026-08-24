@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://fd88atot6qs4"]
+
+[ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/HolyLight/HolyLightHealEffect.tscn" id="2_release"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="3_delivery"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_heal"]
+
+[sub_resource type="Resource" id="Resource_138o6"]
+resource_local_to_scene = true
+script = ExtResource("3_delivery")
+
+[node name="HolyLightSkill" unique_id=2107145381 instance=ExtResource("1_template")]
+skill_id = &"holy_light"
+display_name = "Holy Light"
+ai_priority = 20
+target_relations = 3
+target_selection_mode = 3
+cast_range = 4.0
+base_cast_time = 1.0
+can_move_while_casting = true
+skill_cooldown = 0.8
+threat_multiplier = 0.5
+decision_delay_max = 2.0
+extra_hesitation_chance = 0.05
+release_effect_scene = ExtResource("2_release")
+release_effect_anchor = 1
+delivery = SubResource("Resource_138o6")
+
+[node name="HealEffect" type="Node" parent="." index="2" unique_id=341272012]
+script = ExtResource("4_heal")
+base_amount = 25.0

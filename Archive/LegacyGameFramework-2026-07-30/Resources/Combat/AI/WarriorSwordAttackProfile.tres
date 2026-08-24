@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="AIAttackProfile" format=3 uid="uid://dvqcjlumaos6u"]
+
+[ext_resource type="Script" uid="uid://dpa5fk2pkbrjj" path="res://Scripts/Combat/AI/AttackProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Warrior Sword Attack"
+approach_speed_multiplier = 1.2

@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://dscgnfj560dfv"]
+
+[ext_resource type="Material" uid="uid://ccx73bp1urikv" path="res://Materials/MatGridPurple.tres" id="1_mkbhs"]
+
+[node name="MagicGlobeVisual" type="Node3D" unique_id=151080071]
+
+[node name="MagicGlobe" type="CSGSphere3D" parent="." unique_id=1774316662]
+material_override = ExtResource("1_mkbhs")
+radius = 0.1
+radial_segments = 16
+rings = 8

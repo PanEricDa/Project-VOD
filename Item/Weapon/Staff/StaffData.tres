@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MeleeWeaponData" format=3 uid="uid://cw5mngsw0yio1"]
+
+[ext_resource type="Script" uid="uid://dypgael48bvms" path="res://Item/Weapon/MeleeWeaponData.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://Item/Weapon/Staff/StaffVisual.tscn" id="2_visual"]
+[ext_resource type="AnimationLibrary" uid="uid://c3abk25bvqwr0" path="res://Item/Weapon/Staff/StaffAnimationLibrary.res" id="3_animation"]
+
+[resource]
+script = ExtResource("1_script")
+hitbox_sizes = Array[Vector3]([Vector3(0.4, 0.4, 0.4)])
+hitbox_center_offsets = Array[Vector3]([Vector3(-0.1, 0.25, 0.7)])
+display_name = "Staff"
+visual_scene = ExtResource("2_visual")
+animation_library = ExtResource("3_animation")

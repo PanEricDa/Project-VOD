@@ -1,0 +1,116 @@
+[gd_scene load_steps=11 format=3 uid="uid://d2ql6db3l1rx4"]
+
+[ext_resource type="Script" path="res://Scripts/Combat/AI/AttackModuleBase.gd" id="1_script"]
+[ext_resource type="Resource" path="res://Resources/Combat/AI/DefaultAIAttackProfile.tres" id="2_profile"]
+[ext_resource type="Script" path="res://Scripts/Combat/AI/AIAttackHitbox.gd" id="3_hitbox"]
+[ext_resource type="PackedScene" path="res://Effects/Combat/HitFeedbackBridge.tscn" id="4_feedback_bridge"]
+[ext_resource type="Resource" path="res://Effects/Combat/DefaultAIHitFeedback.tres" id="5_feedback_profile"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hitbox"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hitbox"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_name = "RESET"
+length = 0.01
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_attack"]
+resource_name = "attack"
+length = 0.3
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:rotation")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.22, 0.3),
+"transitions": PackedFloat32Array(1, 0.8, 1.4, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-0.25, 0, 0.75), Vector3(0.35, 0, -0.65), Vector3(0, 0, 0)]
+}
+tracks/1/type = "method"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath(".")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.08, 0.21),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_base"]
+_data = {
+&"RESET": SubResource("Animation_reset"),
+&"attack": SubResource("Animation_attack")
+}
+
+[node name="AttackModuleBase" type="Node3D" unique_id=209134086]
+script = ExtResource("1_script")
+attack_profile = ExtResource("2_profile")
+
+[node name="WeaponPivot" type="Node3D" parent="."]
+
+[node name="WeaponVisualRoot" type="Node3D" parent="WeaponPivot"]
+
+[node name="AttackOrigin" type="Marker3D" parent="WeaponPivot"]
+position = Vector3(0, 0.35, -0.5)
+
+[node name="AttackAnimationPlayer" type="AnimationPlayer" parent="."]
+libraries/ = SubResource("AnimationLibrary_base")
+
+[node name="DeliveryRoot" type="Node3D" parent="."]
+
+[node name="HitboxDetector" type="Node3D" parent="DeliveryRoot"]
+script = ExtResource("3_hitbox")
+
+[node name="HitboxShapeCast" type="ShapeCast3D" parent="DeliveryRoot/HitboxDetector"]
+enabled = false
+shape = SubResource("BoxShape3D_hitbox")
+target_position = Vector3(0, 0, 0)
+max_results = 32
+collision_mask = 4
+collide_with_areas = false
+
+[node name="DebugHitbox" type="MeshInstance3D" parent="DeliveryRoot/HitboxDetector"]
+visible = false
+cast_shadow = 0
+mesh = SubResource("BoxMesh_hitbox")
+
+[node name="HitFeedbackBridge" parent="." instance=ExtResource("4_feedback_bridge")]
+attack_source_path = NodePath("..")
+effect_profile = ExtResource("5_feedback_profile")

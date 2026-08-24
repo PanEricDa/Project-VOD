@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://UnitSystem/Components/Status/StatusEffectComponent.gd" id="1_status_effect"]
+
+[node name="StatusEffect" type="Node"]
+script = ExtResource("1_status_effect")

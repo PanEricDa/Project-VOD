@@ -1,0 +1,106 @@
+[gd_scene format=3 uid="uid://dga0kjc3d2h2l"]
+
+[ext_resource type="PackedScene" uid="uid://bnltv4w1d4jfk" path="res://UnitSystem/Visuals/Player/HeroVisual.tscn" id="1_visual"]
+[ext_resource type="PackedScene" uid="uid://c5j5eodw8fove" path="res://Item/Weapon/Shield/IronShieldVisual.tscn" id="2_5i0h5"]
+[ext_resource type="AnimationLibrary" uid="uid://njpdtps8x2gh" path="res://Item/Weapon/Shield/ShieldAnimationLibrary.res" id="3_txxyl"]
+
+[sub_resource type="Animation" id="Animation_5kj1s"]
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CharacterRoot:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CharacterRoot:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.5, 0.7, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-0.17716946, 0, 0), Vector3(0.67486846, 0, 0), Vector3(0.58408463, -0.359837, -0.5987131), Vector3(0.015707964, -0.6527531, -1.5707964)]
+}
+
+[sub_resource type="Animation" id="Animation_arvff"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CharacterRoot:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CharacterRoot:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CharacterRoot/WeaponSocket:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0.32, 0.28, -0.22)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("CharacterRoot/WeaponSocket:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_wnkm0"]
+_data = {
+&"Die": SubResource("Animation_5kj1s"),
+&"RESET": SubResource("Animation_arvff")
+}
+
+[node name="HeroAnimationWorkbench" type="Node3D" unique_id=212519072]
+
+[node name="HeroVisual" parent="." unique_id=2025475360 instance=ExtResource("1_visual")]
+
+[node name="CharacterRoot" parent="HeroVisual" index="0" unique_id=1562324973]
+transform = Transform3D(1, 0, 0, 0, 1.0000005, 0, 0, 0, 0.99999964, 0, 0, 0)
+
+[node name="WeaponSocket" parent="HeroVisual/CharacterRoot" index="1" unique_id=2021864902]
+transform = Transform3D(1.0000011, 0, 0, 0, 1.0000012, 0, 0, 0, 1.0000008, 0.32, 0.28, -0.22)
+
+[node name="IronShieldVisual" parent="HeroVisual/CharacterRoot/WeaponSocket" index="1" unique_id=1010440417 instance=ExtResource("2_5i0h5")]
+
+[node name="CharacterAnimationPlayer" parent="HeroVisual" index="1" unique_id=634680723]
+libraries/ = SubResource("AnimationLibrary_wnkm0")
+libraries/ShieldAnimationLibrary = ExtResource("3_txxyl")
+
+[editable path="HeroVisual"]

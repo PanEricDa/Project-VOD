@@ -1,0 +1,16 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://UnitSystem/Components/Combat/AI/AICombatSystem.gd" id="1_combat"]
+[ext_resource type="Script" path="res://UnitSystem/Components/Combat/AI/AIAttackController.gd" id="2_controller"]
+[ext_resource type="PackedScene" path="res://Effects/Combat/HitFeedbackBridge.tscn" id="4_feedback"]
+[ext_resource type="Resource" path="res://Effects/Combat/DefaultAIHitFeedback.tres" id="5_feedback_profile"]
+
+[node name="CombatSystem" type="Node3D"]
+script = ExtResource("1_combat")
+
+[node name="AttackController" type="Node" parent="."]
+script = ExtResource("2_controller")
+
+[node name="HitFeedbackBridge" parent="." instance=ExtResource("4_feedback")]
+attack_source_path = NodePath("../AttackController")
+effect_profile = ExtResource("5_feedback_profile")

@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://b8lhq33pdpii1"]
+
+[ext_resource type="PackedScene" uid="uid://c8sy8ntuxb36f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_diisg"]
+[ext_resource type="Resource" uid="uid://rxbqutolnn8f" path="res://SkillSystem/00-Skills/HolyLight/HolyLightSkillDefinition.tres" id="2_4l5tf"]
+[ext_resource type="PackedScene" uid="uid://dqegnoh8t3m2b" path="res://SkillSystem/00-Skills/HolyLight/HolyLightDelivery.tscn" id="3_138o6"]
+
+[node name="HolyLightSkill" unique_id=1606041092 instance=ExtResource("1_diisg")]
+skill_definition = ExtResource("2_4l5tf")
+delivery_agent_scene = ExtResource("3_138o6")

@@ -1,0 +1,167 @@
+[gd_scene format=3 uid="uid://b57b7knoialwy"]
+
+[ext_resource type="Material" uid="uid://c40gw7vteanxu" path="res://Materials/MatGridDark.tres" id="1_snkud"]
+[ext_resource type="Texture2D" uid="uid://ddqhqbhb1d7we" path="res://Assets/HDR Sky/Sky04.hdr" id="2_so4i8"]
+[ext_resource type="Script" uid="uid://4c7vii5flost" path="res://UnitSystem/Components/Camera/CameraFollowController.gd" id="3_5f76c"]
+[ext_resource type="PackedScene" uid="uid://cqp35eaph02gm" path="res://UnitSystem/AI/Enemy/Units/GoblinWarrior.tscn" id="4_5f76c"]
+[ext_resource type="PackedScene" uid="uid://hhb1ptr0vdc6" path="res://UnitSystem/Player/Hero/Hero.tscn" id="5_o18qo"]
+[ext_resource type="PackedScene" uid="uid://cxm75mad5h74p" path="res://UnitSystem/AI/Enemy/Units/GoblinArcher.tscn" id="5_q71sd"]
+[ext_resource type="PackedScene" uid="uid://df6vr63dn4ehx" path="res://UnitSystem/AI/Ally/Units/Guardian.tscn" id="9_mwr1f"]
+[ext_resource type="PackedScene" uid="uid://dgp6yqvmotjlt" path="res://UnitSystem/AI/Ally/Units/Priest.tscn" id="9_q71sd"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Encounter/EncounterController.tscn" id="10_3fbv1"]
+[ext_resource type="PackedScene" path="res://GameFlow/Rooms/CombatRoomController.tscn" id="11_room_flow"]
+[ext_resource type="PackedScene" uid="uid://cnrpfwsspnim8" path="res://UnitSystem/AI/Ally/Units/Caster.tscn" id="12_d35n2"]
+[ext_resource type="PackedScene" uid="uid://dhorinny074d3" path="res://UnitSystem/AI/Ally/Units/Archer.tscn" id="12_q71sd"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_o18qo"]
+panorama = ExtResource("2_so4i8")
+energy_multiplier = 0.6
+
+[sub_resource type="Sky" id="Sky_iufkg"]
+sky_material = SubResource("PanoramaSkyMaterial_o18qo")
+
+[sub_resource type="Environment" id="Environment_cdjdm"]
+background_mode = 2
+sky = SubResource("Sky_iufkg")
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.84, 0.95, 1)
+ambient_light_energy = 0.65
+tonemap_mode = 3
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+glow_enabled = true
+glow_normalized = true
+fog_enabled = true
+fog_light_color = Color(0.72, 0.79, 0.88, 1)
+fog_light_energy = 0.8
+fog_density = 0.003
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_8wwas"]
+vertices = PackedVector3Array(-40, 0, -50, 40, 0, -50, 40, 0, 50, -40, 0, 50)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+agent_height = 0.5
+agent_radius = 0.25
+
+[node name="TestCombatRoom" type="Node3D" unique_id=369100259]
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=1165615627]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+material_override = ExtResource("1_snkud")
+use_collision = true
+size = Vector3(80, 0.5, 100)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1386725249]
+environment = SubResource("Environment_cdjdm")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=747778878]
+transform = Transform3D(-0.41909057, 0.776274, -0.47091594, -0.667139, 0.088529676, 0.73965406, 0.6158643, 0.6241484, 0.48078066, 0, 4.9189367, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=1513108303]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 6.8)
+script = ExtResource("3_5f76c")
+look_ahead_distance = 1.2
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=1880538139]
+transform = Transform3D(1, 0, 0, 0, 0.64278764, 0.76604444, 0, -0.76604444, 0.64278764, 0, 0, 0)
+current = true
+fov = 45.0
+near = 0.1
+far = 200.0
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=458507483]
+navigation_mesh = SubResource("NavigationMesh_8wwas")
+
+[node name="PlayerSpawn" type="Marker3D" parent="." unique_id=181217404]
+
+[node name="PartySpawn" type="Marker3D" parent="." unique_id=1297325965]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="EnemyContainer" type="Node3D" parent="." unique_id=1611124849]
+
+[node name="Pack_A" type="Node3D" parent="EnemyContainer" unique_id=1959362072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4113255, 0, -4.7680807)
+
+[node name="GoblinWarrior" parent="EnemyContainer/Pack_A" unique_id=1948486579 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3091416, 0, 0)
+combat_targeting_radius = 0.0
+
+[node name="GoblinWarrior2" parent="EnemyContainer/Pack_A" unique_id=1942734927 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3351798, 0, 0)
+combat_targeting_radius = 0.0
+
+[node name="GoblinWarrior3" parent="EnemyContainer/Pack_A" unique_id=313678618 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3091416, 0, 1.5789001)
+combat_targeting_radius = 0.0
+
+[node name="Pack_B" type="Node3D" parent="EnemyContainer" unique_id=1435788145]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.954334, 0, -21.66187)
+
+[node name="GoblinWarrior" parent="EnemyContainer/Pack_B" unique_id=1690692877 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1068983, 0, 0)
+combat_targeting_radius = 0.0
+
+[node name="GoblinWarrior2" parent="EnemyContainer/Pack_B" unique_id=1584272130 instance=ExtResource("4_5f76c")]
+combat_targeting_radius = 0.0
+
+[node name="GoblinArcher" parent="EnemyContainer/Pack_B" unique_id=95843393 instance=ExtResource("5_q71sd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.22892)
+combat_targeting_radius = 0.0
+
+[node name="GoblinArcher2" parent="EnemyContainer/Pack_B" unique_id=515074805 instance=ExtResource("5_q71sd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8773403, 0, 0)
+combat_targeting_radius = 0.0
+
+[node name="Pack_C" type="Node3D" parent="EnemyContainer" unique_id=423947785]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.731205, 0, -33.03395)
+
+[node name="GoblinArcher" parent="EnemyContainer/Pack_C" unique_id=1589762219 instance=ExtResource("5_q71sd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.4067764)
+combat_targeting_radius = 0.0
+
+[node name="GoblinArcher2" parent="EnemyContainer/Pack_C" unique_id=1062118579 instance=ExtResource("5_q71sd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7847748, 0, -2.4067764)
+movement_speed = 3.8
+targeting_radius = 4.0
+combat_targeting_radius = 0.0
+
+[node name="GoblinWarrior" parent="EnemyContainer/Pack_C" unique_id=1376914418 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22694397, 0, 0.93665314)
+combat_targeting_radius = 0.0
+
+[node name="GoblinWarrior2" parent="EnemyContainer/Pack_C" unique_id=1728512069 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1424541, 0, -0.57408905)
+combat_targeting_radius = 0.0
+
+[node name="GoblinWarrior3" parent="EnemyContainer/Pack_C" unique_id=1805358774 instance=ExtResource("4_5f76c")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1460752, 0, -0.9629669)
+combat_targeting_radius = 0.0
+
+[node name="Hero" parent="." unique_id=1528668348 instance=ExtResource("5_o18qo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.9848228, 0, 7.3288093)
+maximum_health = 300.0
+defense = 10.0
+
+[node name="EncounterController" parent="." unique_id=1972353907 instance=ExtResource("10_3fbv1")]
+debug_log_enabled = true
+
+[node name="CombatRoomController" parent="." unique_id=1499868204 instance=ExtResource("11_room_flow")]
+
+[node name="Guardian" parent="." unique_id=1491736132 instance=ExtResource("9_mwr1f")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.9996, 0.49999976, 7.573698)
+
+[node name="Priest" parent="." unique_id=1932325711 instance=ExtResource("9_q71sd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.647898, 0.49999952, 6.4666986)
+
+[node name="Caster" parent="." unique_id=361830826 instance=ExtResource("12_d35n2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.276782, 0.5, 9.337597)
+combat_targeting_radius = 0.0
+
+[node name="Archer" parent="." unique_id=1871583316 instance=ExtResource("12_q71sd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.892951, 0, 10.451373)
+combat_targeting_radius = 0.0
+hit_movement_lock_duration = 0.3
+
+[editable path="EnemyContainer/Pack_C/GoblinWarrior"]

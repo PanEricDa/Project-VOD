@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dhorinny074d3"]
+
+[ext_resource type="PackedScene" uid="uid://ceip30yw62vwx" path="res://UnitSystem/AI/Ally/AllyBase.tscn" id="1_0utxq"]
+[ext_resource type="Resource" uid="uid://c7xo5naj6san6" path="res://UnitSystem/AI/Ally/Formation/Positions/Defender.tres" id="2_0utxq"]
+[ext_resource type="Resource" uid="uid://d1ufbct3qqslr" path="res://Item/Weapon/Bow/BowData.tres" id="3_vwo0i"]
+[ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="4_awrw3"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIRangedCombatSystem.tscn" id="4_combat"]
+
+[node name="Archer" unique_id=1491736132 instance=ExtResource("1_0utxq")]
+formation_position = ExtResource("2_0utxq")
+targeting_radius = 7.0
+combat_action_policy = 0
+automatic_skill_cast_enabled = true
+shared_action_cooldown_duration = 1.0
+starting_weapon = ExtResource("3_vwo0i")
+movement_speed = 4.0
+dash_speed = 6.0
+dash_max_distance = 2.0
+maximum_health = 95.0
+attack_power = 15.0
+defense = 3.0
+threat_action_suppression_at_125 = 0.5
+hit_movement_lock_duration = 0.1
+
+[node name="CombatSystem" parent="." index="3" unique_id=1570772978 instance=ExtResource("4_combat")]
+
+[node name="AllyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=693921659 instance=ExtResource("4_awrw3")]

@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://1mumlvk22rb7"]
+
+[ext_resource type="Material" uid="uid://c7j5iwhmwjtgj" path="res://Materials/MatGridLight.tres" id="1_blade"]
+[ext_resource type="Material" uid="uid://c40gw7vteanxu" path="res://Materials/MatGridDark.tres" id="2_handle"]
+
+[node name="IronSwordVisual" type="Node3D" unique_id=1010440417]
+
+[node name="Blade" type="CSGBox3D" parent="." unique_id=1726972230]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.28623247, 0)
+material_override = ExtResource("1_blade")
+size = Vector3(0.055, 0.6, 0.1)
+
+[node name="Handle" type="CSGBox3D" parent="." unique_id=2031311969]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.095, 0)
+material_override = ExtResource("2_handle")
+size = Vector3(0.085, 0.21, 0.085)

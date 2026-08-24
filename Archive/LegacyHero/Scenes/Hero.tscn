@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://c52wn0q0oqyn8"]
+
+[ext_resource type="Script" uid="uid://bvk4cjtyjrvmv" path="res://Scripts/HeroController.gd" id="1_bccwe"]
+[ext_resource type="Material" uid="uid://bbmycyfrgow23" path="res://Materials/MatGridTiffanyBlue.tres" id="2_rms2c"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/MeleeAttackModule.tscn" id="4_melee"]
+[ext_resource type="PackedScene" path="res://Effects/Combat/HitFeedbackBridge.tscn" id="5_feedback_bridge"]
+[ext_resource type="Resource" path="res://Effects/Combat/DefaultMeleeHitFeedback.tres" id="6_feedback_profile"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/Combat/HealthComponent.tscn" id="7_health_component"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/Combat/FactionComponent.tscn" id="8_faction_component"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rms2c"]
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="Hero" type="CharacterBody3D" unique_id=1391812830]
+collision_layer = 2
+script = ExtResource("1_bccwe")
+
+[node name="HealthComponent" parent="." instance=ExtResource("7_health_component")]
+
+[node name="FactionComponent" parent="." instance=ExtResource("8_faction_component")]
+faction_id = &"player"
+team_id = 1
+
+[node name="Visual" type="Node3D" parent="." unique_id=785761889]
+
+[node name="AttackSpinPivot" type="Node3D" parent="Visual"]
+
+[node name="BodyMesh" type="CSGBox3D" parent="Visual/AttackSpinPivot" unique_id=2140561795]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_rms2c")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="MeleeAttackModule" parent="Visual/AttackSpinPivot" unique_id=2065997835 instance=ExtResource("4_melee")]
+combo_reset_duration = 0.2
+
+[node name="HitFeedbackBridge" parent="." instance=ExtResource("5_feedback_bridge")]
+effect_profile = ExtResource("6_feedback_profile")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=1587329510]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_rms2c")
+
+[node name="TargetLockRangeIndicator" type="MeshInstance3D" parent="." unique_id=1785516186]
+cast_shadow = 0

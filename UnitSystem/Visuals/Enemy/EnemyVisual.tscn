@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://dr77ml1pn2k5e"]
+
+[ext_resource type="PackedScene" uid="uid://dlncm31ot7o8j" path="res://UnitSystem/Visuals/Base/UnitVisualBase.tscn" id="1_base"]
+[ext_resource type="Material" uid="uid://cpebnuk4q0yxs" path="res://Materials/MatGridRed.tres" id="2_material"]
+
+[node name="EnemyVisual" instance=ExtResource("1_base")]
+
+[node name="BodyMesh" type="CSGCylinder3D" parent="CharacterRoot/ModelRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_material")
+radius = 0.3
+height = 0.5
+smooth_faces = false

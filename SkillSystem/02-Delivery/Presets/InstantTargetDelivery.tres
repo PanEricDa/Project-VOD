@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="InstantTargetDeliveryConfig" format=3 uid="uid://bmyctswpm1v1b"]
+
+[ext_resource type="Script" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="1_7ywx6"]
+
+[resource]
+script = ExtResource("1_7ywx6")

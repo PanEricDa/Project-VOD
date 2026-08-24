@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://qnydhnj8ebf3"]
+
+[ext_resource type="PackedScene" path="res://Scenes/Components/SkillModules/SkillModuleBase.tscn" id="1_xrq1p"]
+[ext_resource type="Resource" uid="uid://dcieb3g033yk" path="res://Resources/Combat/Skills/BasicHealingProfile.tres" id="2_8k7gy"]
+
+[node name="HealingSkill" unique_id=1531060206 instance=ExtResource("1_xrq1p")]
+skill_profile = ExtResource("2_8k7gy")

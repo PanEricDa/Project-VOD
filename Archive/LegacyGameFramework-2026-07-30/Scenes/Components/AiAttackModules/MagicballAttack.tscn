@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://3qfp8ykww3yp"]
+
+[ext_resource type="PackedScene" uid="uid://d2ql6db3l1rx4" path="res://Scenes/Components/AiAttackModules/AttackModuleBase.tscn" id="1_j6q3b"]
+
+[node name="AttackModuleBase" unique_id=209134086 instance=ExtResource("1_j6q3b")]

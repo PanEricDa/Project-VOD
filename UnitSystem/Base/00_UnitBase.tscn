@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://c1ie71h3631fa"]
+
+[ext_resource type="Script" uid="uid://dum6x7q6e2lcq" path="res://UnitSystem/Base/00_UnitBase.gd" id="1_unit_base"]
+[ext_resource type="PackedScene" uid="uid://bl6uahs5jwxd6" path="res://SkillSystem/01-Core/SkillHostComponent.tscn" id="2_skill_host"]
+[ext_resource type="PackedScene" uid="uid://c7wet0ko35ola" path="res://UnitSystem/Components/UI/WorldHealthBar.tscn" id="3_world_health_bar"]
+[ext_resource type="PackedScene" uid="uid://ct5n6hc6c6dy" path="res://UnitSystem/Components/State/UnitStateComponent.tscn" id="4_unit_state"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Status/StatusEffectComponent.tscn" id="5_status_effect"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_wvhbo"]
+radius = 0.35
+height = 0.8
+
+[node name="UnitBase" type="CharacterBody3D" unique_id=1491736132]
+script = ExtResource("1_unit_base")
+
+[node name="SkillHost" parent="." unique_id=2089143983 instance=ExtResource("2_skill_host")]
+
+[node name="UnitState" parent="." unique_id=1840979116 instance=ExtResource("4_unit_state")]
+
+[node name="StatusEffect" parent="." unique_id=2123851793 instance=ExtResource("5_status_effect")]
+
+[node name="Visual" type="Node3D" parent="." unique_id=1778080596]
+
+[node name="WorldUIRoot" type="Node3D" parent="." unique_id=1328125326]
+
+[node name="WorldHealthBar" parent="WorldUIRoot" unique_id=1814569765 instance=ExtResource("3_world_health_bar")]
+threat_outline_margin = 4
+threat_outline_width = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1406011159]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("CapsuleShape3D_wvhbo")

@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://h1yto3c6wup5"]
+
+[ext_resource type="Script" path="res://Item/Projectiles/FireballProjectile.gd" id="1_projectile"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballFlightEffect.tscn" id="2_flight"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballExplosionEffect.tscn" id="3_explosion"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_sweep"]
+radius = 0.18
+
+[node name="FireBall" type="Node3D" unique_id=525040451]
+script = ExtResource("1_projectile")
+
+[node name="CollisionSweep" type="ShapeCast3D" parent="."]
+enabled = false
+shape = SubResource("SphereShape3D_sweep")
+target_position = Vector3(0, 0, -1)
+collision_mask = 5
+collide_with_areas = false
+collide_with_bodies = true
+max_results = 32
+exclude_parent = false
+
+[node name="FireballFlightEffect" parent="." instance=ExtResource("2_flight")]
+autoplay = false
+
+[node name="FireballExplosionEffect" parent="." instance=ExtResource("3_explosion")]
+autoplay = false
+auto_free_on_finished = false

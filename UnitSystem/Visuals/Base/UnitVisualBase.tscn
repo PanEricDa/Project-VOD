@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://dlncm31ot7o8j"]
+
+[ext_resource type="Script" uid="uid://cnnylv7j1x8es" path="res://UnitSystem/Components/Animation/CharacterAnimationEventPlayer.gd" id="1_animation_events"]
+[ext_resource type="AnimationLibrary" uid="uid://c2vgt3knvow1t" path="res://UnitSystem/Visuals/Base/BasicAnimationLibrary.res" id="1_xoxkc"]
+
+[node name="UnitVisualBase" type="Node3D" unique_id=693921659]
+
+[node name="CharacterRoot" type="Node3D" parent="." unique_id=1562324973]
+
+[node name="ModelRoot" type="Node3D" parent="CharacterRoot" unique_id=362671630]
+
+[node name="WeaponSocket" type="Node3D" parent="CharacterRoot" unique_id=2021864902]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.32, 0.28, -0.22)
+
+[node name="ProjectileOrigin" type="Marker3D" parent="CharacterRoot/WeaponSocket" unique_id=1533849369]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, -0.45)
+
+[node name="CharacterAnimationPlayer" type="AnimationPlayer" parent="." unique_id=634680723]
+libraries/unit = ExtResource("1_xoxkc")
+script = ExtResource("1_animation_events")

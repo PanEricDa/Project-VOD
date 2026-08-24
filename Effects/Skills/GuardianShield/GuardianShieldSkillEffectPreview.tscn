@@ -1,0 +1,52 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Effects/Skills/GuardianShield/GuardianShieldSkillEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/GuardianShield/GuardianShieldSkillEffect.tscn" id="2_effect"]
+[ext_resource type="Material" path="res://Materials/MatGridYellow.tres" id="3_guardian"]
+[ext_resource type="Material" uid="uid://c6rgg66w6cmn1" path="res://Materials/MatGridLightBrown.tres" id="4_ground"]
+[ext_resource type="Material" uid="uid://bbmycyfrgow23" path="res://Materials/MatGridTiffanyBlue.tres" id="5_shield"]
+
+[sub_resource type="Environment" id="PreviewEnvironment"]
+background_mode = 1
+background_color = Color(0.025, 0.03, 0.045, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.42, 0.46, 0.56, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 3
+
+[node name="GuardianShieldSkillEffectPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("PreviewEnvironment")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -30, 0)
+light_energy = 0.6
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+position = Vector3(0, -0.05, 0)
+material_override = ExtResource("4_ground")
+size = Vector3(4, 0.1, 4)
+
+[node name="PreviewGuardian" type="Node3D" parent="."]
+
+[node name="Body" type="CSGBox3D" parent="PreviewGuardian"]
+position = Vector3(0, 0.25, 0)
+material_override = ExtResource("3_guardian")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="Shield" type="CSGBox3D" parent="PreviewGuardian"]
+position = Vector3(0.19, 0.31, -0.31)
+material_override = ExtResource("5_shield")
+size = Vector3(0.32, 0.42, 0.06)
+
+[node name="GuardianShieldSkillEffect" parent="PreviewGuardian" instance=ExtResource("2_effect")]
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 42.0
+near = 0.05
+far = 50.0

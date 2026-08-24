@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MeleeWeaponData" format=3 uid="uid://dfvy0ic06ufm"]
+
+[ext_resource type="AnimationLibrary" uid="uid://njpdtps8x2gh" path="res://Item/Weapon/Shield/ShieldAnimationLibrary.res" id="1_060va"]
+[ext_resource type="Script" uid="uid://dypgael48bvms" path="res://Item/Weapon/MeleeWeaponData.gd" id="1_jupst"]
+[ext_resource type="PackedScene" uid="uid://c5j5eodw8fove" path="res://Item/Weapon/Shield/IronShieldVisual.tscn" id="3_s08qi"]
+
+[resource]
+script = ExtResource("1_jupst")
+attack_forward_distances = Array[float]([0.15, 0.15])
+hitbox_sizes = Array[Vector3]([Vector3(0.8, 0.6, 0.5), Vector3(1, 0.6, 0.7)])
+hitbox_center_offsets = Array[Vector3]([Vector3(0, 0.25, 0.4), Vector3(0, 0.25, 0.3)])
+display_name = "IronShield"
+visual_scene = ExtResource("3_s08qi")
+animation_library = ExtResource("1_060va")
+attack_range = 0.7999999999999999
+attack_range_tolerance = 0.3
+basic_attack_damage_variance = 0.05
+basic_attack_threat_multiplier = 1.6
+metadata/_custom_type_script = "uid://cl2ksr7xlntn8"

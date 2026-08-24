@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://ct5n6hc6c6dy"]
+
+[ext_resource type="Script" path="res://UnitSystem/Components/State/UnitStateComponent.gd" id="1_state"]
+[ext_resource type="PackedScene" path="res://Effects/Death/DefaultDeathEffect.tscn" id="2_death_effect"]
+
+[node name="UnitStateComponent" type="Node"]
+script = ExtResource("1_state")
+death_effect_scene = ExtResource("2_death_effect")

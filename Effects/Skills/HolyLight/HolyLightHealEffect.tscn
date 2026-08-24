@@ -1,0 +1,278 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://duichcfyrxpe" path="res://Effects/Skills/HolyLight/HolyLightHealEffect.gd" id="1_script"]
+
+[sub_resource type="StandardMaterial3D" id="Material_ring"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+blend_mode = 1
+cull_mode = 2
+albedo_color = Color(1, 0.827451, 0.415686, 0.82)
+emission_enabled = true
+emission = Color(1, 0.827451, 0.415686, 1)
+emission_energy_multiplier = 2.2
+
+[sub_resource type="TorusMesh" id="Mesh_ring"]
+resource_local_to_scene = true
+inner_radius = 0.58
+outer_radius = 0.65
+rings = 12
+ring_segments = 48
+
+[sub_resource type="StandardMaterial3D" id="Material_column"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+blend_mode = 1
+cull_mode = 2
+albedo_color = Color(1, 0.956863, 0.839216, 0.32)
+emission_enabled = true
+emission = Color(1, 0.956863, 0.839216, 1)
+emission_energy_multiplier = 1.8
+
+[sub_resource type="CylinderMesh" id="Mesh_column"]
+resource_local_to_scene = true
+top_radius = 0.24
+bottom_radius = 0.32
+height = 1.2
+radial_segments = 24
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="Material_particle"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+blend_mode = 1
+cull_mode = 2
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.827451, 0.415686, 0.9)
+emission_enabled = true
+emission = Color(1, 0.827451, 0.415686, 1)
+emission_energy_multiplier = 2.5
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="Mesh_particle"]
+resource_local_to_scene = true
+material = SubResource("Material_particle")
+size = Vector2(0.055, 0.055)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcess_heal"]
+resource_local_to_scene = true
+emission_shape = 3
+emission_box_extents = Vector3(0.3, 0.22, 0.3)
+direction = Vector3(0, 1, 0)
+spread = 18.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 1.0
+initial_velocity_max = 1.8
+scale_min = 0.55
+scale_max = 1.15
+color = Color(1, 0.88, 0.58, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_flash"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+blend_mode = 1
+cull_mode = 2
+albedo_color = Color(1, 1, 1, 0.95)
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 2.8
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="Mesh_vertical_ray"]
+resource_local_to_scene = true
+size = Vector2(0.055, 0.42)
+
+[sub_resource type="QuadMesh" id="Mesh_horizontal_ray"]
+resource_local_to_scene = true
+size = Vector2(0.42, 0.055)
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_local_to_scene = true
+resource_name = "RESET"
+length = 0.01
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("GroundRing:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [Vector3(0.2, 0.2, 0.2)]}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("GroundRing:transparency")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [1.0]}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("LightColumn:scale")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [Vector3(0.55, 0.05, 0.55)]}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("LightColumn:transparency")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [1.0]}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("HealFlash:scale")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [Vector3(0.2, 0.2, 0.2)]}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("HealFlash/VerticalRay:transparency")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [1.0]}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("HealFlash/HorizontalRay:transparency")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [1.0]}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("HealingLight:light_energy")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {"times": PackedFloat32Array(0), "transitions": PackedFloat32Array(1), "update": 0, "values": [0.0]}
+
+[sub_resource type="Animation" id="Animation_heal"]
+resource_local_to_scene = true
+resource_name = "heal"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("GroundRing:scale")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {"times": PackedFloat32Array(0, 0.08, 0.34, 0.5), "transitions": PackedFloat32Array(1, 0.8, 1.3, 1), "update": 0, "values": [Vector3(0.2, 0.2, 0.2), Vector3(1, 1, 1), Vector3(1.08, 1.08, 1.08), Vector3(1.2, 1.2, 1.2)]}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("GroundRing:transparency")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {"times": PackedFloat32Array(0, 0.08, 0.34, 0.5), "transitions": PackedFloat32Array(1, 0.8, 1.2, 1), "update": 0, "values": [0.65, 0.05, 0.35, 1.0]}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("LightColumn:scale")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {"times": PackedFloat32Array(0, 0.04, 0.15, 0.34, 0.5), "transitions": PackedFloat32Array(1, 1, 0.8, 1.3, 1), "update": 0, "values": [Vector3(0.55, 0.05, 0.55), Vector3(0.55, 0.05, 0.55), Vector3(1, 1, 1), Vector3(0.9, 1, 0.9), Vector3(0.2, 1, 0.2)]}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("LightColumn:transparency")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {"times": PackedFloat32Array(0, 0.04, 0.15, 0.34, 0.5), "transitions": PackedFloat32Array(1, 1, 0.8, 1.2, 1), "update": 0, "values": [1.0, 1.0, 0.12, 0.38, 1.0]}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("HealFlash:scale")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {"times": PackedFloat32Array(0, 0.1, 0.16, 0.24, 0.5), "transitions": PackedFloat32Array(1, 1, 0.7, 1.3, 1), "update": 0, "values": [Vector3(0.2, 0.2, 0.2), Vector3(0.2, 0.2, 0.2), Vector3(1, 1, 1), Vector3(1.25, 1.25, 1.25), Vector3(1.25, 1.25, 1.25)]}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("HealFlash/VerticalRay:transparency")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {"times": PackedFloat32Array(0, 0.1, 0.15, 0.24, 0.5), "transitions": PackedFloat32Array(1, 1, 0.7, 1.3, 1), "update": 0, "values": [1.0, 1.0, 0.0, 1.0, 1.0]}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("HealFlash/HorizontalRay:transparency")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {"times": PackedFloat32Array(0, 0.1, 0.15, 0.24, 0.5), "transitions": PackedFloat32Array(1, 1, 0.7, 1.3, 1), "update": 0, "values": [1.0, 1.0, 0.0, 1.0, 1.0]}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("HealingLight:light_energy")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {"times": PackedFloat32Array(0, 0.08, 0.15, 0.26, 0.5), "transitions": PackedFloat32Array(1, 1, 0.8, 1.2, 1), "update": 0, "values": [0.0, 0.0, 1.2, 0.4, 0.0]}
+tracks/8/type = "method"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath(".")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {"times": PackedFloat32Array(0.08, 0.34), "transitions": PackedFloat32Array(1, 1), "values": [{"args": [], "method": &"_start_particles"}, {"args": [], "method": &"_stop_particles"}]}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_heal"]
+_data = {&"RESET": SubResource("Animation_reset"), &"heal": SubResource("Animation_heal")}
+
+[node name="HolyLightHealEffect" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="GroundRing" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.02, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_ring")
+material_override = SubResource("Material_ring")
+transparency = 1.0
+
+[node name="LightColumn" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.6, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_column")
+material_override = SubResource("Material_column")
+transparency = 1.0
+
+[node name="RisingParticles" type="GPUParticles3D" parent="."]
+position = Vector3(0, 0.22, 0)
+emitting = false
+amount = 18
+lifetime = 0.42
+one_shot = true
+explosiveness = 0.85
+randomness = 0.25
+visibility_aabb = AABB(-0.8, -0.2, -0.8, 1.6, 2, 1.6)
+process_material = SubResource("ParticleProcess_heal")
+draw_pass_1 = SubResource("Mesh_particle")
+
+[node name="HealFlash" type="Node3D" parent="."]
+position = Vector3(0, 0.38, 0)
+scale = Vector3(0.2, 0.2, 0.2)
+
+[node name="VerticalRay" type="MeshInstance3D" parent="HealFlash"]
+cast_shadow = 0
+mesh = SubResource("Mesh_vertical_ray")
+material_override = SubResource("Material_flash")
+transparency = 1.0
+
+[node name="HorizontalRay" type="MeshInstance3D" parent="HealFlash"]
+cast_shadow = 0
+mesh = SubResource("Mesh_horizontal_ray")
+material_override = SubResource("Material_flash")
+transparency = 1.0
+
+[node name="HealingLight" type="OmniLight3D" parent="."]
+position = Vector3(0, 0.42, 0)
+light_color = Color(1, 0.956863, 0.839216, 1)
+light_energy = 0.0
+shadow_enabled = false
+omni_range = 1.5
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries/ = SubResource("AnimationLibrary_heal")

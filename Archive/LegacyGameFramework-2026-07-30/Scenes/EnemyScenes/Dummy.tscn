@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://bjaf2qyjstg15"]
+
+[ext_resource type="PackedScene" uid="uid://hs83cw88fkc4" path="res://Scenes/EnemyScenes/EnemyBase.tscn" id="1_base"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.75, 0.12, 0.12, 1)
+roughness = 0.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+top_radius = 0.28
+bottom_radius = 0.23
+height = 0.5
+radial_segments = 8
+rings = 1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_handle"]
+albedo_color = Color(0.24, 0.1, 0.035, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_blade"]
+albedo_color = Color(0.56, 0.3, 0.1, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_guard"]
+albedo_color = Color(0.32, 0.15, 0.045, 1)
+roughness = 0.95
+
+[node name="Dummy" unique_id=232577944 instance=ExtResource("1_base")]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1526957712) index="0" unique_id=128399067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+mesh = SubResource("CylinderMesh_body")
+
+[node name="WoodKnifeRoot" type="Node3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1526957712) index="1" unique_id=464504940]
+transform = Transform3D(0.9800666, 0.19866933, 0, -0.19866933, 0.9800666, 0, 0, 0, 1, 0.3, 0.28, -0.18)
+
+[node name="Handle" type="CSGBox3D" parent="VisualRoot/WoodKnifeRoot" index="0" unique_id=1753367857]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 0)
+material_override = SubResource("StandardMaterial3D_handle")
+size = Vector3(0.07, 0.2, 0.07)
+
+[node name="Blade" type="CSGBox3D" parent="VisualRoot/WoodKnifeRoot" index="1" unique_id=642416039]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, 0)
+material_override = SubResource("StandardMaterial3D_blade")
+size = Vector3(0.055, 0.25, 0.035)
+
+[node name="Guard" type="CSGBox3D" parent="VisualRoot/WoodKnifeRoot" index="2" unique_id=560267615]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+material_override = SubResource("StandardMaterial3D_guard")
+size = Vector3(0.16, 0.035, 0.055)

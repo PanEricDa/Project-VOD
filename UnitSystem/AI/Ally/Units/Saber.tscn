@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://b28xsr4k8ubyr"]
+
+[ext_resource type="PackedScene" uid="uid://ceip30yw62vwx" path="res://UnitSystem/AI/Ally/AllyBase.tscn" id="1_08wlk"]
+[ext_resource type="Resource" uid="uid://bpu0t6mdfo7a" path="res://UnitSystem/AI/Ally/Formation/Positions/AttackingMid.tres" id="2_pyabn"]
+[ext_resource type="Resource" uid="uid://bu388bdhai45r" path="res://Item/Weapon/Sword/IronSwordData.tres" id="3_8n3ym"]
+[ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="4_8n3ym"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="4_pyabn"]
+
+[node name="Saber" unique_id=1491736132 instance=ExtResource("1_08wlk")]
+maximum_health = 125.0
+attack_power = 16.0
+defense = 8.0
+formation_position = ExtResource("2_pyabn")
+targeting_radius = 4.0
+starting_weapon = ExtResource("3_8n3ym")
+movement_speed = 4.8
+hit_movement_lock_duration = 0.04
+
+[node name="AllyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=693921659 instance=ExtResource("4_8n3ym")]
+
+[node name="CombatSystem" parent="." index="6" unique_id=1809900059 instance=ExtResource("4_pyabn")]
+debug_hitbox_enabled = true

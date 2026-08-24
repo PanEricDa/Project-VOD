@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://cxm75mad5h74p"]
+
+[ext_resource type="PackedScene" uid="uid://ckposes0vweos" path="res://UnitSystem/AI/Enemy/EnemyBase.tscn" id="1_035f1"]
+[ext_resource type="Resource" uid="uid://dlipgdvb7u0v2" path="res://Item/Weapon/Bow/GoblinBowData.tres" id="2_qcxik"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIRangedCombatSystem.tscn" id="3_qcxik"]
+
+[node name="GoblinArcher" unique_id=1948486579 instance=ExtResource("1_035f1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17294908, -1.7744957, 1.1991208)
+starting_weapon = ExtResource("2_qcxik")
+movement_speed = 4.5
+maximum_health = 150.0
+attack_power = 3.0
+defense = 1.0
+hit_movement_lock_duration = 0.1
+
+[node name="CombatSystem" parent="." index="12" unique_id=340757386 instance=ExtResource("3_qcxik")]
+base_global_cooldown_duration = 2.0

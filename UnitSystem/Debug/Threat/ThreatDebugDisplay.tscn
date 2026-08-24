@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://byclq0fts2dx"]
+
+[ext_resource type="Script" uid="uid://e5biy0tgqpsg" path="res://UnitSystem/Debug/Threat/ThreatDebugDisplay.gd" id="1_script"]
+
+[node name="ThreatDebugDisplay" type="Node3D" unique_id=473722337]
+script = ExtResource("1_script")
+
+[node name="ThreatLabel" type="Label3D" parent="." unique_id=46633718]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.45, 0)
+pixel_size = 0.001
+billboard = 1
+no_depth_test = true
+fixed_size = true
+modulate = Color(1, 0.87, 0.34, 1)
+font_size = 26
+outline_size = 6

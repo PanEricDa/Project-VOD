@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://Scenes/Components/SkillModules/SkillModuleBase.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://bsr6v7xmapmdc" path="res://Scripts/Combat/Skills/FireballSkill.gd" id="2_script"]
+[ext_resource type="Resource" uid="uid://cmy70tgws45th" path="res://Resources/Combat/Skills/MageFireballProfile.tres" id="3_profile"]
+[ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="4_projectile"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballCastChargeEffect.tscn" id="5_charge"]
+
+[node name="FireballSkill" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+skill_profile = ExtResource("3_profile")
+projectile_scene = ExtResource("4_projectile")
+
+[node name="CastOrigin" parent="." index="0"]
+position = Vector3(0.38, 0.45, -0.12)
+
+[node name="FireballCastChargeEffect" parent="CastOrigin" instance=ExtResource("5_charge")]
+autoplay = false

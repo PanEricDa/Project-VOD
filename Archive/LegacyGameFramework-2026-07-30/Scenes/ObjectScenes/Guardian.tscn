@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://ig35jkhhgiuj"]
+
+[ext_resource type="PackedScene" uid="uid://dy8mha7fw5p01" path="res://Scenes/ObjectScenes/AllyBase.tscn" id="1_base"]
+[ext_resource type="Material" uid="uid://0wc0xq5kfkwy" path="res://Materials/MatGridBlue.tres" id="2_body"]
+[ext_resource type="PackedScene" uid="uid://uwa7mp6j27fc" path="res://Scenes/Components/AiAttackModules/ShieldAttack.tscn" id="3_shield_attack"]
+
+[node name="Guardian" unique_id=50624926 instance=ExtResource("1_base")]
+enemy_vision_range = 3.0
+combat_guard_distance = 1.5
+attack_module_path = NodePath("VisualRoot/AttackModuleSocket/ShieldAttack")
+
+[node name="BodyMesh" type="CSGBox3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="0" unique_id=1284436133]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_body")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="ShieldAttack" parent="VisualRoot/AttackModuleSocket" index="0" unique_id=702933505 instance=ExtResource("3_shield_attack")]

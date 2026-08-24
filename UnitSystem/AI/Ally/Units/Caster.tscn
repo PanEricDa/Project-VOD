@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://cnrpfwsspnim8"]
+
+[ext_resource type="PackedScene" uid="uid://ceip30yw62vwx" path="res://UnitSystem/AI/Ally/AllyBase.tscn" id="1_ceg2y"]
+[ext_resource type="Resource" uid="uid://c7xo5naj6san6" path="res://UnitSystem/AI/Ally/Formation/Positions/Defender.tres" id="2_rysu0"]
+[ext_resource type="Resource" uid="uid://dlppmmwgyx6it" path="res://Item/Weapon/MagicGlobe/MagicGlobeData.tres" id="3_ceg2y"]
+[ext_resource type="PackedScene" uid="uid://dofx4arumbdgl" path="res://SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn" id="4_1dym3"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="4_ceg2y"]
+[ext_resource type="PackedScene" uid="uid://iy31womyjbj1" path="res://UnitSystem/Visuals/Ally/CasterVisual.tscn" id="4_rysu0"]
+[ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="5_xggor"]
+[ext_resource type="Script" uid="uid://d02epfqku0fc0" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="6_74tff"]
+
+[sub_resource type="Resource" id="Resource_xggor"]
+resource_local_to_scene = true
+script = ExtResource("6_74tff")
+projectile_scene = ExtResource("5_xggor")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+impact_radius = 1.2
+
+[node name="Caster" unique_id=1491736132 instance=ExtResource("1_ceg2y")]
+maximum_health = 90.0
+attack_power = 16.0
+defense = 2.0
+formation_position = ExtResource("2_rysu0")
+targeting_radius = 6.5
+combat_action_policy = 2
+automatic_skill_cast_enabled = true
+shared_action_cooldown_duration = 1.0
+starting_weapon = ExtResource("3_ceg2y")
+movement_speed = 3.8
+hit_movement_lock_duration = 0.1
+movement_acceleration = 16.0
+slowing_distance = 0.1
+dash_speed = 5.0
+dash_max_distance = 2.0
+dash_cooldown = 3.0
+dash_acceleration = 35.1
+rotation_speed = 5.0
+
+[node name="FireboltSkill" parent="SkillHost/SkillSocket" index="0" unique_id=165098916 instance=ExtResource("4_1dym3")]
+delivery = SubResource("Resource_xggor")
+
+[node name="CombatSystem" parent="." index="6" unique_id=1762750344 instance=ExtResource("4_ceg2y")]
+debug_hitbox_enabled = true
+
+[node name="CasterVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=582572661 instance=ExtResource("4_rysu0")]
+
+[editable path="SkillHost"]

@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://grnftwimvncn"]
+
+[ext_resource type="PackedScene" uid="uid://dy8mha7fw5p01" path="res://Scenes/ObjectScenes/AllyBase.tscn" id="1_1jrjr"]
+[ext_resource type="Material" uid="uid://4jd5sjt2j2v" path="res://Materials/MatGridPink.tres" id="2_44hsp"]
+[ext_resource type="Material" uid="uid://cpebnuk4q0yxs" path="res://Materials/MatGridRed.tres" id="3_g8j2r"]
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn" id="4_firebolt"]
+
+[node name="Mage2" unique_id=1791913868 instance=ExtResource("1_1jrjr")]
+legacy_skill_scheduler_enabled = false
+combat_guard_distance = 5.0
+combat_guard_distance_tolerance = 0.3
+front_distance = -2.0
+wander_lateral_radius = 2.3
+wander_lateral_minimum = 1.2
+formation_side_mode = 1
+wander_forward_radius = 0.4
+dash_speed = 5.0
+dash_max_distance = 1.0
+dash_cooldown = 2.0
+
+[node name="FireboltSkill" parent="SkillHostComponent/SkillSocket" index="0" instance=ExtResource("4_firebolt")]
+
+[node name="AllySkillRequestBridge" parent="." index="3"]
+enabled = true
+
+[node name="BodyMesh" type="CSGBox3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="0" unique_id=917583455]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_44hsp")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="HatRoot" type="Node3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="1" unique_id=1763327822]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 0)
+
+[node name="HatBrim" type="CSGCylinder3D" parent="VisualRoot/HatRoot" index="0" unique_id=2043857462]
+material_override = ExtResource("2_44hsp")
+radius = 0.34
+height = 0.045
+sides = 20
+
+[node name="HatCone" type="CSGCylinder3D" parent="VisualRoot/HatRoot" index="1" unique_id=34384737]
+transform = Transform3D(0.9848077, 0.17364818, 0, -0.17364818, 0.9848077, 0, 0, 0, 1, 0.04, 0.2, 0)
+material_override = ExtResource("2_44hsp")
+radius = 0.2
+height = 0.42
+sides = 20
+cone = true
+
+[node name="MagicFocus" type="CSGSphere3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="2" unique_id=1218877331]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.38, 0.45, -0.12)
+material_override = ExtResource("3_g8j2r")
+radius = 0.1
+radial_segments = 16
+rings = 8

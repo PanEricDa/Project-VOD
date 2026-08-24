@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://dgp6yqvmotjlt"]
+
+[ext_resource type="PackedScene" uid="uid://ceip30yw62vwx" path="res://UnitSystem/AI/Ally/AllyBase.tscn" id="1_enuto"]
+[ext_resource type="Resource" uid="uid://chrocvgkyl14c" path="res://UnitSystem/AI/Ally/Formation/Positions/DefensiveMid.tres" id="2_enuto"]
+[ext_resource type="Resource" uid="uid://cw5mngsw0yio1" path="res://Item/Weapon/Staff/StaffData.tres" id="3_k3ry1"]
+[ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="4_ac6fd"]
+[ext_resource type="PackedScene" uid="uid://fd88atot6qs4" path="res://SkillSystem/00-Skills/HolyLight/HolyLightSkill.tscn" id="4_njum3"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="5_f7dx7"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="5_oond8"]
+
+[sub_resource type="Resource" id="Resource_ac6fd"]
+resource_local_to_scene = true
+script = ExtResource("5_f7dx7")
+
+[node name="Priest" unique_id=1491736132 instance=ExtResource("1_enuto")]
+formation_position = ExtResource("2_enuto")
+combat_action_policy = 1
+automatic_skill_cast_enabled = true
+shared_action_cooldown_duration = 1.0
+starting_weapon = ExtResource("3_k3ry1")
+movement_speed = 3.8
+movement_acceleration = 16.0
+slowing_distance = 0.1
+dash_speed = 5.0
+dash_max_distance = 2.0
+dash_cooldown = 3.0
+dash_acceleration = 35.1
+rotation_speed = 5.0
+targeting_radius = 6.0
+combat_targeting_radius = 0.0
+maximum_health = 105.0
+attack_power = 11.0
+defense = 5.0
+hit_movement_lock_duration = 0.1
+
+[node name="HolyLightSkill" parent="SkillHost/SkillSocket" index="0" unique_id=75927867 instance=ExtResource("4_njum3")]
+delivery = SubResource("Resource_ac6fd")
+
+[node name="CombatSystem" parent="." index="6" unique_id=1762750344 instance=ExtResource("5_oond8")]
+debug_hitbox_enabled = true
+
+[node name="AllyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=693921659 instance=ExtResource("4_ac6fd")]
+
+[editable path="SkillHost"]

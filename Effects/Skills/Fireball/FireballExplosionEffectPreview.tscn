@@ -1,0 +1,67 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://Effects/Skills/Fireball/FireballExplosionEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballExplosionEffect.tscn" id="2_effect"]
+[ext_resource type="Material" path="res://Materials/MatGridTiffanyBlue.tres" id="3_target"]
+[ext_resource type="Material" path="res://Materials/MatGridDark.tres" id="4_ground"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.012, 0.016, 0.028, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.25, 0.29, 0.38, 1)
+ambient_light_energy = 0.34
+tonemap_mode = 3
+
+[sub_resource type="StandardMaterial3D" id="Material_radius"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.32, 0.12, 0.28)
+emission_enabled = true
+emission = Color(1, 0.18, 0.05, 1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="TorusMesh" id="Torus_radius"]
+inner_radius = 1.17
+outer_radius = 1.2
+rings = 48
+ring_segments = 8
+
+[node name="FireballExplosionEffectPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -28, 0)
+light_energy = 0.36
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+position = Vector3(0, -0.05, 0)
+material_override = ExtResource("4_ground")
+size = Vector3(4, 0.1, 4)
+
+[node name="PreviewTarget" type="CSGBox3D" parent="."]
+position = Vector3(0, 0.25, 0)
+material_override = ExtResource("3_target")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="RadiusReference" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.012, 0)
+material_override = SubResource("Material_radius")
+mesh = SubResource("Torus_radius")
+cast_shadow = 0
+
+[node name="ImpactPoint" type="Node3D" parent="."]
+position = Vector3(0, 0.32, 0)
+
+[node name="FireballExplosionEffect" parent="ImpactPoint" instance=ExtResource("2_effect")]
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 42.0
+near = 0.05
+far = 50.0

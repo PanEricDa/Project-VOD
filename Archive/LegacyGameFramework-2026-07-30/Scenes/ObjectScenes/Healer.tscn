@@ -1,0 +1,55 @@
+[gd_scene format=3 uid="uid://ryb0b8uquubx"]
+
+[ext_resource type="PackedScene" uid="uid://dy8mha7fw5p01" path="res://Scenes/ObjectScenes/AllyBase.tscn" id="1_t1fda"]
+[ext_resource type="Material" uid="uid://bbmycyfrgow23" path="res://Materials/MatGridTiffanyBlue.tres" id="2_3sy48"]
+[ext_resource type="PackedScene" uid="uid://b8lhq33pdpii1" path="res://SkillSystem/00-Skills/HolyLight/HolyLightSkill.tscn" id="2_iqh06"]
+[ext_resource type="Material" uid="uid://81qd8wrc0yr8" path="res://Materials/MatGridYellow.tres" id="3_iqh06"]
+
+[node name="Healer" unique_id=1791913868 instance=ExtResource("1_t1fda")]
+combat_guard_distance = 3.0
+combat_guard_distance_tolerance = 0.4
+front_distance = -1.1
+wander_lateral_radius = 0.9
+wander_lateral_minimum = 0.35
+formation_side_mode = 1
+formation_exit_margin = 0.35
+side_reselection_delay = 0.5
+wander_forward_radius = 0.35
+dash_trigger_distance = 2.0
+dash_retry_distance = 3.0
+dash_speed = 7.5
+dash_max_distance = 2.5
+dash_cooldown = 1.8
+
+[node name="HolyLightSkill" parent="SkillHostComponent/SkillSocket" index="0" unique_id=1606041092 instance=ExtResource("2_iqh06")]
+
+[node name="AllySkillRequestBridge" parent="." index="3"]
+enabled = true
+request_while_out_of_combat = true
+
+[node name="BodyMesh" type="CSGBox3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="0" unique_id=1781952937]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_3sy48")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="StaffRoot" type="Node3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="1" unique_id=243378919]
+transform = Transform3D(0.9887711, 0.14943814, 0, -0.14943814, 0.9887711, 0, 0, 0, 1, 0.32, 0.42, -0.06)
+
+[node name="StaffShaft" type="CSGCylinder3D" parent="VisualRoot/StaffRoot" index="0" unique_id=1833397063]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = ExtResource("3_iqh06")
+radius = 0.025
+height = 0.85
+sides = 12
+
+[node name="FocusOrb" type="CSGSphere3D" parent="VisualRoot/StaffRoot" index="1" unique_id=509030543]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 0)
+material_override = ExtResource("3_iqh06")
+radius = 0.09
+radial_segments = 16
+rings = 8
+
+[node name="FocusBar" type="CSGBox3D" parent="VisualRoot/StaffRoot" index="2" unique_id=1227794468]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.43, 0)
+material_override = ExtResource("3_iqh06")
+size = Vector3(0.24, 0.035, 0.035)

@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/AI/Components/AllySkillRequestBridge.gd" id="1_bridge"]
+
+[node name="AllySkillRequestBridge" type="Node"]
+script = ExtResource("1_bridge")
+enabled = false
+request_interval = 0.25
+request_while_out_of_combat = false
+cancel_on_combat_exit = true
+skill_host_path = NodePath("../SkillHostComponent")

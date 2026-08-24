@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Combat/Components/HealthComponent.gd" id="1_health"]
+
+[node name="HealthComponent" type="Node"]
+script = ExtResource("1_health")
+resource_id = &"health"
+maximum_value = 100.0
+starting_value = 100.0

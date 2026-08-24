@@ -1,0 +1,215 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" uid="uid://d2ql6db3l1rx4" path="res://Scenes/Components/AiAttackModules/AttackModuleBase.tscn" id="1_base"]
+[ext_resource type="Script" path="res://Scripts/Combat/AI/SwordAttack.gd" id="2_script"]
+[ext_resource type="Resource" path="res://Resources/Combat/AI/WarriorSwordAttackProfile.tres" id="3_profile"]
+[ext_resource type="Material" uid="uid://81qd8wrc0yr8" path="res://Materials/MatGridYellow.tres" id="4_sword"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_sword_hitbox"]
+size = Vector3(1, 0.7, 0.9)
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_name = "RESET"
+length = 0.05
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_attack_1"]
+resource_name = "attack_1"
+length = 0.32
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.2, 0.32),
+"transitions": PackedFloat32Array(1, 0.7, 1.4, 1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0), Vector3(0.05, 0.28, 0.02), Vector3(-0.06, 0.24, -0.04), Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.2, 0.32),
+"transitions": PackedFloat32Array(1, 0.7, 1.5, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-0.15, -0.95, 0.35), Vector3(0.1, 1.1, -0.3), Vector3(0, 0, 0)]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.1, 0.22),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_attack_2"]
+resource_name = "attack_2"
+length = 0.36
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.24, 0.36),
+"transitions": PackedFloat32Array(1, 0.7, 1.4, 1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0), Vector3(-0.05, 0.2, 0.02), Vector3(0.07, 0.3, -0.05), Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.24, 0.36),
+"transitions": PackedFloat32Array(1, 0.7, 1.5, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0.25, 1, -0.4), Vector3(-0.2, -1.05, 0.4), Vector3(0, 0, 0)]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.12, 0.25),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_attack_3"]
+resource_name = "attack_3"
+length = 0.45
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.31, 0.45),
+"transitions": PackedFloat32Array(1, 0.7, 1.5, 1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0), Vector3(0, 0.38, 0.04), Vector3(0, 0.18, -0.12), Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.31, 0.45),
+"transitions": PackedFloat32Array(1, 0.7, 1.6, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-1.15, 0, 0.15), Vector3(1.2, 0, -0.1), Vector3(0, 0, 0)]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.18, 0.34),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_sword"]
+_data = {
+&"RESET": SubResource("Animation_reset"),
+&"attack_1": SubResource("Animation_attack_1"),
+&"attack_2": SubResource("Animation_attack_2"),
+&"attack_3": SubResource("Animation_attack_3")
+}
+
+[node name="SwordAttack" unique_id=209134086 instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+attack_profile = ExtResource("3_profile")
+hitbox_enabled = true
+
+[node name="WeaponPivot" parent="." index="0"]
+position = Vector3(0, 0.25, 0)
+
+[node name="Blade" type="CSGBox3D" parent="WeaponPivot/WeaponVisualRoot" index="0"]
+transform = Transform3D(1, 0, 0, 0, 0.91613084, 0.4008794, 0, -0.4008794, 0.91613084, 0.33116287, 0.23894644, -0.3301518)
+material_override = ExtResource("4_sword")
+size = Vector3(0.02, 0.6, 0.08)
+
+[node name="Handle" type="CSGBox3D" parent="WeaponPivot/WeaponVisualRoot" index="1"]
+transform = Transform3D(1, 0, 0, 0, -0.40087944, 0.91613084, 0, -0.91613084, -0.40087944, 0.33116287, 0.09141098, -0.2655934)
+material_override = ExtResource("4_sword")
+size = Vector3(0.06, 0.13, 0.05)
+
+[node name="AttackOrigin" parent="WeaponPivot" index="1"]
+position = Vector3(0.33, 0.25, -0.5)
+
+[node name="AttackAnimationPlayer" parent="." index="1"]
+libraries/ = SubResource("AnimationLibrary_sword")
+
+[node name="HitboxDetector" parent="DeliveryRoot" index="0"]
+position = Vector3(0, 0.35, -0.65)
+debug_hitbox_enabled = true
+
+[node name="HitboxShapeCast" parent="DeliveryRoot/HitboxDetector" index="0"]
+shape = SubResource("BoxShape3D_sword_hitbox")
+collision_mask = 4
+
+[editable path="WeaponPivot"]
+[editable path="DeliveryRoot"]

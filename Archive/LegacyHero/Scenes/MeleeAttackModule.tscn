@@ -1,0 +1,297 @@
+[gd_scene format=3 uid="uid://chhosjxctqfom"]
+
+[ext_resource type="Script" uid="uid://bkmaxncgvmm22" path="res://Scripts/Combat/MeleeAttackModule.gd" id="1_script"]
+[ext_resource type="Material" uid="uid://81qd8wrc0yr8" path="res://Materials/MatGridYellow.tres" id="2_yellow"]
+[ext_resource type="Script" uid="uid://bcogwj11xd3gx" path="res://Scripts/Combat/MeleeHitDetector.gd" id="3_detector"]
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_name = "RESET"
+length = 0.05
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_attack_1"]
+resource_name = "attack_1"
+length = 0.32
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.2, 0.32),
+"transitions": PackedFloat32Array(1, 0.7, 1.4, 1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0), Vector3(0.05, 0.28, 0.02), Vector3(-0.06, 0.24, -0.04), Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.08, 0.2, 0.32),
+"transitions": PackedFloat32Array(1, 0.7, 1.5, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-0.15, -0.95, 0.35), Vector3(0.1, 1.1, -0.3), Vector3(0, 0, 0)]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.1, 0.22),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+tracks/3/type = "method"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.18, 0.3),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_combo_window"
+}, {
+"args": [],
+"method": &"_close_combo_window"
+}]
+}
+tracks/4/type = "method"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath(".")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.08),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_request_lunge_for_current_attack"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_attack_2"]
+resource_name = "attack_2"
+length = 0.36
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.24, 0.36),
+"transitions": PackedFloat32Array(1, 0.7, 1.4, 1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0), Vector3(-0.05, 0.2, 0.02), Vector3(0.07, 0.3, -0.05), Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.24, 0.36),
+"transitions": PackedFloat32Array(1, 0.7, 1.5, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0.25, 1, -0.4), Vector3(-0.2, -1.05, 0.4), Vector3(0, 0, 0)]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.12, 0.25),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+tracks/3/type = "method"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.2, 0.34),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_combo_window"
+}, {
+"args": [],
+"method": &"_close_combo_window"
+}]
+}
+tracks/4/type = "method"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath(".")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.1),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_request_lunge_for_current_attack"
+}]
+}
+
+[sub_resource type="Animation" id="Animation_attack_3"]
+resource_name = "attack_3"
+length = 0.45
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("WeaponPivot:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.31, 0.45),
+"transitions": PackedFloat32Array(1, 0.7, 1.5, 1),
+"update": 0,
+"values": [Vector3(0, 0.25, 0), Vector3(0, 0.38, 0.04), Vector3(0, 0.18, -0.12), Vector3(0, 0.25, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("WeaponPivot:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.16, 0.31, 0.45),
+"transitions": PackedFloat32Array(1, 0.7, 1.6, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(-1.15, 0, 0.15), Vector3(1.2, 0, -0.1), Vector3(0, 0, 0)]
+}
+tracks/2/type = "method"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath(".")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0.18, 0.34),
+"transitions": PackedFloat32Array(1, 1),
+"values": [{
+"args": [],
+"method": &"_open_hit_window"
+}, {
+"args": [],
+"method": &"_close_hit_window"
+}]
+}
+tracks/3/type = "method"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath(".")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0.16),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_request_lunge_for_current_attack"
+}]
+}
+tracks/4/type = "method"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath(".")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.1),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_request_third_attack_spin"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_attacks"]
+_data = {
+&"RESET": SubResource("Animation_reset"),
+&"attack_1": SubResource("Animation_attack_1"),
+&"attack_2": SubResource("Animation_attack_2"),
+&"attack_3": SubResource("Animation_attack_3")
+}
+
+[sub_resource type="BoxMesh" id="BoxMesh_debug"]
+size = Vector3(1.2, 0.8, 1)
+
+[node name="MeleeAttackModule" type="Node3D" unique_id=253408811]
+script = ExtResource("1_script")
+third_attack_spin_windup_pause = 0.04
+
+[node name="WeaponPivot" type="Node3D" parent="." unique_id=112366599]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+
+[node name="Blade" type="CSGBox3D" parent="WeaponPivot" unique_id=407720408]
+transform = Transform3D(1, 0, 0, 0, 0.91613084, 0.4008794, 0, -0.4008794, 0.91613084, 0.33116287, 0.23894644, -0.3301518)
+material_override = ExtResource("2_yellow")
+size = Vector3(0.02, 0.6, 0.08)
+
+[node name="Handle" type="CSGBox3D" parent="WeaponPivot" unique_id=1049283723]
+transform = Transform3D(1, 0, 0, 0, -0.40087944, 0.91613084, 0, -0.91613084, -0.40087944, 0.33116287, 0.09141098, -0.2655934)
+material_override = ExtResource("2_yellow")
+size = Vector3(0.06, 0.13, 0.05)
+
+[node name="AttackAnimationPlayer" type="AnimationPlayer" parent="." unique_id=88790409]
+libraries/ = SubResource("AnimationLibrary_attacks")
+
+[node name="MeleeHitDetector" type="Node3D" parent="." unique_id=1384553744]
+script = ExtResource("3_detector")
+hitbox_sizes = Array[Vector3]([Vector3(0.6, 0.6, 0.6), Vector3(0.6, 0.6, 0.6), Vector3(1, 0.7, 0.8)])
+
+[node name="DebugHitbox" type="MeshInstance3D" parent="MeleeHitDetector" unique_id=1910376597]
+cast_shadow = 0
+mesh = SubResource("BoxMesh_debug")

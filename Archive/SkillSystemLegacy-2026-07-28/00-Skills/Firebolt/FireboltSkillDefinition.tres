@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="IndependentSkillDefinition" format=3 uid="uid://dwkctx2mg27n7"]
+
+[ext_resource type="Script" uid="uid://bqla6ob4h6pdx" path="res://SkillSystem/01-Core/SkillDefinition.gd" id="1_definition"]
+[ext_resource type="Script" uid="uid://x5ob35i4quxb" path="res://SkillSystem/02-Conditions/AlwaysSkillCondition.gd" id="2_condition"]
+[ext_resource type="Script" uid="uid://dgce0dpsb531w" path="res://SkillSystem/03-Targeting/ProvidedTargetSelector.gd" id="3_target"]
+[ext_resource type="Script" uid="uid://bxu0gmjcnkvhi" path="res://SkillSystem/04-Decisions/BasicRandomDecisionPolicy.gd" id="4_decision"]
+[ext_resource type="Script" uid="uid://bcbpepfl178yi" path="res://SkillSystem/05-Costs/NoSkillCost.gd" id="5_cost"]
+[ext_resource type="Script" uid="uid://cbloy3d1wujyk" path="res://SkillSystem/06-Presentation/SceneSkillPresentation.gd" id="6_presentation"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballCastChargeEffect.tscn" id="7_cast_effect"]
+
+[sub_resource type="Resource" id="Resource_cast_presentation"]
+script = ExtResource("6_presentation")
+effect_scene = ExtResource("7_cast_effect")
+
+[sub_resource type="Resource" id="Resource_condition"]
+script = ExtResource("2_condition")
+
+[sub_resource type="Resource" id="Resource_cost"]
+script = ExtResource("5_cost")
+
+[sub_resource type="Resource" id="Resource_decision"]
+script = ExtResource("4_decision")
+
+[sub_resource type="Resource" id="Resource_target"]
+script = ExtResource("3_target")
+
+[resource]
+script = ExtResource("1_definition")
+skill_id = &"firebolt"
+display_name = "Firebolt"
+target_relation = 3
+cast_range = 6.0
+cast_time = 0.75
+skill_cooldown = 3.0
+condition = SubResource("Resource_condition")
+target_selector = SubResource("Resource_target")
+decision_policy = SubResource("Resource_decision")
+cost = SubResource("Resource_cost")
+cast_presentation = SubResource("Resource_cast_presentation")

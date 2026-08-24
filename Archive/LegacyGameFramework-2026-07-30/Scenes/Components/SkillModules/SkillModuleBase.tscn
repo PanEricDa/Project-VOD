@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Combat/Skills/SkillModuleBase.gd" id="1_script"]
+[ext_resource type="Resource" path="res://Resources/Combat/Skills/DefaultSkillProfile.tres" id="2_profile"]
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_name = "RESET"
+length = 0.1
+
+[sub_resource type="Animation" id="Animation_cast"]
+resource_name = "cast"
+length = 0.1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_skill"]
+_data = {&"RESET": SubResource("Animation_reset"), &"cast": SubResource("Animation_cast")}
+
+[node name="SkillModuleBase" type="Node3D"]
+script = ExtResource("1_script")
+skill_profile = ExtResource("2_profile")
+
+[node name="CastOrigin" type="Marker3D" parent="."]
+
+[node name="DeliveryRoot" type="Node3D" parent="."]
+
+[node name="SkillAnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {&"": SubResource("AnimationLibrary_skill")}

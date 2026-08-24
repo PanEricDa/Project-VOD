@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://fg22r73g7ojn" path="res://SkillSystem/01-Core/SkillHostComponent.gd" id="1_host"]
+
+[node name="SkillHostComponent" type="Node"]
+script = ExtResource("1_host")
+skill_socket_path = NodePath("SkillSocket")
+auto_discover_skills = true
+global_cooldown_duration = 1.0
+
+[node name="SkillSocket" type="Node" parent="."]

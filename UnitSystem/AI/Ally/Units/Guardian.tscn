@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://df6vr63dn4ehx"]
+
+[ext_resource type="PackedScene" uid="uid://ceip30yw62vwx" path="res://UnitSystem/AI/Ally/AllyBase.tscn" id="1_336a2"]
+[ext_resource type="Resource" uid="uid://dfvy0ic06ufm" path="res://Item/Weapon/Shield/IronShieldData.tres" id="2_336a2"]
+[ext_resource type="Resource" uid="uid://byl7gmvvlvodu" path="res://UnitSystem/AI/Ally/Formation/Positions/Forward.tres" id="3_rmpxs"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="4_combat"]
+[ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="4_rmpxs"]
+[ext_resource type="PackedScene" uid="uid://cyj2p3visptjw" path="res://SkillSystem/00-Skills/GuardianShield/GuardianShieldSkill.tscn" id="5_skill"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="5_xppbt"]
+[ext_resource type="Resource" uid="uid://cnrmochu3ntvo" path="res://UnitSystem/Components/Targeting/AI/Policies/GuardianProtect.tres" id="6_protect"]
+
+[sub_resource type="Resource" id="Resource_p24kn"]
+resource_local_to_scene = true
+script = ExtResource("5_xppbt")
+
+[node name="Guardian" unique_id=1491736132 instance=ExtResource("1_336a2")]
+formation_position = ExtResource("3_rmpxs")
+targeting_radius = 6.0
+combat_targeting_radius = 12.0
+combat_action_policy = 1
+automatic_skill_cast_enabled = true
+shared_action_cooldown_duration = 1.0
+starting_weapon = ExtResource("2_336a2")
+movement_speed = 4.8
+maximum_health = 250.0
+attack_power = 8.0
+defense = 35.0
+threat_takeover_ratio = 1.05
+threat_action_suppression_at_125 = 0.0
+hit_movement_lock_duration = 0.04
+
+[node name="GuardianShieldSkill" parent="SkillHost/SkillSocket" index="0" unique_id=2125788544 instance=ExtResource("5_skill")]
+delivery = SubResource("Resource_p24kn")
+
+[node name="CombatSystem" parent="." index="3" unique_id=1080413471 instance=ExtResource("4_combat")]
+debug_hitbox_enabled = true
+
+[node name="AITargetingComponent" parent="." index="5"]
+selection_policy = ExtResource("6_protect")
+
+[node name="AllyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=693921659 instance=ExtResource("4_rmpxs")]
+
+[editable path="SkillHost"]

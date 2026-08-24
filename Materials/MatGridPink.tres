@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://4jd5sjt2j2v"]
+
+[ext_resource type="Texture2D" uid="uid://bxe3ab1ssasvg" path="res://Assets/PrototypeGridTexture/Pink/Texture01.png" id="1_ppoks"]
+
+[resource]
+albedo_texture = ExtResource("1_ppoks")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_offset = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_world_triplanar = true

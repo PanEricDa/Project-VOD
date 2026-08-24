@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="SkillProfile" format=3 uid="uid://dgovltxss4gx1"]
+
+[ext_resource type="Script" uid="uid://dok2x468mp5xa" path="res://Scripts/Combat/Skills/SkillProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Default Skill"

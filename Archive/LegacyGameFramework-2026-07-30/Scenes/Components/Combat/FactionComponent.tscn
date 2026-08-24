@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Combat/Components/FactionComponent.gd" id="1_faction"]
+
+[node name="FactionComponent" type="Node"]
+script = ExtResource("1_faction")
+faction_id = &"neutral"
+team_id = 0
+targetable = true

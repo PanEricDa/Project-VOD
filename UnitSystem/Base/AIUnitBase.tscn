@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://cmy5rxnbhuv4u"]
+
+[ext_resource type="PackedScene" uid="uid://c1ie71h3631fa" path="res://UnitSystem/Base/00_UnitBase.tscn" id="1_unit"]
+[ext_resource type="Script" uid="uid://dhrl3artd7d4f" path="res://UnitSystem/Base/AIUnitBase.gd" id="2_ai"]
+[ext_resource type="Script" uid="uid://x4xqe1nxxbmf" path="res://UnitSystem/Components/Combat/EditorWeaponPreview.gd" id="4_weapon_preview"]
+
+[node name="AIUnitBase" unique_id=1604626718 instance=ExtResource("1_unit")]
+script = ExtResource("2_ai")
+starting_weapon = null
+movement_speed = 4.2
+movement_acceleration = 20.0
+slowing_distance = 0.2
+arrival_distance = 0.15
+dash_speed = 9.0
+dash_max_distance = 3.0
+dash_arrival_distance = 0.35
+dash_cooldown = 1.5
+dash_recovery_duration = 0.2
+dash_acceleration = 40.0
+rotation_speed = 7.0
+gravity_multiplier = 1.0
+
+[node name="MovementSystem" type="Node3D" parent="." index="2" unique_id=73502218]
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="MovementSystem" index="0" unique_id=947852554]
+path_desired_distance = 0.2
+target_desired_distance = 0.15
+radius = 0.25
+max_speed = 9.0
+
+[node name="EditorWeaponPreview" type="Node3D" parent="." index="3" unique_id=811314242]
+visible = false
+script = ExtResource("4_weapon_preview")

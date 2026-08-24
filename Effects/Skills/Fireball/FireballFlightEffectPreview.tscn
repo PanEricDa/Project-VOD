@@ -1,0 +1,77 @@
+[gd_scene format=3 uid="uid://cd4m3o8dap81q"]
+
+[ext_resource type="Script" uid="uid://dx3e41cq8kxq4" path="res://Effects/Skills/Fireball/FireballFlightEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballFlightEffect.tscn" id="2_effect"]
+[ext_resource type="Material" uid="uid://c40gw7vteanxu" path="res://Materials/MatGridDark.tres" id="3_ground"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.012, 0.016, 0.028, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.24, 0.28, 0.38, 1)
+ambient_light_energy = 0.32
+tonemap_mode = 3
+
+[sub_resource type="StandardMaterial3D" id="Material_path"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.3, 0.36, 0.48, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="Material_start"]
+shading_mode = 0
+albedo_color = Color(0.25, 0.6, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_end"]
+shading_mode = 0
+albedo_color = Color(1, 0.32, 0.12, 1)
+
+[node name="FireballFlightEffectPreview" type="Node3D" unique_id=2117271680]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1154171782]
+environment = SubResource("Environment_preview")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1878968189]
+transform = Transform3D(0.9396926, 0.28016648, -0.1961747, 0, 0.57357645, 0.81915206, 0.34202012, -0.76975113, 0.53898555, 0, 0, 0)
+light_energy = 0.3
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="." unique_id=594990280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+material_override = ExtResource("3_ground")
+size = Vector3(6, 0.1, 3)
+
+[node name="FlightPath" type="Node3D" parent="." unique_id=278265825]
+
+[node name="PathGuide" type="CSGBox3D" parent="FlightPath" unique_id=312608853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.62, 0)
+material_override = SubResource("Material_path")
+size = Vector3(4.4, 0.015, 0.015)
+
+[node name="StartMarker" type="Marker3D" parent="FlightPath" unique_id=1977544146]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 0.62, 0)
+
+[node name="Visual" type="CSGSphere3D" parent="FlightPath/StartMarker" unique_id=1191427754]
+radius = 0.045
+radial_segments = 8
+rings = 4
+material = SubResource("Material_start")
+
+[node name="EndMarker" type="Marker3D" parent="FlightPath" unique_id=728502087]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.62, 0)
+
+[node name="Visual" type="CSGSphere3D" parent="FlightPath/EndMarker" unique_id=1633381199]
+radius = 0.045
+radial_segments = 8
+rings = 4
+material = SubResource("Material_end")
+
+[node name="FlightCarrier" type="Node3D" parent="." unique_id=922021396]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="FireballFlightEffect" parent="FlightCarrier" unique_id=649167326 instance=ExtResource("2_effect")]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1372621058]
+current = true
+fov = 38.0
+far = 50.0

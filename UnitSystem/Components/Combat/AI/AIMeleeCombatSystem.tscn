@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AICombatSystem.tscn" id="1_base"]
+[ext_resource type="Script" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/Common/MeleeHitboxComponent.tscn" id="3_hitbox"]
+
+[node name="CombatSystem" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+
+[node name="MeleeHitbox" parent="." instance=ExtResource("3_hitbox")]

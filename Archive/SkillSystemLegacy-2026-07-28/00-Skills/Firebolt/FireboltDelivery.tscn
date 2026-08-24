@@ -1,0 +1,12 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://SkillSystem/07-Delivery/00-Agents/TrackingProjectileDeliveryAgent.tscn" id="1_delivery_base"]
+[ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="2_projectile"]
+
+[node name="FireboltDelivery" instance=ExtResource("1_delivery_base")]
+projectile_scene = ExtResource("2_projectile")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+impact_radius = 1.2
+aim_height = 0.25

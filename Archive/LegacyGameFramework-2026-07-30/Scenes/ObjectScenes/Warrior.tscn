@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://d2b6ijqwblgwh"]
+
+[ext_resource type="PackedScene" uid="uid://dy8mha7fw5p01" path="res://Scenes/ObjectScenes/AllyBase.tscn" id="1_base"]
+[ext_resource type="Material" uid="uid://0wc0xq5kfkwy" path="res://Materials/MatGridBlue.tres" id="2_le74j"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/AiAttackModules/SwordAttack.tscn" id="3_sword_attack"]
+
+[node name="Warrior" unique_id=577865700 instance=ExtResource("1_base")]
+enemy_vision_range = 4.0
+combat_guard_distance = 1.5
+attack_module_path = NodePath("VisualRoot/AttackModuleSocket/SwordAttack")
+front_distance = 1.5
+wander_lateral_radius = 1.8
+formation_side_mode = 1
+
+[node name="BodyMesh" type="CSGBox3D" parent="VisualRoot" parent_id_path=PackedInt32Array(1749312951) index="0" unique_id=631568766]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = ExtResource("2_le74j")
+size = Vector3(0.5, 0.5, 0.5)
+
+[node name="SwordAttack" parent="VisualRoot/AttackModuleSocket" index="0" unique_id=1425074422 instance=ExtResource("3_sword_attack")]
+attack_animation_names = Array[StringName]([&"attack_1", &"attack_2", &"attack_3"])

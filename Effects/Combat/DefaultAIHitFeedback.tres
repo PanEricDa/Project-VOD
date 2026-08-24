@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="HitFeedbackProfile" format=3 uid="uid://xyld0tt22iha"]
+
+[ext_resource type="Script" uid="uid://bnck3s3v56yxf" path="res://Effects/Combat/HitFeedbackProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+hit_stop_duration = 0.06
+camera_shake_enabled = false
+combo_intensity_multipliers = Array[float]([1.0])

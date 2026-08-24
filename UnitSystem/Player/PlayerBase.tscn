@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://dvtw3m3fv0shj"]
+
+[ext_resource type="PackedScene" uid="uid://c1ie71h3631fa" path="res://UnitSystem/Base/00_UnitBase.tscn" id="1_unit"]
+[ext_resource type="Script" uid="uid://ceo7ccsfgsb3n" path="res://UnitSystem/Player/PlayerBase.gd" id="2_player"]
+[ext_resource type="Script" uid="uid://qb830k0dualh" path="res://UnitSystem/Components/Combat/PlayerAttackController.gd" id="3_attack_controller"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Targeting/PlayerTargetingComponent.tscn" id="4_targeting"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/Common/MeleeHitboxComponent.tscn" id="5_melee_hitbox"]
+[ext_resource type="PackedScene" path="res://Effects/Combat/HitFeedbackBridge.tscn" id="6_hit_feedback"]
+[ext_resource type="Resource" path="res://Effects/Combat/DefaultMeleeHitFeedback.tres" id="7_hit_feedback_profile"]
+[ext_resource type="Script" path="res://UnitSystem/Components/Combat/EditorWeaponPreview.gd" id="8_weapon_preview"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/UI/PlayerThreatFocusController.tscn" id="9_threat_focus"]
+
+[node name="PlayerBase" unique_id=1375667450 instance=ExtResource("1_unit")]
+collision_layer = 2
+script = ExtResource("2_player")
+movement_speed = 4.0
+movement_acceleration = 24.0
+visual_rotation_speed = 12.0
+dash_distance = 2.5
+dash_speed = 10.0
+maximum_consecutive_dashes = 2
+dash_cooldown_duration = 2.0
+gravity_multiplier = 1.0
+faction_id = "Player"
+team_id = 1
+
+[node name="TargetingSystem" parent="." index="2" unique_id=1854654861 instance=ExtResource("4_targeting")]
+
+[node name="AttackController" type="Node" parent="." index="3" unique_id=173813248]
+script = ExtResource("3_attack_controller")
+
+[node name="MeleeHitbox" parent="." index="4" instance=ExtResource("5_melee_hitbox")]
+
+[node name="Effects" type="Node3D" parent="." index="5"]
+
+[node name="EditorWeaponPreview" type="Node3D" parent="."]
+script = ExtResource("8_weapon_preview")
+
+[node name="PlayerThreatFocusController" parent="." instance=ExtResource("9_threat_focus")]
+
+[node name="HitFeedbackBridge" parent="Effects" instance=ExtResource("6_hit_feedback")]
+attack_source_path = NodePath("../../AttackController")
+effect_profile = ExtResource("7_hit_feedback_profile")

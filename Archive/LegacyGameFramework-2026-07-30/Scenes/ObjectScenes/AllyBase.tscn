@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://dy8mha7fw5p01"]
+
+[ext_resource type="Script" uid="uid://dylpogmg7gjje" path="res://Scripts/AI/AllyBase.gd" id="1_ofaw4"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/Combat/HealthComponent.tscn" id="2_health_component"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/Combat/FactionComponent.tscn" id="3_faction_component"]
+[ext_resource type="Script" path="res://SkillSystem/01-Core/SkillHostComponent.gd" id="4_independent_skill_host"]
+[ext_resource type="PackedScene" path="res://Scenes/Components/AI/AllySkillRequestBridge.tscn" id="5_skill_request_bridge"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8wjju"]
+size = Vector3(0.5, 0.5, 0.5)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_vision"]
+radius = 6.0
+
+[node name="AllyBase" type="CharacterBody3D" unique_id=1791913868]
+collision_layer = 2
+script = ExtResource("1_ofaw4")
+vision_indicator_idle_color = Color(0.78039217, 0.78039217, 0.78039217, 0.05882353)
+
+[node name="HealthComponent" parent="." instance=ExtResource("2_health_component")]
+
+[node name="FactionComponent" parent="." instance=ExtResource("3_faction_component")]
+faction_id = &"ally"
+team_id = 1
+
+[node name="SkillHostComponent" type="Node3D" parent="."]
+script = ExtResource("4_independent_skill_host")
+skill_socket_path = NodePath("SkillSocket")
+auto_discover_skills = true
+global_cooldown_duration = 1.0
+
+[node name="SkillSocket" type="Node3D" parent="SkillHostComponent"]
+
+[node name="AllySkillRequestBridge" parent="." instance=ExtResource("5_skill_request_bridge")]
+enabled = false
+skill_host_path = NodePath("../SkillHostComponent")
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1749312951]
+
+[node name="AttackModuleSocket" type="Node3D" parent="VisualRoot"]
+
+[node name="SkillModuleSocket" type="Node3D" parent="VisualRoot"]
+
+[node name="CollisionShape" type="CollisionShape3D" parent="." unique_id=796815313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_8wjju")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=1310966872]
+path_desired_distance = 0.2
+target_desired_distance = 0.15
+radius = 0.25
+max_speed = 9.0
+
+[node name="CombatSensor" type="Area3D" parent="." unique_id=1586946951]
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="VisionShape" type="CollisionShape3D" parent="CombatSensor" unique_id=1979343679]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("SphereShape3D_vision")
+
+[node name="VisionRangeIndicator" type="MeshInstance3D" parent="." unique_id=264503075]
+cast_shadow = 0

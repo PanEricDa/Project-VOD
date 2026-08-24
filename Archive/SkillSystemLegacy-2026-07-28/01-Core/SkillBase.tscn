@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://c8sy8ntuxb36f"]
+
+[ext_resource type="Script" uid="uid://wp8yie0qspa0" path="res://SkillSystem/01-Core/SkillBase.gd" id="1_3cpy8"]
+[ext_resource type="Resource" uid="uid://bjpk2fqa4amse" path="res://SkillSystem/09-Presets/DefaultSkillDefinition.tres" id="2_02aoe"]
+[ext_resource type="PackedScene" path="res://SkillSystem/07-Delivery/00-Agents/BasicDeliveryAgent.tscn" id="3_ue0ub"]
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_name = "RESET"
+length = 0.1
+
+[sub_resource type="Animation" id="Animation_cast"]
+resource_name = "cast"
+length = 0.1
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_skill"]
+_data = {
+&"RESET": SubResource("Animation_reset"),
+&"cast": SubResource("Animation_cast")
+}
+
+[node name="SkillBase" type="Node3D" unique_id=1606041092]
+script = ExtResource("1_3cpy8")
+skill_definition = ExtResource("2_02aoe")
+delivery_agent_scene = ExtResource("3_ue0ub")
+cast_origin_path = null
+presentation_root_path = null
+delivery_socket_path = null
+animation_player_path = null
+cast_animation_name = null
+
+[node name="CastOrigin" type="Marker3D" parent="." unique_id=601190467]
+
+[node name="PresentationRoot" type="Node3D" parent="." unique_id=258301449]
+
+[node name="DeliverySocket" type="Marker3D" parent="." unique_id=579593528]
+
+[node name="SkillAnimationPlayer" type="AnimationPlayer" parent="." unique_id=1653206728]
+libraries/ = SubResource("AnimationLibrary_skill")
+
+[node name="SkillAudioPlayer" type="AudioStreamPlayer3D" parent="." unique_id=1012965055]

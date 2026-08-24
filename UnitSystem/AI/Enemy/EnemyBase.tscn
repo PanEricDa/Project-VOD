@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://ckposes0vweos"]
+
+[ext_resource type="PackedScene" uid="uid://cmy5rxnbhuv4u" path="res://UnitSystem/Base/AIUnitBase.tscn" id="1_ai"]
+[ext_resource type="Script" uid="uid://c2rowesn0hcw7" path="res://UnitSystem/AI/Enemy/EnemyBase.gd" id="2_enemy"]
+[ext_resource type="PackedScene" uid="uid://dr77ml1pn2k5e" path="res://UnitSystem/Visuals/Enemy/EnemyVisual.tscn" id="3_visual"]
+[ext_resource type="PackedScene" uid="uid://c0kfhoyabpinv" path="res://UnitSystem/Components/Targeting/AI/AITargetingComponent.tscn" id="5_targeting"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Behavior/EnemyBehaviorStateMachine.tscn" id="6_behavior"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/Threat/EnemyThreatComponent.tscn" id="7_threat"]
+[ext_resource type="PackedScene" uid="uid://byclq0fts2dx" path="res://UnitSystem/Debug/Threat/ThreatDebugDisplay.tscn" id="8_threat_debug"]
+
+[node name="EnemyBase" unique_id=1948486579 groups=["enemy_targets"] instance=ExtResource("1_ai")]
+collision_layer = 4
+script = ExtResource("2_enemy")
+targeting_radius = 6.0
+faction_id = "Enemy"
+team_id = 2
+
+[node name="UnitState" parent="." index="1" unique_id=1840979116]
+death_mode = 1
+remove_after_seconds = 2.0
+
+[node name="AITargetingComponent" parent="." index="3" unique_id=91411252 instance=ExtResource("5_targeting")]
+
+[node name="ThreatComponent" parent="." index="4" unique_id=177019467 instance=ExtResource("7_threat")]
+
+[node name="ThreatDebugDisplay" parent="." index="5" unique_id=544040748 instance=ExtResource("8_threat_debug")]
+debug_display_enabled = false
+
+[node name="BehaviorStateMachine" parent="." index="6" unique_id=1962546501 instance=ExtResource("6_behavior")]
+leash_distance = 20.0
+
+[node name="EnemyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=313442081 instance=ExtResource("3_visual")]

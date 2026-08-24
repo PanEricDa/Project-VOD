@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://b3qp6uulk431f"]
+
+[ext_resource type="Script" path="res://SkillSystem/01-Core/SkillBase.gd" id="1_skill"]
+[ext_resource type="Script" path="res://SkillSystem/02-Delivery/SkillDeliveryRunner.gd" id="2_runner"]
+
+[node name="SkillBase" type="Node"]
+script = ExtResource("1_skill")
+
+[node name="DeliveryRunner" type="Node" parent="."]
+script = ExtResource("2_runner")
+
+[node name="RuntimeEffects" type="Node" parent="."]

@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://cbecfr3g8svqm"]
+
+[ext_resource type="Script" uid="uid://bu0pxpairgi7s" path="res://Item/Projectiles/TrackingArcProjectile.gd" id="1_projectile"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wvhbo"]
+albedo_color = Color(0.55, 0.22678332, 0.07699999, 1)
+
+[node name="Arrow" type="Node3D" unique_id=1507154661]
+script = ExtResource("1_projectile")
+
+[node name="ArrowVisual" type="CSGBox3D" parent="." unique_id=1632351403]
+size = Vector3(0.04, 0.04, 0.5)
+material = SubResource("StandardMaterial3D_wvhbo")

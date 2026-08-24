@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MeleeWeaponData" format=3 uid="uid://dlppmmwgyx6it"]
+
+[ext_resource type="Script" uid="uid://dypgael48bvms" path="res://Item/Weapon/MeleeWeaponData.gd" id="1_script"]
+[ext_resource type="PackedScene" uid="uid://dscgnfj560dfv" path="res://Item/Weapon/MagicGlobe/MagicGlobeVisual.tscn" id="2_visual"]
+[ext_resource type="AnimationLibrary" uid="uid://xekaausbog11" path="res://Item/Weapon/MagicGlobe/MagicGlobeAnimationLibrary.res" id="3_animation"]
+
+[resource]
+script = ExtResource("1_script")
+hitbox_sizes = Array[Vector3]([Vector3(0.5, 0.5, 0.5)])
+hitbox_center_offsets = Array[Vector3]([Vector3(0, 0.3, 0.5)])
+display_name = "Magic Globe"
+visual_scene = ExtResource("2_visual")
+animation_library = ExtResource("3_animation")

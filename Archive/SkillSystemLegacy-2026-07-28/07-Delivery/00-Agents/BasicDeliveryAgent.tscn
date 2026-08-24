@@ -1,0 +1,32 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://SkillSystem/07-Delivery/00-Agents/BasicDeliveryAgent.gd" id="1_agent"]
+[ext_resource type="Script" path="res://SkillSystem/07-Delivery/01-Trajectories/DirectTrajectory.gd" id="2_trajectory"]
+[ext_resource type="Script" path="res://SkillSystem/07-Delivery/02-Collisions/ArrivalCollisionPolicy.gd" id="3_collision"]
+[ext_resource type="Script" path="res://SkillSystem/07-Delivery/03-Impacts/DirectImpactSelector.gd" id="4_impact"]
+[ext_resource type="Script" path="res://SkillSystem/08-Payloads/HealthChangePayload.gd" id="5_payload"]
+
+[sub_resource type="Resource" id="Resource_trajectory"]
+script = ExtResource("2_trajectory")
+travel_duration = 0.0
+face_travel_direction = true
+
+[sub_resource type="Resource" id="Resource_collision"]
+script = ExtResource("3_collision")
+require_valid_target_on_arrival = true
+
+[sub_resource type="Resource" id="Resource_impact"]
+script = ExtResource("4_impact")
+
+[sub_resource type="Resource" id="Resource_payload"]
+script = ExtResource("5_payload")
+operation = 0
+amount = 10.0
+health_component_path = NodePath("HealthComponent")
+
+[node name="BasicDeliveryAgent" type="Node3D"]
+script = ExtResource("1_agent")
+trajectory = SubResource("Resource_trajectory")
+collision_policy = SubResource("Resource_collision")
+impact_selector = SubResource("Resource_impact")
+payloads = Array[Resource]([SubResource("Resource_payload")])

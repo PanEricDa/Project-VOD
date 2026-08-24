@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FormationPositionData" format=3 uid="uid://bh7nrfn3agb6y"]
+
+[ext_resource type="Script" uid="uid://dkj3wbvonm6l0" path="res://UnitSystem/AI/Ally/Formation/FormationPositionData.gd" id="1_position"]
+
+[resource]
+script = ExtResource("1_position")
+display_name = "Right Wing-Back"
+center_offset = Vector2(2, -1.5)
+lateral_radius = 0.7
+forward_radius = 0.75

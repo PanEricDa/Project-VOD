@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SkillProfile" format=3 uid="uid://cmy70tgws45th"]
+
+[ext_resource type="Script" uid="uid://dok2x468mp5xa" path="res://Scripts/Combat/Skills/SkillProfile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Mage Fireball"
+required_target_group = &"enemy_targets"
+cast_range = 6.0
+cast_time = 0.75
+skill_cooldown = 5.0

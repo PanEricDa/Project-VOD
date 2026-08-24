@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://bl6uahs5jwxd6"]
+
+[ext_resource type="Script" path="res://SkillSystem/01-Core/SkillHostComponent.gd" id="1_host"]
+
+[node name="SkillHostComponent" type="Node"]
+script = ExtResource("1_host")
+
+[node name="SkillSocket" type="Node" parent="."]
