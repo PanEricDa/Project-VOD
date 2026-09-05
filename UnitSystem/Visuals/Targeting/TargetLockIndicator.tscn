@@ -6,9 +6,9 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ring"]
 shader = ExtResource("2_ring_shader")
 shader_parameter/ring_color = Color(1, 0.78, 0.16, 1)
-shader_parameter/outer_radius = 0.5
-shader_parameter/inner_radius = 0.45
-shader_parameter/edge_smooth = 0.02
+shader_parameter/outer_radius = 0.48
+shader_parameter/inner_radius = 0.42
+shader_parameter/edge_smooth = 0.015
 shader_parameter/emission_strength = 0.6
 shader_parameter/overall_alpha = 0.0
 

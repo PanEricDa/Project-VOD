@@ -386,8 +386,11 @@ func _create_formal_indicator() -> void:
 			+ "Target locking remains available."
 		)
 		return
-	var indicator := formal_indicator_scene.instantiate() as TargetLockIndicator
+	var instantiated_root := formal_indicator_scene.instantiate()
+	var indicator := instantiated_root as TargetLockIndicator
 	if indicator == null:
+		# 类型不符的替换场景已经实例化但不会入树；立即释放避免孤儿节点泄漏。
+		instantiated_root.queue_free()
 		_report_formal_indicator_issue(
 			"PlayerTargetingComponent: formal indicator scene root is not a TargetLockIndicator."
 		)
