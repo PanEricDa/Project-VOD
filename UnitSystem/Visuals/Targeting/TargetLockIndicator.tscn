@@ -4,6 +4,7 @@
 [ext_resource type="Shader" path="res://UnitSystem/Visuals/Targeting/TargetLockIndicator.gdshader" id="2_ring_shader"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ring"]
+resource_local_to_scene = true
 shader = ExtResource("2_ring_shader")
 shader_parameter/ring_color = Color(1, 0.78, 0.16, 1)
 shader_parameter/outer_radius = 0.48
@@ -13,7 +14,6 @@ shader_parameter/emission_strength = 0.6
 shader_parameter/overall_alpha = 0.0
 
 [sub_resource type="QuadMesh" id="QuadMesh_ring"]
-material = SubResource("ShaderMaterial_ring")
 size = Vector2(1.2, 1.2)
 
 [node name="TargetLockIndicator" type="Node3D"]
@@ -26,4 +26,5 @@ script = ExtResource("1_indicator_script")
 [node name="RingMesh" type="MeshInstance3D" parent="RingRoot"]
 rotation = Vector3(-1.5707963267948966, 0, 0)
 cast_shadow = 0
+material_override = SubResource("ShaderMaterial_ring")
 mesh = SubResource("QuadMesh_ring")

@@ -32,6 +32,8 @@ func _initialize() -> void:
 func _run() -> void:
 	await _test_state_controller_contract()
 	await _test_scene_visual_contract()
+	await _test_enter_exit_scale_continuity()
+	await _test_scene_instance_material_isolation()
 	_finish()
 
 
@@ -319,6 +321,80 @@ func _test_scene_visual_contract() -> void:
 	)
 
 	indicator.queue_free()
+	await process_frame
+
+
+## 验证进入尚未完成时开始退出会从当前缩放继续，不会先跳回完整尺寸。
+func _test_enter_exit_scale_continuity() -> void:
+	var indicator_script := load(INDICATOR_SCRIPT_PATH) as GDScript
+	var indicator := indicator_script.new() as Node3D if indicator_script != null else null
+	_expect(indicator != null, "scale-continuity indicator instantiates")
+	if indicator == null:
+		return
+	root.add_child(indicator)
+	await process_frame
+	indicator.call(&"play_enter", Vector3.ZERO)
+	await _wait_seconds(float(indicator.get("enter_duration")) * 0.35)
+	var scale_before_exit: float = indicator.scale.x
+	indicator.call(&"play_exit")
+	await process_frame
+	await process_frame
+	_expect(
+		indicator.scale.x <= scale_before_exit + 0.02,
+		"EXIT during ENTER continues from the current scale without enlarging"
+	)
+	indicator.queue_free()
+	await process_frame
+
+
+## 验证每个正式场景实例独占运行时修改的 ShaderMaterial，透明度不会串扰。
+func _test_scene_instance_material_isolation() -> void:
+	var scene := load(INDICATOR_SCENE_PATH) as PackedScene
+	_expect(scene != null, "material-isolation scene loads")
+	if scene == null:
+		return
+	var first := scene.instantiate() as TargetLockIndicator
+	var second := scene.instantiate() as TargetLockIndicator
+	_expect(first != null and second != null, "two formal indicator instances instantiate")
+	if first == null or second == null:
+		if is_instance_valid(first):
+			first.free()
+		if is_instance_valid(second):
+			second.free()
+		return
+	root.add_child(first)
+	root.add_child(second)
+	await process_frame
+	var first_mesh := first.get_node_or_null(^"RingRoot/RingMesh") as MeshInstance3D
+	var second_mesh := second.get_node_or_null(^"RingRoot/RingMesh") as MeshInstance3D
+	var first_material := (
+		first_mesh.get_active_material(0) as ShaderMaterial
+		if first_mesh != null else null
+	)
+	var second_material := (
+		second_mesh.get_active_material(0) as ShaderMaterial
+		if second_mesh != null else null
+	)
+	_expect(
+		first_material != null and second_material != null,
+		"both indicator instances expose a ShaderMaterial"
+	)
+	if first_material != null and second_material != null:
+		_expect(
+			first_material != second_material,
+			"formal indicator instances do not share their mutable material"
+		)
+		first.play_enter(Vector3.ZERO)
+		await process_frame
+		_expect(
+			float(first_material.get_shader_parameter("overall_alpha")) > 0.0
+				and is_zero_approx(
+					float(second_material.get_shader_parameter("overall_alpha"))
+				),
+			"changing one indicator alpha does not affect another instance"
+		)
+	first.queue_free()
+	second.queue_free()
 	await process_frame
 
 

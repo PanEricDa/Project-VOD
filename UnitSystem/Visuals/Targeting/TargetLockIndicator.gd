@@ -57,6 +57,8 @@ var _state_time: float = 0.0
 var _presentation_alpha: float = 0.0
 ## 退出动画起始透明度，用于从当前表现平滑衰减而不是固定值。
 var _exit_start_alpha: float = 0.0
+## 退出动画起始统一缩放，用于从当前进入或维持尺寸连续缩小，避免快速解除时跳变。
+var _exit_start_scale: float = MAINTAIN_SCALE
 ## 材质缺失诊断是否已经输出过；避免每帧刷屏。
 var _material_issue_reported: bool = false
 
@@ -103,6 +105,7 @@ func play_exit() -> void:
 	_effect_state = EffectState.EXIT
 	_state_time = 0.0
 	_exit_start_alpha = _presentation_alpha
+	_exit_start_scale = scale.x
 
 
 ## 场景销毁或初始化失败时立即复位并隐藏，不播放退出动画。
@@ -111,6 +114,7 @@ func hide_immediately() -> void:
 	_effect_state = EffectState.EXIT
 	_state_time = exit_duration
 	_presentation_alpha = 0.0
+	_exit_start_scale = MAINTAIN_SCALE
 	_push_alpha_to_material()
 
 
@@ -177,7 +181,7 @@ func _apply_maintain() -> void:
 func _apply_exit(progress: float) -> void:
 	var eased := _ease_out_saturate(clampf(progress, 0.0, 1.0))
 	_presentation_alpha = lerpf(_exit_start_alpha, 0.0, eased)
-	var exit_scale := lerpf(MAINTAIN_SCALE, exit_end_scale, eased)
+	var exit_scale := lerpf(_exit_start_scale, exit_end_scale, eased)
 	_apply_transforms(exit_scale)
 	_push_alpha_to_material()
 
