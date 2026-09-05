@@ -1,0 +1,101 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://UnitSystem/Components/UI/UnitHealthFrame.gd" id="1_frame_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.07, 0.08, 0.11, 0.86)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 0.35)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_trough"]
+bg_color = Color(0.04, 0.05, 0.08, 0.92)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_fill"]
+bg_color = Color(0.26, 0.76, 0.42, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="UnitHealthFrame" type="PanelContainer"]
+custom_minimum_size = Vector2(420, 90)
+mouse_filter = 2
+size_flags_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+script = ExtResource("1_frame_script")
+
+[node name="FrameContent" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="CoreInfo" type="VBoxContainer" parent="FrameContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Header" type="HBoxContainer" parent="FrameContent/CoreInfo"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="FrameContent/CoreInfo/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.96, 0.98, 1)
+theme_override_font_sizes/font_size = 18
+text = "单位名称"
+
+[node name="StateLabel" type="Label" parent="FrameContent/CoreInfo/Header"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.45, 1)
+theme_override_font_sizes/font_size = 14
+text = "倒下"
+
+[node name="HealthBar" type="ProgressBar" parent="FrameContent/CoreInfo"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_health_trough")
+theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
+min_value = 0.0
+max_value = 1.0
+value = 0.0
+show_percentage = false
+
+[node name="HealthValue" type="Label" parent="FrameContent/CoreInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.8, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+text = "0 / 0"
+
+[node name="ExtensionSlot" type="MarginContainer" parent="FrameContent"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+mouse_filter = 2
