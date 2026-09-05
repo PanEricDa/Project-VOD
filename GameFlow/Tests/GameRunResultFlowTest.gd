@@ -1,6 +1,8 @@
 extends SceneTree
 
 ## 验证房间结算 UI 与玩家统一输入开关的最小公开契约。
+## 同时固化 CombatHUD 与 RunResultOverlay 两个独立 CanvasLayer 的共存契约：
+## HUD 由同一 Autoload 独立创建、结果层渲染于其上、结算不破坏当前 HUD 绑定。
 ## 本测试不依赖具体房间或单位摆放，因此可在无窗口环境中稳定执行。
 
 const GAME_RUN_CONTROLLER_PATH: String = "res://GameFlow/GameRunController.gd"
@@ -47,6 +49,10 @@ func _verify_result_signal_disables_player_input() -> void:
 	_expect(game_run != null, "GameRunController must be registered as an Autoload")
 	if game_run == null:
 		return
+	# CombatHUD 与 RunResultOverlay 引用提前声明；Autoload 的 _ready 要到首个过程帧
+	# 之后才保证完成子节点创建，因此存在性与层级断言在树稳定后统一取证。
+	var hud: CanvasLayer = null
+	var overlay: CanvasLayer = null
 
 	var room := Node3D.new()
 	room.name = "ResultFlowRoom"
@@ -65,13 +71,22 @@ func _verify_result_signal_disables_player_input() -> void:
 	room.add_child(room_controller)
 	await process_frame
 	await process_frame
+	hud = game_run.get_node_or_null(^"CombatHUD") as CanvasLayer
+	overlay = game_run.get_node_or_null(^"RunResultOverlay") as CanvasLayer
+	_expect(hud != null, "GameRunController creates the combat HUD independently")
+	_expect(overlay != null, "GameRunController keeps the result overlay")
+	if hud != null and overlay != null:
+		_expect(hud.layer < overlay.layer, "result overlay renders above combat HUD")
+	if hud != null:
+		_expect(hud.visible, "combat room player makes the HUD visible")
 	room_controller.room_completed.emit()
 	await process_frame
 	_expect(
 		not hero.is_player_input_enabled(),
 		"room completion must disable PlayerBase input without pausing the world"
 	)
-	var overlay: CanvasLayer = game_run.get_node_or_null(^"RunResultOverlay") as CanvasLayer
+	if hud != null:
+		_expect(hud.visible, "result overlay does not destroy or unbind current HUD")
 	_expect(overlay != null, "GameRunController must create its reusable result overlay")
 	if overlay != null:
 		var backdrop := overlay.get_node_or_null(^"Backdrop") as Control
@@ -90,6 +105,8 @@ func _verify_result_signal_disables_player_input() -> void:
 			not hero.is_player_input_enabled(),
 			"room failure must also disable PlayerBase input"
 		)
+		if hud != null:
+			_expect(hud.visible, "result overlay does not destroy or unbind current HUD")
 	room.queue_free()
 	current_scene = null
 	await process_frame
