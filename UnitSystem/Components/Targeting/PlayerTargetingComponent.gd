@@ -62,6 +62,10 @@ var formal_indicator_height: float = 0.03
 
 var _owner_unit: UnitBase
 var _locked_target: UnitBase
+## 是否持有需要管理的锁定引用。目标被直接释放后其引用与 null 比较结果相同，
+## 无法单凭 _locked_target 区分“从未锁定”与“引用失效”，因此用该标记兜底，
+## 保证统一清空路径（广播 null 并让正式特效退出）在目标被释放时仍然执行。
+var _lock_held: bool = false
 ## 由 PlayerBase 统一维护的输入许可。
 ## false 时保留现有锁定与合法性检查，但不再响应鼠标选择或最近目标快捷键。
 var _input_enabled: bool = true
@@ -85,6 +89,7 @@ func _exit_tree() -> void:
 	# 收到无意义的回调。
 	_dispose_formal_indicator()
 	_locked_target = null
+	_lock_held = false
 	_owner_unit = null
 
 
@@ -133,6 +138,7 @@ func request_lock(target: UnitBase) -> bool:
 		return true
 
 	_locked_target = target
+	_lock_held = true
 	_update_indicator_color()
 	locked_target_changed.emit(_locked_target)
 	_enter_formal_indicator(_locked_target)
@@ -142,12 +148,15 @@ func request_lock(target: UnitBase) -> bool:
 ## 解除当前目标。
 ##
 ## 只有状态实际从“有目标”变为“无目标”时才发送一次信号，避免消费者收到重复事件。
+## 目标已被直接释放时 _locked_target 与 null 不可区分，由 _lock_held 保证
+## 仍然完整执行一次广播与正式特效退出。
 func clear_locked_target() -> void:
-	if _locked_target == null:
+	if _locked_target == null and not _lock_held:
 		_update_indicator_color()
 		return
 
 	_locked_target = null
+	_lock_held = false
 	_update_indicator_color()
 	locked_target_changed.emit(null)
 	_exit_formal_indicator()
@@ -222,7 +231,10 @@ func select_target_at_screen_position(screen_position: Vector2) -> bool:
 ## 组件只输出方向，由 PlayerBase 决定旋转哪个视觉节点。目标无效或几乎与玩家重合时
 ## 返回 Vector3.ZERO，使 PlayerBase 可以回退到冲刺或移动朝向。
 func get_locked_target_direction() -> Vector3:
-	if not is_valid_lock_target(_locked_target):
+	if (
+		not is_instance_valid(_locked_target)
+		or not is_valid_lock_target(_locked_target)
+	):
 		return Vector3.ZERO
 
 	var direction: Vector3 = (
@@ -258,9 +270,14 @@ func is_valid_lock_target(target: UnitBase) -> bool:
 
 
 func _physics_process(_delta: float) -> void:
-	if _locked_target == null:
+	if _locked_target == null and not _lock_held:
 		return
-	if not is_valid_lock_target(_locked_target):
+	# 目标已被直接释放时引用与 null 不可区分，且带类型参数的合法性函数会在
+	# 调用点拒绝已释放对象，因此先用 is_instance_valid 短路再进入统一清空路径。
+	if (
+		not is_instance_valid(_locked_target)
+		or not is_valid_lock_target(_locked_target)
+	):
 		clear_locked_target()
 		return
 	_update_formal_indicator_position()

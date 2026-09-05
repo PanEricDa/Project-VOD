@@ -41,6 +41,7 @@ func _run() -> void:
 	await _test_existing_interface_contract()
 	await _test_formal_indicator_integration()
 	await _test_degradation_cases()
+	await _test_failure_lifecycle()
 	if is_instance_valid(_world):
 		_world.queue_free()
 	await process_frame
@@ -157,8 +158,8 @@ func _test_formal_indicator_integration() -> void:
 		"the formal indicator reaches MAINTAIN after the enter duration"
 	)
 	first.position = Vector3(2.5, 0.0, 0.5)
-	await physics_frame
-	await physics_frame
+	await _wait_physics_frames(2)
+	await _wait_physics_frames(2)
 	_expect(
 		indicator.global_position.is_equal_approx(
 			first.global_position + Vector3.UP * indicator_height
@@ -311,8 +312,8 @@ func _test_degradation_cases() -> void:
 		not null_scene_component.get_locked_target_direction().is_zero_approx(),
 		"the locked direction works without a formal scene"
 	)
-	await physics_frame
-	await physics_frame
+	await _wait_physics_frames(2)
+	await _wait_physics_frames(2)
 	await _dispose_fixture(null_scene_fixture)
 
 	var debug_fixture := await _make_fixture(
@@ -342,6 +343,287 @@ func _test_degradation_cases() -> void:
 			"the formal effect never hides the debug ring"
 		)
 	await _dispose_fixture(debug_fixture)
+
+
+## 验证所有现有锁定解除原因统一映射到正式特效退出，目标直接释放无失效引用，
+## 持有者死亡与组件移除即时清理，以及清空的幂等性。
+func _test_failure_lifecycle() -> void:
+	var fixture := await _make_fixture()
+	var component: PlayerTargetingComponent = fixture.component
+	var first: UnitBase = fixture.first
+	var second: UnitBase = fixture.second
+	var events := _make_signal_recorder(component)
+	var indicator_height := float(component.get("formal_indicator_height"))
+
+	var friendly := (load(UNIT_SCENE_PATH) as PackedScene).instantiate() as UnitBase
+	friendly.name = "FriendlyUnit"
+	friendly.team_id = 1
+	_world.add_child(friendly)
+	var rogue := (load(UNIT_SCENE_PATH) as PackedScene).instantiate() as UnitBase
+	rogue.name = "RogueUnit"
+	rogue.team_id = 2
+	_world.add_child(rogue)
+	var far_target := _make_target("FarTarget", Vector3(30.0, 0.0, 0.0))
+	await process_frame
+
+	_expect(component.request_lock(first), "the lifecycle lock succeeds")
+	var indicators := _collect_formal_indicators(component)
+	var indicator: TargetLockIndicator = (
+		indicators[0] if indicators.size() > 0 else null
+	)
+	if indicator == null:
+		await _dispose_fixture(fixture)
+		return
+
+	var last_position := indicator.global_position
+	var broadcasts := events.size()
+	_expect(
+		not component.request_lock(friendly),
+		"requesting a friendly unit fails"
+	)
+	_expect(
+		component.get_locked_target() == null,
+		"requesting a friendly unit clears the old lock"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"requesting a friendly unit broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"requesting a friendly unit starts the formal exit"
+	)
+	_expect(
+		indicator.global_position.is_equal_approx(last_position),
+		"the friendly rejection keeps the last synced position"
+	)
+
+	_expect(component.request_lock(first), "relock before the group test succeeds")
+	broadcasts = events.size()
+	_expect(
+		not component.request_lock(rogue),
+		"requesting a unit outside the candidate group fails"
+	)
+	_expect(
+		component.get_locked_target() == null
+			and events.size() == broadcasts + 1
+			and events[broadcasts] == null,
+		"a non-candidate request clears and broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"a non-candidate request starts the formal exit"
+	)
+
+	_expect(component.request_lock(first), "relock before the range test succeeds")
+	broadcasts = events.size()
+	_expect(
+		not component.request_lock(far_target),
+		"requesting an out-of-range enemy fails"
+	)
+	_expect(
+		component.get_locked_target() == null
+			and events.size() == broadcasts + 1
+			and events[broadcasts] == null,
+		"an out-of-range request clears and broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"an out-of-range request starts the formal exit"
+	)
+
+	var death_position := first.global_position + Vector3.UP * indicator_height
+	_expect(component.request_lock(first), "relock before the death test succeeds")
+	broadcasts = events.size()
+	first.apply_damage(first.maximum_health)
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"target death clears the lock through the existing validity check"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"target death broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"target death starts the formal exit"
+	)
+	_expect(
+		indicator.global_position.is_equal_approx(death_position),
+		"the death exit uses the last foot position"
+	)
+
+	first.revive(50.0)
+	first.targetable = true
+	_expect(
+		component.request_lock(first),
+		"relock before the untargetable test succeeds"
+	)
+	broadcasts = events.size()
+	first.targetable = false
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"an untargetable target clears the lock through the same path"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"an untargetable target broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"an untargetable target starts the formal exit"
+	)
+
+	first.targetable = true
+	_expect(
+		component.request_lock(first),
+		"relock before the physics-range test succeeds"
+	)
+	broadcasts = events.size()
+	first.position = Vector3(20.0, 0.0, 0.0)
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"moving the target out of range clears the lock"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"moving out of range broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"moving out of range starts the formal exit"
+	)
+	first.position = Vector3(1.5, 0.0, -1.0)
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"moving back in range does not restore the old lock"
+	)
+
+	_expect(
+		component.request_lock(first),
+		"relock before the free test succeeds"
+	)
+	broadcasts = events.size()
+	await _wait_physics_frames(2)
+	var free_position := indicator.global_position
+	first.queue_free()
+	await process_frame
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"freeing the target clears the lock without invalid access"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"freeing the target broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"freeing the target starts the formal exit"
+	)
+	_expect(
+		indicator.global_position.is_equal_approx(free_position),
+		"the free exit uses the last synced world position"
+	)
+
+	_expect(
+		component.request_lock(second),
+		"relock before the owner death test succeeds"
+	)
+	broadcasts = events.size()
+	fixture.holder.apply_damage(fixture.holder.maximum_health)
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"owner death clears the lock through the existing owner check"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"owner death broadcasts null exactly once"
+	)
+	_expect(
+		indicator.get_effect_state() == TargetLockIndicator.EffectState.EXIT,
+		"owner death starts the formal exit"
+	)
+	await _wait_seconds(indicator.exit_duration + TIME_MARGIN)
+	fixture.holder.revive(50.0)
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"owner revive does not restore the old lock"
+	)
+	_expect(
+		not indicator.is_effect_visible(),
+		"owner revive does not replay the formal enter"
+	)
+
+	_expect(
+		component.request_lock(second),
+		"relock before the idempotency test succeeds"
+	)
+	broadcasts = events.size()
+	component.clear_locked_target()
+	component.clear_locked_target()
+	_expect(
+		component.get_locked_target() == null
+			and events.size() == broadcasts + 1
+			and events[broadcasts] == null,
+		"repeated clears broadcast null exactly once in total"
+	)
+	await _wait_seconds(indicator.exit_duration + TIME_MARGIN)
+	indicator.play_exit()
+	_expect(
+		not indicator.is_effect_visible(),
+		"an extra exit request after completion does not restart the animation"
+	)
+
+	_expect(
+		component.request_lock(second),
+		"relock before the combined failure test succeeds"
+	)
+	broadcasts = events.size()
+	second.position = Vector3(40.0, 0.0, 0.0)
+	second.apply_damage(second.maximum_health)
+	await _wait_physics_frames(2)
+	_expect(
+		component.get_locked_target() == null,
+		"simultaneous death and out-of-range clear the lock once"
+	)
+	_expect(
+		events.size() == broadcasts + 1 and events[broadcasts] == null,
+		"simultaneous failure causes broadcast null exactly once"
+	)
+	_expect(
+		_collect_formal_indicators(component).size() == 1,
+		"all failure causes keep reusing the single formal instance"
+	)
+	await _dispose_fixture(fixture)
+
+	var removal_fixture := await _make_fixture()
+	_expect(
+		removal_fixture.component.request_lock(removal_fixture.first),
+		"relock before the component removal test succeeds"
+	)
+	var removal_indicators := (
+		_collect_formal_indicators(removal_fixture.component)
+	)
+	# 已释放对象与 null 比较结果相等，因此先记录存在性，再单独断言实例已被释放。
+	var removal_had_indicator := removal_indicators.size() == 1
+	var removal_indicator: TargetLockIndicator = (
+		removal_indicators[0] if removal_indicators.size() > 0 else null
+	)
+	removal_fixture.holder.remove_child(removal_fixture.component)
+	removal_fixture.component.queue_free()
+	await process_frame
+	_expect(
+		removal_had_indicator and not is_instance_valid(removal_indicator),
+		"removing the component disposes the formal effect immediately"
+	)
+	await _dispose_fixture(removal_fixture)
 
 
 ## 建立一名 team 1 持有者、挂载真实组件并创建两名 team 2 锁定目标的夹具。
@@ -408,16 +690,24 @@ func _collect_formal_indicators(node: Node) -> Array:
 
 
 ## 只清理本夹具创建的持有者与目标；组件随持有者一同释放。
+## 已被测试释放的目标以有效性判断兜底，避免对已释放对象执行类型转换。
 func _dispose_fixture(fixture: Dictionary) -> void:
 	for key: String in ["holder", "first", "second"]:
-		var node := fixture.get(key) as Node
-		if is_instance_valid(node):
-			node.queue_free()
+		var node_value: Variant = fixture.get(key)
+		if is_instance_valid(node_value) and node_value is Node:
+			(node_value as Node).queue_free()
 	await process_frame
 
 
 func _wait_seconds(seconds: float) -> void:
 	await create_timer(seconds).timeout
+
+
+## 连续等待物理帧。physics_frame 信号先于节点 _physics_process 触发，
+## 因此状态变更后至少等待两帧才能稳定观测组件的物理期清空结果。
+func _wait_physics_frames(frame_count: int) -> void:
+	for _frame_index: int in range(frame_count):
+		await physics_frame
 
 
 func _expect(condition: bool, message: String) -> void:
