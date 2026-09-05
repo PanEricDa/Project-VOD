@@ -1,9 +1,11 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://UnitSystem/Components/Targeting/PlayerTargetingComponent.gd" id="1_targeting"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Visuals/Targeting/TargetLockIndicator.tscn" id="2_formal_indicator"]
 
 [node name="PlayerTargetingComponent" type="Node3D"]
 script = ExtResource("1_targeting")
+formal_indicator_scene = ExtResource("2_formal_indicator")
 
 [node name="TargetLockRangeIndicator" type="MeshInstance3D" parent="."]
 cast_shadow = 0
