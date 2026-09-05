@@ -1,0 +1,36 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://GameFlow/UI/CombatHUD.gd" id="1_combat_hud_script"]
+[ext_resource type="PackedScene" path="res://UnitSystem/Components/UI/UnitHealthFrame.tscn" id="2_unit_health_frame"]
+
+[node name="CombatHUD" type="CanvasLayer"]
+visible = false
+layer = 10
+script = ExtResource("1_combat_hud_script")
+
+[node name="SafeArea" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PartyColumn" type="VBoxContainer" parent="SafeArea"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 8
+mouse_filter = 2
+
+[node name="AllyFrames" type="VBoxContainer" parent="SafeArea/PartyColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PlayerFrame" parent="SafeArea/PartyColumn" instance=ExtResource("2_unit_health_frame")]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
