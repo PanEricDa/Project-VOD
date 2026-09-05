@@ -4,9 +4,9 @@
 
 ## 目标与范围
 
-本阶段只实现屏幕空间的队伍生命 HUD，不实现锁定目标、顶部目标信息、专注、技能、物品、
-状态图标或头像资源。HUD 必须直接读取现有 `UnitBase` 生命数据，不改变玩家、友方 AI、敌人、
-伤害和死亡逻辑。
+本设计覆盖屏幕空间的队伍生命 HUD，以及后续直接扩展的顶部中央锁定目标生命 HUD；不实现专注、
+技能、物品、状态图标或头像资源。HUD 必须直接读取现有 `UnitBase` 生命数据和
+`PlayerBase.locked_target_changed`，不改变玩家、友方 AI、敌人、锁定判定、伤害和死亡逻辑。
 
 布局遵循已经确认的规则：玩家信息框固定在屏幕左下角；友方 AI 信息框在玩家框上方自下向上
 排列并与玩家框左边缘对齐；友方框的宽高约为玩家框的三分之二。玩家框预留后续资源和状态
@@ -44,7 +44,8 @@ GameRunController
                        ▼
 CombatHUD（布局与队伍槽位）
   ├─ 玩家 UnitHealthFrame：标准模式
-  └─ 友方 UnitHealthFrame：紧凑模式，可重复实例化
+  ├─ 友方 UnitHealthFrame：紧凑模式，可重复实例化
+  └─ 锁定目标 UnitHealthFrame：顶部目标模式，固定单实例
                        │
                        ▼
 UnitBase（生命 getter、health_changed、died、revived）
@@ -82,7 +83,7 @@ func refresh_party(player: UnitBase, allies: Array[UnitBase]) -> void
 `UnitHealthFrame` 是绑定任意 `UnitBase` 的可复用显示组件，不认识 Player、Guardian 或具体职业。
 
 ```gdscript
-enum PresentationMode { PLAYER, COMPACT_ALLY }
+enum PresentationMode { PLAYER, COMPACT_ALLY, TARGET }
 
 func bind_unit(unit: UnitBase) -> void
 func unbind_unit() -> void
@@ -117,8 +118,9 @@ func is_bound() -> bool
 - 当前生命 / 最大生命的数值文本。
 - 实时生命进度条。
 
-生命变化立即更新，不加入延迟损血条、低血闪烁或 Tween。最大生命为零时比例按零处理，数值不得
-出现除零、NaN 或负数。
+真实生命变化立即更新；伤害发生后保留一段红色损血残影，再收缩到当前生命比例。实时生命颜色按
+比例从满血绿色经过黄色渐变到低血红色。最大生命为零时比例按零处理，数值不得出现除零、NaN
+或负数。
 
 死亡后不删除也不重排槽位：血量显示为 `0 / 最大生命`，整个框进入明确的降低亮度状态，并显示
 “倒下”文本。这样聚怪战斗中队伍位置不会因连续死亡跳动。复活时原槽位立即恢复正常显示。
@@ -131,17 +133,19 @@ func is_bound() -> bool
 
 ```text
 CombatHUD (CanvasLayer)
-└─ SafeArea (MarginContainer，全屏左下锚点)
-   └─ PartyColumn (VBoxContainer，底部对齐)
-      ├─ AllyFrames (VBoxContainer)
-      └─ PlayerFrame (UnitHealthFrame)
+├─ SafeArea (MarginContainer，全屏左下锚点)
+│  └─ PartyColumn (VBoxContainer，底部对齐)
+│     ├─ AllyFrames (VBoxContainer)
+│     └─ PlayerFrame (UnitHealthFrame)
+└─ TargetSafeArea (MarginContainer，顶部通栏)
+   └─ TargetCenter (CenterContainer)
+      └─ TargetFrame (UnitHealthFrame，默认隐藏)
 
 UnitHealthFrame (PanelContainer)
 └─ FrameContent (HBoxContainer)
    ├─ CoreInfo (VBoxContainer)
    │  ├─ Header (名称、倒下状态)
-   │  ├─ HealthBar
-   │  └─ HealthValue
+   │  └─ HealthBar（损血残影、实时填充、白色边框、中央数值）
    └─ ExtensionSlot (MarginContainer)
 ```
 
@@ -152,17 +156,39 @@ UnitHealthFrame (PanelContainer)
 
 - 玩家框最小尺寸约 `420 × 90` 像素。
 - 伙伴框最小尺寸约 `280 × 60` 像素，即宽高均为玩家框的三分之二。
+- 顶部锁定目标框最小尺寸为 `480 × 64` 像素，距屏幕顶部约 `36` 像素并水平居中。
 - 左、下安全边距以及框间距由 `CombatHUD` 的导出参数配置。
 - 使用左下锚点和容器布局，不写死屏幕坐标；分辨率变化时仍贴合左下安全区域。
 
 `ExtensionSlot` 在没有内容时折叠，不制造空白占位；它只是明确的节点接口，未来玩家专注值、职业
 资源或状态摘要可以作为子场景挂入。紧凑伙伴模式始终隐藏该插槽。
 
+## 顶部锁定目标生命 HUD 扩展
+
+顶部目标框是 `CombatHUD` 中固定存在但默认隐藏的单实例，不创建第二个全局 HUD 管理器，也不由
+`PlayerTargetingComponent` 反向引用 UI。`CombatHUD.bind_party()` 在绑定当前玩家时检查其既有
+`locked_target_changed` 信号与 `get_locked_target()` 方法：接口存在便连接信号并立即同步当前锁定；
+普通 `UnitBase` 测试夹具或缺少锁定接口的玩家仍可正常显示队伍 HUD，只是不显示目标框。
+
+状态规则如下：
+
+- 没有锁定目标时，`TargetFrame` 解绑并隐藏。
+- 锁定合法目标时，固定目标框以 `TARGET` 模式绑定该 `UnitBase`。
+- 切换目标时复用同一个框，断开旧目标生命信号后绑定新目标。
+- 主动解除、目标死亡、目标失效或超出锁定距离后，由现有锁定系统广播 `null`，目标框立即隐藏。
+- 场景切换、队伍重绑或 HUD 卸载时，先断开旧玩家锁定信号，再解绑目标框。
+- HUD 不自行判断锁定距离、阵营或候选分组，不解除目标，也不驱动脚下锁定圆环。
+
+`TARGET` 模式完整复用现有生命显示：绿色—黄色—红色渐变、红色损血残影、白色血条边框、中央
+生命数值和透明外框。它只把名称改为居中显示，并使用目标专用字号、间距与尺寸；不显示头像、
+等级、职业、仇恨、Buff、施法条或额外状态面板。
+
 ## 样式边界
 
 首版采用场景内 `StyleBoxFlat` 子资源和控件样式覆盖，避免仅为首版新增正式 `.tres` 主题资源。
-基础视觉为深色半透明底板、清晰边框、高对比生命色和可读文本。玩家框与伙伴框使用同一组件，
-只通过展示模式调整尺寸、字号、边距和扩展槽可见性。
+信息框外层保持透明，不显示黑色底框；生命条使用白色边框、高对比渐变填充、红色损血残影和带
+黑色描边的中央生命数值。玩家、伙伴和目标框使用同一组件，只通过展示模式调整尺寸、字号、名称
+对齐、间距和扩展槽可见性。
 
 当更多 HUD 元素形成统一视觉语言后，再把颜色、字体和边框迁移到共享 Theme；此次结构不会阻碍
 迁移，也不提前引入尚无复用价值的主题配置层。
@@ -170,6 +196,7 @@ UnitHealthFrame (PanelContainer)
 ## 生命周期与层级
 
 - `CombatHUD` 使用独立 `CanvasLayer`，层级低于当前 `RunResultOverlay` 的 100。
+- 顶部目标框与左下队伍框属于同一个 `CombatHUD`，由更高层的结果界面统一覆盖。
 - 当前场景变化时，先 `unbind_party()`，再延迟发现并绑定新场景单位，防止旧场景信号残留。
 - 重开房间复用相同流程，不在 HUD 中调用 `reload_current_scene()`。
 - 战败或胜利时结果界面自然覆盖 HUD；首版无需额外隐藏或冻结 HUD。
@@ -180,6 +207,7 @@ UnitHealthFrame (PanelContainer)
 此次开放性集中在稳定的扩展点，而不是预制未来系统：
 
 - `UnitHealthFrame` 可绑定任何 `UnitBase`，未来可用于召唤物、小队、Boss 队友或其他队伍界面。
+- `TARGET` 模式只增加排版差异，生命绑定、渐变色和损血残影仍只有一套实现。
 - 玩家与伙伴共用一个显示组件，避免后续修复生命显示时维护两套逻辑。
 - `CombatHUD` 只接收单位引用，不读取 AI 组件、职业、技能或物品结构。
 - `refresh_party()` 为运行时队伍变化保留入口。
@@ -209,7 +237,11 @@ UnitHealthFrame (PanelContainer)
 - 伙伴框默认宽高约为玩家框的三分之二，紧凑模式不显示扩展槽。
 - 场景切换和重开后旧绑定清除，新场景重新绑定。
 - 没有玩家或存在多个玩家时安全隐藏，不影响结果界面和房间流程。
-- HUD 不生成锁定目标显示，也不修改现有 `WorldHealthBar`。
+- 顶部目标框初始隐藏；锁定、切换、解除和预先已有锁定时均正确绑定或隐藏。
+- 目标受伤更新生命数值、渐变色和损血残影；切换后旧目标不再更新该框。
+- HUD 解绑后不再响应旧玩家锁定信号，但不会清除玩家自身锁定。
+- 顶部目标框为 `480 × 64`、顶部边距约 36 像素、水平居中并保持鼠标穿透。
+- HUD 不生成或控制脚下正式锁定特效，也不修改现有 `WorldHealthBar`。
 
 完成后还应运行现有生命、死亡、世界血条和游戏流程测试，并以 Godot headless 加载新增场景，确认
 没有新增脚本解析错误、无效节点引用或信号连接警告。
@@ -223,9 +255,11 @@ UnitHealthFrame (PanelContainer)
 5. 为 `GameRunController` 补充场景发现、切换和两个 UI 独立初始化的集成测试。
 6. 接入 `CombatHUD`，不修改单位战斗与 AI 结构。
 7. 运行新增与相关回归测试，在实际测试房间核对 1 名玩家与多名伙伴的可读性。
+8. 在既有组件上新增 `TARGET` 展示模式和顶部目标槽，通过玩家稳定锁定信号完成绑定与解绑。
 
 ## 验收结果
 
 进入含玩家和伙伴的战斗房间后，左下角持续显示玩家真实生命；伙伴生命框在其上方稳定排列。
 伤害、治疗、死亡、复活以及场景重开均能正确更新，且整个功能可以通过删除/停用 `CombatHUD`
-恢复到原状态，不影响任何战斗行为。锁定系统保持未实现状态，等待后续单独设计。
+恢复到原状态，不影响任何战斗行为。玩家锁定目标存在时，顶部中央同步显示该目标生命；解除锁定
+后目标框隐藏，HUD 不改变锁定系统本身的行为。

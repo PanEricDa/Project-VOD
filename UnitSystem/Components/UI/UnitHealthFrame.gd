@@ -3,13 +3,15 @@ extends PanelContainer
 
 ## 屏幕空间队伍 HUD 的单个单位生命信息框。
 ## 本组件只通过 UnitBase 的公开 getter 与信号读取生命状态，负责名称回退显示、
-## 当前/最大生命文本、红色损血残影、按比例渐变的生命进度条、“倒下”死亡标记与玩家/紧凑伙伴展示切换；
+## 当前/最大生命文本、红色损血残影、按比例渐变的生命进度条、“倒下”死亡标记，
+## 以及玩家、紧凑伙伴和顶部目标三种展示切换；
 ## 它不修改单位数据、不参与战斗结算，也不依赖任何 AI 或玩家专属组件。
 ## 场景内样式全部使用 StyleBoxFlat 子资源，不引用外部 Theme 或资源文件。
 
 enum PresentationMode {
 	PLAYER,
 	COMPACT_ALLY,
+	TARGET,
 }
 
 ## 玩家模式下名称文本的字号，单位为像素。
@@ -20,10 +22,16 @@ const PLAYER_VALUE_FONT_SIZE: int = 16
 const ALLY_NAME_FONT_SIZE: int = 30
 ## 紧凑伙伴模式下数值文本的字号，单位为像素。
 const ALLY_VALUE_FONT_SIZE: int = 13
+## 顶部目标模式下名称文本的字号，单位为像素。
+const TARGET_NAME_FONT_SIZE: int = 30
+## 顶部目标模式下生命数值文本的字号，单位为像素。
+const TARGET_VALUE_FONT_SIZE: int = 16
 ## 玩家模式下核心信息（名称/进度条/数值）的纵向间距，单位为像素。
 const PLAYER_CONTENT_SEPARATION: int = 6
 ## 紧凑伙伴模式下核心信息的纵向间距，单位为像素。
 const ALLY_CONTENT_SEPARATION: int = 4
+## 顶部目标模式下名称与生命条的纵向间距，单位为像素。
+const TARGET_CONTENT_SEPARATION: int = 4
 ## 单位倒下时整框使用的半透明灰暗色。
 const DEAD_FRAME_MODULATE: Color = Color(0.55, 0.55, 0.55, 0.9)
 ## 存活与复活后恢复的原始色。
@@ -103,7 +111,7 @@ func unbind_unit() -> void:
 	visible = false
 
 
-## 切换玩家或紧凑伙伴展示；只影响字号、间距和扩展槽，不改变绑定数据。
+## 切换玩家、紧凑伙伴或顶部目标展示；只影响字号、对齐、间距和扩展槽，不改变绑定数据。
 func set_presentation_mode(mode: PresentationMode) -> void:
 	_presentation_mode = mode
 	_apply_presentation_mode()
@@ -302,17 +310,35 @@ func _set_dead_state(dead: bool) -> void:
 ## 按展示模式应用字号、间距与扩展槽可见性；扩展槽仅在玩家模式且已有内容时显示。
 func _apply_presentation_mode() -> void:
 	var is_player_mode := _presentation_mode == PresentationMode.PLAYER
+	var is_target_mode := _presentation_mode == PresentationMode.TARGET
 	_name_label.add_theme_font_size_override(
 		"font_size",
-		PLAYER_NAME_FONT_SIZE if is_player_mode else ALLY_NAME_FONT_SIZE
+		(
+			PLAYER_NAME_FONT_SIZE
+			if is_player_mode
+			else TARGET_NAME_FONT_SIZE if is_target_mode else ALLY_NAME_FONT_SIZE
+		)
 	)
 	_health_value.add_theme_font_size_override(
 		"font_size",
-		PLAYER_VALUE_FONT_SIZE if is_player_mode else ALLY_VALUE_FONT_SIZE
+		(
+			PLAYER_VALUE_FONT_SIZE
+			if is_player_mode
+			else TARGET_VALUE_FONT_SIZE if is_target_mode else ALLY_VALUE_FONT_SIZE
+		)
 	)
 	_core_info.add_theme_constant_override(
 		"separation",
-		PLAYER_CONTENT_SEPARATION if is_player_mode else ALLY_CONTENT_SEPARATION
+		(
+			PLAYER_CONTENT_SEPARATION
+			if is_player_mode
+			else TARGET_CONTENT_SEPARATION if is_target_mode else ALLY_CONTENT_SEPARATION
+		)
+	)
+	_name_label.horizontal_alignment = (
+		HORIZONTAL_ALIGNMENT_CENTER
+		if is_target_mode
+		else HORIZONTAL_ALIGNMENT_LEFT
 	)
 	_extension_slot.visible = (
 		is_player_mode and _extension_slot.get_child_count() > 0

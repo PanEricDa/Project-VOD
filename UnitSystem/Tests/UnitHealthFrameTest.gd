@@ -89,7 +89,21 @@ func _run() -> void:
 		name_label.get_theme_font_size(&"font_size") == 30,
 		"compact ally name font is doubled to 30 pixels"
 	)
+	frame.call(&"set_presentation_mode", 2)
+	_expect(
+		name_label.get_theme_font_size(&"font_size") == 30
+		and health_value.get_theme_font_size(&"font_size") == 16,
+		"target mode uses the dedicated readable font sizes"
+	)
+	_expect(
+		name_label.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER,
+		"target mode centers the target name"
+	)
 	frame.call(&"set_presentation_mode", 0)
+	_expect(
+		name_label.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
+		"returning to player mode restores left-aligned naming"
+	)
 	_expect(
 		centered_health_value != null
 		and centered_health_value.get_parent() == health_bar,
