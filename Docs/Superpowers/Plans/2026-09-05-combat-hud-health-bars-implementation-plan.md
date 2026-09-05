@@ -26,6 +26,29 @@
 - 实施时保留用户已有工作树改动，只提交任务明确列出的文件；不得把无关的 `project.godot` 和 `addons/godot_mcp/commands/headless_commands.gd.uid` 纳入提交。
 - 每个任务遵循 RED → GREEN → 回归 → 单独提交；若 RED 阶段未按预期失败，先检查测试是否真正覆盖契约，不得直接进入实现。
 
+## Known Baseline Exception
+
+`UnitSystem/Tests/UnitDeathLifecycleTest.gd` 在 HUD 实施前已经确定性 exit code `1`，Godot 4.7 与
+4.7.1 均只报告：
+
+```text
+Saber death releases external action controller occupancy
+```
+
+这不是 HUD 依赖，也不是当前证据所指向的控制器占用未释放。该断言在 Saber 已死亡时调用
+`AIAttackController.can_attack()`；而 `can_attack()` 的既有公开语义同时要求内部状态为 `IDLE`、武器
+和动画有效、宿主有效，并且 `not _owner_body.is_dead()`。因此死亡态下返回 `false` 是必然结果，不能
+单独证明 `_state` 仍为 `EXTERNAL_ACTION`。同一测试随后复活 Saber 后的 `can_attack()` 断言没有失败，
+也与死亡清理已经把控制器恢复为 `IDLE` 相符。
+
+本 HUD 计划不得顺带修改该测试、`AIUnitBase`、`AICombatSystem` 或 `AIAttackController`。执行开始和
+结束时仍要单独运行它作为基线哨兵：
+
+- 若执行开始时仍为上述唯一失败，交付时允许保持相同的唯一失败；失败数量增加、失败文本变化或
+  出现脚本错误均视为 HUD 回归。
+- 若它在 HUD 执行前已被其他独立工作修复为 exit code `0`，则交付时必须继续 exit code `0`。
+- 修正该既有测试契约应另立 AI 死亡生命周期任务，不属于本计划的验收范围。
+
 ---
 
 ## File Structure
@@ -328,11 +351,12 @@ Expected: 输出 `UnitHealthFrameTest: PASS`，exit code `0`，无无效信号�
 
 ```powershell
 $vodGodot = 'G:\Godot\Godot_v4.7-stable_win64.exe\Godot_v4.7-stable_win64_console.exe'
-& $vodGodot --headless --path 'G:\Godot\ProjectVOD' --script 'res://UnitSystem/Tests/UnitDeathLifecycleTest.gd'
+& $vodGodot --headless --path 'G:\Godot\ProjectVOD' --script 'res://UnitSystem/Tests/UnitStateComponentTest.gd'
 & $vodGodot --headless --path 'G:\Godot\ProjectVOD' --script 'res://UnitSystem/Tests/WorldHealthBarTest.gd'
 ```
 
-Expected: 两个既有测试均 exit code `0`；屏幕信息框不要求也不得改变世界血条的显示规则。
+Expected: 两个既有测试均 exit code `0`；屏幕信息框不要求也不得改变单位状态组件或世界血条的规则。
+`UnitDeathLifecycleTest.gd` 按文首 Known Baseline Exception 单独处理，不作为 Task 1 的硬性 GREEN 条件。
 
 - [ ] **Step 7: Commit Task 1 only**
 
@@ -936,7 +960,7 @@ $vodTests = @(
   'res://GameFlow/Tests/CombatHUDBindingIntegrationTest.gd',
   'res://GameFlow/Tests/GameRunResultFlowTest.gd',
   'res://UnitSystem/Tests/WorldHealthBarTest.gd',
-  'res://UnitSystem/Tests/UnitDeathLifecycleTest.gd',
+  'res://UnitSystem/Tests/UnitStateComponentTest.gd',
   'res://GameFlow/Rooms/Tests/CombatRoomControllerTest.gd'
 )
 foreach ($vodTest in $vodTests) {
@@ -947,9 +971,37 @@ foreach ($vodTest in $vodTests) {
 }
 ```
 
-Expected: 所有脚本 exit code `0`。允许测试刻意触发的多玩家 warning；不允许 Parser Error、Invalid call、已释放实例访问、重复连接或节点未找到。
+Expected: 严格回归矩阵内所有脚本 exit code `0`。允许测试刻意触发的多玩家 warning；不允许 Parser Error、Invalid call、已释放实例访问、重复连接或节点未找到。
 
-- [ ] **Step 4: Run final editor and project startup scans**
+- [ ] **Step 4: Compare the known UnitDeathLifecycle baseline**
+
+```powershell
+$vodGodot = 'G:\Godot\Godot_v4.7-stable_win64.exe\Godot_v4.7-stable_win64_console.exe'
+& $vodGodot --headless --path 'G:\Godot\ProjectVOD' --script 'res://UnitSystem/Tests/UnitDeathLifecycleTest.gd' 2>&1 |
+  Tee-Object -Variable deathLifecycleOutput
+$deathLifecycleExit = $LASTEXITCODE
+$deathLifecycleText = $deathLifecycleOutput -join "`n"
+if ($deathLifecycleExit -eq 0) {
+  Write-Output 'UnitDeathLifecycleTest is independently fixed and passes.'
+} elseif (
+  $deathLifecycleExit -eq 1 -and
+  ([regex]::Matches(
+    $deathLifecycleText,
+    'Saber death releases external action controller occupancy'
+  ).Count -eq 1) -and
+  $deathLifecycleText.Contains('UnitDeathLifecycleTest: FAIL (1)')
+) {
+  Write-Warning 'UnitDeathLifecycleTest retains its single documented baseline failure.'
+} else {
+  throw 'UnitDeathLifecycleTest differs from the documented pre-HUD baseline.'
+}
+```
+
+Expected: 若既有问题尚未另行修复，则 exit code 为 `1`、只包含上述一个断言失败且汇总为
+`FAIL (1)`；若实施开始前已经通过，则此处必须 exit code `0`。不要为了使 HUD 任务全绿而修改该测试
+或 AI 控制器。
+
+- [ ] **Step 5: Run final editor and project startup scans**
 
 ```powershell
 $vodGodot = 'G:\Godot\Godot_v4.7-stable_win64.exe\Godot_v4.7-stable_win64_console.exe'
@@ -961,7 +1013,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Godot project startup failed' }
 
 Expected: 两项 exit code `0`。检查新增 `.gd.uid` 已生成且引用正常；不得把 `.godot/` 导入缓存加入 Git。
 
-- [ ] **Step 5: Perform manual 2560×1440 visual acceptance**
+- [ ] **Step 6: Perform manual 2560×1440 visual acceptance**
 
 在 Godot 编辑器运行当前主场景，仅观察，不修改场景实例。逐项核对并记录结果：
 
@@ -978,7 +1030,7 @@ Expected: 两项 exit code `0`。检查新增 `.gd.uid` 已生成且引用正常
 
 若仅需调整视觉参数，应优先修改 `CombatHUD.tscn` / `UnitHealthFrame.tscn` 的样式子资源或已定义的布局导出默认值；不得因此更改单位、AI 或战斗代码。
 
-- [ ] **Step 6: Audit scope and repository state**
+- [ ] **Step 7: Audit scope and repository state**
 
 ```powershell
 git status --short
@@ -988,7 +1040,7 @@ git diff --name-only HEAD~3..HEAD
 
 Expected: 功能差异只涉及本计划 File Structure 中列出的 HUD、测试和 `GameRunController.gd` 文件；用户原有 `project.godot` 与 Godot MCP UID 状态保持原样，没有 `Scenes/**`、AI、技能、物品、锁定或世界血条修改。
 
-- [ ] **Step 7: Commit the regression contract**
+- [ ] **Step 8: Commit the regression contract**
 
 ```powershell
 git add -- 'GameFlow/Tests/GameRunResultFlowTest.gd'
@@ -1009,5 +1061,6 @@ git commit -m 'test: verify combat HUD result-flow compatibility'
 - 没有玩家时 HUD 隐藏；多个玩家时 HUD 隐藏并只在绑定尝试时输出一次警告。
 - 所有新增公共 API 与导出参数具有符合 `AGENTS.md` 的简体中文邻近文档。
 - 不存在新外部 `.tres/.res`，不修改现有单位、AI、战斗、技能、物品、锁定、世界血条、测试场景或 `project.godot`。
-- 三个新增测试、结果流程测试、生命/死亡/世界血条/房间控制器回归、editor scan 和 project startup 全部 exit code `0`。
+- 三个新增测试、结果流程测试、单位状态/世界血条/房间控制器严格回归、editor scan 和 project startup 全部 exit code `0`。
+- `UnitDeathLifecycleTest` 若未被独立任务修复，仍只能保留实施前已经确认的单一断言失败；不得新增失败或改变失败类型。若实施前已恢复为通过，则交付时必须继续通过。
 - 2560×1440 与至少一个不同宽高比下的手动可读性验收完成，并确认结果层位于 HUD 之上。
