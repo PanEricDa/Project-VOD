@@ -188,6 +188,8 @@ func _apply_transforms(uniform_scale: float) -> void:
 
 ## 把统一透明度推送给正式 ShaderMaterial；缺少场景子节点时静默跳过，
 ## 存在网格但材质缺失时只诊断一次，不上抛到锁定组件。
+## 对未声明同名 uniform 的 shader 写入参数覆盖在运行时是静默且安全的，
+## 因此不依赖引擎的参数存在性查询接口。
 func _push_alpha_to_material() -> void:
 	if _ring_mesh == null:
 		return
@@ -200,11 +202,7 @@ func _push_alpha_to_material() -> void:
 				+ "state logic keeps running without the visual layer."
 			)
 		return
-	if material.shader.has_param(MATERIAL_ALPHA_PARAMETER):
-		material.set_shader_parameter(
-			MATERIAL_ALPHA_PARAMETER,
-			_presentation_alpha
-		)
+	material.set_shader_parameter(MATERIAL_ALPHA_PARAMETER, _presentation_alpha)
 
 
 func _ease_out_saturate(progress: float) -> float:

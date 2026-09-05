@@ -1,12 +1,19 @@
 extends SceneTree
 
-## 验证 TargetLockIndicator 三状态（进入/维持/退出）与位置语义的独立行为契约。
-## 测试直接实例化脚本节点，不加载玩家、敌人或测试房间，也不依赖正式网格与材质。
+## 验证 TargetLockIndicator 三状态（进入/维持/退出）与位置语义的独立行为契约，
+## 以及正式圆环场景、shader 材质与状态驱动的视觉装配契约。
+## 测试直接实例化脚本节点与正式场景，不加载玩家、敌人或测试房间。
 ## 状态断言使用 EffectState 的声明顺序数值（ENTER=0, MAINTAIN=1, EXIT=2），
 ## 与计划锁定的稳定接口一致；所有交互通过公开方法完成，不访问私有字段。
 
 const INDICATOR_SCRIPT_PATH := (
 	"res://UnitSystem/Visuals/Targeting/TargetLockIndicator.gd"
+)
+const INDICATOR_SCENE_PATH := (
+	"res://UnitSystem/Visuals/Targeting/TargetLockIndicator.tscn"
+)
+const INDICATOR_SHADER_PATH := (
+	"res://UnitSystem/Visuals/Targeting/TargetLockIndicator.gdshader"
 )
 ## 无头环境下推进动画的计时安全余量，单位为秒。
 const TIME_MARGIN := 0.08
@@ -23,15 +30,19 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	await _test_state_controller_contract()
+	await _test_scene_visual_contract()
+	_finish()
+
+
+func _test_state_controller_contract() -> void:
 	var indicator_script := load(INDICATOR_SCRIPT_PATH) as GDScript
 	_expect(indicator_script != null, "TargetLockIndicator script exists")
 	if indicator_script == null:
-		_finish()
 		return
 	var indicator := indicator_script.new() as Node3D
 	_expect(indicator != null, "TargetLockIndicator instantiates as Node3D")
 	if indicator == null:
-		_finish()
 		return
 	root.add_child(indicator)
 	await process_frame
@@ -179,7 +190,152 @@ func _run() -> void:
 
 	indicator.queue_free()
 	await process_frame
-	_finish()
+
+
+func _test_scene_visual_contract() -> void:
+	_expect(
+		ResourceLoader.exists(INDICATOR_SCENE_PATH),
+		"formal indicator scene exists"
+	)
+	_expect(
+		ResourceLoader.exists(INDICATOR_SHADER_PATH),
+		"formal indicator shader exists"
+	)
+	if (
+		not ResourceLoader.exists(INDICATOR_SCENE_PATH)
+		or not ResourceLoader.exists(INDICATOR_SHADER_PATH)
+	):
+		return
+	var scene := load(INDICATOR_SCENE_PATH) as PackedScene
+	var shader_resource := load(INDICATOR_SHADER_PATH) as Shader
+	_expect(
+		scene != null and shader_resource != null,
+		"formal indicator resources load"
+	)
+	if scene == null or shader_resource == null:
+		return
+
+	var shader_text := FileAccess.get_file_as_string(INDICATOR_SHADER_PATH)
+	_expect(
+		not shader_text.contains("disable_depth_test"),
+		"the ring shader keeps normal depth occlusion"
+	)
+
+	var indicator := scene.instantiate() as TargetLockIndicator
+	_expect(indicator != null, "scene root is a TargetLockIndicator")
+	if indicator == null:
+		return
+	root.add_child(indicator)
+	await process_frame
+	_expect(not indicator.visible, "scene root stays hidden by default")
+	_expect(indicator.top_level, "scene root uses a top-level world transform")
+
+	var ring_root := indicator.get_node_or_null(^"RingRoot")
+	var ring_mesh := (
+		indicator.get_node_or_null(^"RingRoot/RingMesh") as MeshInstance3D
+	)
+	_expect(
+		ring_root != null and ring_mesh != null,
+		"stable RingRoot/RingMesh path exists"
+	)
+	if ring_mesh == null:
+		indicator.queue_free()
+		await process_frame
+		return
+
+	_expect(
+		_count_mesh_instances(indicator) == 1,
+		"the scene assembles exactly one formal ring layer"
+	)
+	_expect(
+		not _subtree_has_collision(indicator),
+		"the effect subtree contains no collision or pickable nodes"
+	)
+	var quad := ring_mesh.mesh as QuadMesh
+	_expect(quad != null, "RingMesh draws a QuadMesh")
+	if quad != null:
+		_expect(
+			is_equal_approx(quad.size.x, 1.2)
+			and is_equal_approx(quad.size.y, 1.2),
+			"the ring quad is about 1.2 by 1.2 meters"
+		)
+	_expect(
+		absf(ring_mesh.global_transform.basis.x.dot(Vector3.UP)) < 0.01
+			and absf(ring_mesh.global_transform.basis.y.dot(Vector3.UP)) < 0.01,
+		"the ring quad lies horizontally"
+	)
+	_expect(
+		ring_mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+		"the ring mesh casts no shadows"
+	)
+
+	var material := ring_mesh.get_active_material(0) as ShaderMaterial
+	_expect(material != null, "RingMesh uses a ShaderMaterial")
+	if material == null:
+		indicator.queue_free()
+		await process_frame
+		return
+	_expect(
+		material.shader == shader_resource,
+		"RingMesh material uses the formal ring shader"
+	)
+	_expect(
+		shader_text.contains("uniform vec4 ring_color")
+			and shader_text.contains("uniform float outer_radius")
+			and shader_text.contains("uniform float inner_radius")
+			and shader_text.contains("uniform float edge_smooth")
+			and shader_text.contains("uniform float emission_strength")
+			and shader_text.contains("uniform float overall_alpha"),
+		"the shader declares ring color, radii, softening and overall alpha uniforms"
+	)
+
+	var maintain_opacity := indicator.maintain_opacity
+	var breathe_amplitude := indicator.breathe_amplitude
+	indicator.play_enter(Vector3(0.0, 0.03, -2.0))
+	await _wait_seconds(indicator.enter_duration * 0.5)
+	var entering_alpha := float(material.get_shader_parameter("overall_alpha"))
+	_expect(
+		entering_alpha > 0.0
+			and entering_alpha <= maintain_opacity + 0.01,
+		"ENTER pushes a rising alpha into the material"
+	)
+	await _wait_seconds(indicator.enter_duration + TIME_MARGIN)
+	_expect(
+		int(indicator.get_effect_state()) == STATE_MAINTAIN,
+		"the scene instance reaches MAINTAIN"
+	)
+	var maintain_alpha := float(material.get_shader_parameter("overall_alpha"))
+	_expect(
+		absf(maintain_alpha - maintain_opacity) <= breathe_amplitude + 0.02,
+		"MAINTAIN pushes the breathing base alpha into the material"
+	)
+
+	indicator.play_exit()
+	await _wait_seconds(indicator.exit_duration + TIME_MARGIN)
+	_expect(not indicator.visible, "finished EXIT hides the scene root")
+	_expect(
+		is_zero_approx(float(material.get_shader_parameter("overall_alpha"))),
+		"finished EXIT zeroes the material alpha"
+	)
+
+	indicator.queue_free()
+	await process_frame
+
+
+func _count_mesh_instances(node: Node) -> int:
+	var count := 1 if node is MeshInstance3D else 0
+	for child: Node in node.get_children():
+		count += _count_mesh_instances(child)
+	return count
+
+
+func _subtree_has_collision(node: Node) -> bool:
+	if node is CollisionObject3D or node is CollisionShape3D:
+		return true
+	for child: Node in node.get_children():
+		if _subtree_has_collision(child):
+			return true
+	return false
 
 
 func _wait_seconds(seconds: float) -> void:
