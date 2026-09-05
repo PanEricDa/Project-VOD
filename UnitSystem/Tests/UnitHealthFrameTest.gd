@@ -55,11 +55,66 @@ func _run() -> void:
 	var name_label := frame.get_node(^"FrameContent/CoreInfo/Header/NameLabel") as Label
 	var state_label := frame.get_node(^"FrameContent/CoreInfo/Header/StateLabel") as Label
 	var health_bar := frame.get_node(^"FrameContent/CoreInfo/HealthBar") as ProgressBar
+	var centered_health_value := frame.get_node_or_null(
+		^"FrameContent/CoreInfo/HealthBar/HealthValue"
+	) as Label
+	var legacy_health_value := frame.get_node_or_null(
+		^"FrameContent/CoreInfo/HealthValue"
+	) as Label
+	var health_value := (
+		centered_health_value
+		if centered_health_value != null
+		else legacy_health_value
+	)
 	var damage_bar := frame.get_node_or_null(
 		^"FrameContent/CoreInfo/HealthBar/DamageBar"
 	) as ProgressBar
-	var health_value := frame.get_node(^"FrameContent/CoreInfo/HealthValue") as Label
+	var health_border := frame.get_node_or_null(
+		^"FrameContent/CoreInfo/HealthBar/HealthBorder"
+	) as Panel
 	var extension_slot := frame.get_node(^"FrameContent/ExtensionSlot") as Control
+	var frame_style := frame.get_theme_stylebox(&"panel") as StyleBoxFlat
+	_expect(
+		frame_style != null
+		and is_zero_approx(frame_style.bg_color.a)
+		and _style_has_no_border(frame_style),
+		"unit frame has no dark panel or outer border"
+	)
+	_expect(
+		name_label.get_theme_font_size(&"font_size") == 36,
+		"player name font is doubled to 36 pixels"
+	)
+	frame.call(&"set_presentation_mode", 1)
+	_expect(
+		name_label.get_theme_font_size(&"font_size") == 30,
+		"compact ally name font is doubled to 30 pixels"
+	)
+	frame.call(&"set_presentation_mode", 0)
+	_expect(
+		centered_health_value != null
+		and centered_health_value.get_parent() == health_bar,
+		"health value is overlaid inside the health bar"
+	)
+	if centered_health_value != null:
+		_expect(
+			centered_health_value.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER
+			and centered_health_value.vertical_alignment == VERTICAL_ALIGNMENT_CENTER,
+			"health value is centered in both axes"
+		)
+		_expect(
+			centered_health_value.get_theme_color(&"font_outline_color").is_equal_approx(Color.BLACK)
+			and centered_health_value.get_theme_constant(&"outline_size") >= 3,
+			"health value uses a readable black outline"
+		)
+	_expect(health_border != null, "health bar has an independent white border")
+	if health_border != null:
+		var border_style := health_border.get_theme_stylebox(&"panel") as StyleBoxFlat
+		_expect(
+			border_style != null
+			and border_style.border_color.is_equal_approx(Color.WHITE)
+			and _style_has_uniform_border(border_style, 2),
+			"health bar border is uniformly two-pixel white"
+		)
 	_expect(damage_bar != null, "damage trail bar exists behind current health")
 	if damage_bar != null:
 		_expect(
@@ -203,6 +258,21 @@ func _has_property(object: Object, property_name: StringName) -> bool:
 func _fill_color_is(progress: ProgressBar, expected: Color) -> bool:
 	var fill_style := progress.get_theme_stylebox(&"fill") as StyleBoxFlat
 	return fill_style != null and fill_style.bg_color.is_equal_approx(expected)
+
+
+## 返回 StyleBoxFlat 是否完全没有边框，用于验证 HUD 外层不再形成黑色底框。
+func _style_has_no_border(style: StyleBoxFlat) -> bool:
+	return _style_has_uniform_border(style, 0)
+
+
+## 返回 StyleBoxFlat 四边是否都使用指定宽度。
+func _style_has_uniform_border(style: StyleBoxFlat, width: int) -> bool:
+	return (
+		style.border_width_left == width
+		and style.border_width_top == width
+		and style.border_width_right == width
+		and style.border_width_bottom == width
+	)
 
 
 func _finish() -> void:

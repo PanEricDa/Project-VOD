@@ -13,11 +13,11 @@ enum PresentationMode {
 }
 
 ## 玩家模式下名称文本的字号，单位为像素。
-const PLAYER_NAME_FONT_SIZE: int = 18
+const PLAYER_NAME_FONT_SIZE: int = 36
 ## 玩家模式下数值文本的字号，单位为像素。
 const PLAYER_VALUE_FONT_SIZE: int = 16
 ## 紧凑伙伴模式下名称文本的字号，单位为像素。
-const ALLY_NAME_FONT_SIZE: int = 15
+const ALLY_NAME_FONT_SIZE: int = 30
 ## 紧凑伙伴模式下数值文本的字号，单位为像素。
 const ALLY_VALUE_FONT_SIZE: int = 13
 ## 玩家模式下核心信息（名称/进度条/数值）的纵向间距，单位为像素。
