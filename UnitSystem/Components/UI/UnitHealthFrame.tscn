@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://UnitSystem/Components/UI/UnitHealthFrame.gd" id="1_frame_script"]
 
@@ -25,8 +25,18 @@ corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_transparent"]
+bg_color = Color(0, 0, 0, 0)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_damage_fill"]
+bg_color = Color(0.92, 0.16, 0.12, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_fill"]
-bg_color = Color(0.26, 0.76, 0.42, 1)
+bg_color = Color(0.18, 0.82, 0.28, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
@@ -79,10 +89,29 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 mouse_filter = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_health_trough")
+theme_override_styles/background = SubResource("StyleBoxFlat_transparent")
 theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
 min_value = 0.0
 max_value = 1.0
+step = 0.001
+value = 0.0
+show_percentage = false
+
+[node name="DamageBar" type="ProgressBar" parent="FrameContent/CoreInfo/HealthBar"]
+unique_name_in_owner = true
+show_behind_parent = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_health_trough")
+theme_override_styles/fill = SubResource("StyleBoxFlat_damage_fill")
+min_value = 0.0
+max_value = 1.0
+step = 0.001
 value = 0.0
 show_percentage = false
 

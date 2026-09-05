@@ -86,7 +86,7 @@ func _refresh_room_binding() -> void:
 
 
 ## 场景切换后的统一延迟刷新入口：先刷新房间控制器绑定，再刷新 HUD 队伍绑定。
-## 即使当前场景没有 CombatRoomController 或 HUD 不可用，两者各自独立尝试，互为前置条件。
+## 即使当前场景没有 CombatRoomController 或 HUD 不可用，两者各自独立尝试，不互为前置条件。
 func _refresh_scene_bindings() -> void:
 	_refresh_room_binding()
 	_refresh_combat_hud_binding()

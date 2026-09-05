@@ -34,6 +34,15 @@ func _run() -> void:
 	root.add_child(first_unit)
 	root.add_child(frame)
 	await process_frame
+	_expect(
+		_has_property(frame, &"damage_hold_duration")
+		and _has_property(frame, &"damage_decay_duration"),
+		"damage trail timings are configurable"
+	)
+	if _has_property(frame, &"damage_hold_duration"):
+		frame.set("damage_hold_duration", 0.04)
+	if _has_property(frame, &"damage_decay_duration"):
+		frame.set("damage_decay_duration", 0.08)
 
 	_expect(frame.has_method(&"bind_unit"), "bind_unit is public")
 	_expect(frame.has_method(&"unbind_unit"), "unbind_unit is public")
@@ -46,22 +55,89 @@ func _run() -> void:
 	var name_label := frame.get_node(^"FrameContent/CoreInfo/Header/NameLabel") as Label
 	var state_label := frame.get_node(^"FrameContent/CoreInfo/Header/StateLabel") as Label
 	var health_bar := frame.get_node(^"FrameContent/CoreInfo/HealthBar") as ProgressBar
+	var damage_bar := frame.get_node_or_null(
+		^"FrameContent/CoreInfo/HealthBar/DamageBar"
+	) as ProgressBar
 	var health_value := frame.get_node(^"FrameContent/CoreInfo/HealthValue") as Label
 	var extension_slot := frame.get_node(^"FrameContent/ExtensionSlot") as Control
+	_expect(damage_bar != null, "damage trail bar exists behind current health")
+	if damage_bar != null:
+		_expect(
+			_fill_color_is(damage_bar, Color(0.92, 0.16, 0.12, 1.0)),
+			"damage trail uses the configured red fill"
+		)
 	_expect(frame.visible and bool(frame.call(&"is_bound")), "binding shows frame")
 	_expect(name_label.text == "测试玩家", "node name is the display-name fallback")
 	_expect(health_value.text == "150 / 200", "initial health text is current over maximum")
 	_expect(is_equal_approx(health_bar.value, 0.75), "initial ratio is correct")
+	_expect(
+		_fill_color_is(health_bar, Color(0.59, 0.82, 0.20, 1.0)),
+		"seventy-five percent health interpolates halfway from yellow to green"
+	)
 	_expect(not state_label.visible and not extension_slot.visible, "unused state and extension stay collapsed")
 
 	first_unit.apply_damage(50.0)
-	await process_frame
 	_expect(health_value.text == "100 / 200", "damage updates text from signal")
 	_expect(is_equal_approx(health_bar.value, 0.5), "damage updates ratio from signal")
+	_expect(
+		_fill_color_is(health_bar, Color(1.0, 0.82, 0.12, 1.0)),
+		"half health is yellow"
+	)
+	if damage_bar != null:
+		_expect(
+			is_equal_approx(damage_bar.value, 0.75),
+			"damage trail initially preserves the previous health ratio (value=%s)"
+			% damage_bar.value
+		)
+	await create_timer(0.02).timeout
+	first_unit.apply_damage(20.0)
+	if damage_bar != null:
+		_expect(
+			is_equal_approx(damage_bar.value, 0.75),
+			"repeated damage preserves the longest undisappeared red trail (value=%s)"
+			% damage_bar.value
+		)
+		await create_timer(0.16).timeout
+		_expect(
+			is_equal_approx(damage_bar.value, 0.4),
+			"red trail decays to current health after hold and decay durations"
+		)
 
 	first_unit.apply_healing(20.0)
 	await process_frame
-	_expect(health_value.text == "120 / 200", "healing updates text from signal")
+	_expect(health_value.text == "100 / 200", "healing updates text from signal")
+	if damage_bar != null:
+		_expect(
+			is_equal_approx(damage_bar.value, 0.5),
+			"healing cancels and synchronizes the damage trail"
+		)
+
+	var comparison_frame := frame_scene.instantiate() as Control
+	var comparison_unit := unit_scene.instantiate() as UnitBase
+	comparison_unit.name = "满血单位"
+	comparison_unit.maximum_health = 100.0
+	root.add_child(comparison_unit)
+	root.add_child(comparison_frame)
+	await process_frame
+	comparison_frame.call(&"bind_unit", comparison_unit)
+	await process_frame
+	var comparison_health_bar := comparison_frame.get_node(
+		^"FrameContent/CoreInfo/HealthBar"
+	) as ProgressBar
+	_expect(
+		_fill_color_is(comparison_health_bar, Color(0.18, 0.82, 0.28, 1.0)),
+		"full health is green"
+	)
+	first_unit.apply_damage(50.0)
+	await process_frame
+	_expect(
+		_fill_color_is(health_bar, Color(0.96, 0.49, 0.12, 1.0)),
+		"quarter health interpolates halfway from red to yellow"
+	)
+	_expect(
+		_fill_color_is(comparison_health_bar, Color(0.18, 0.82, 0.28, 1.0)),
+		"one unit changing health does not recolor another frame"
+	)
 
 	first_unit.apply_damage(9999.0)
 	await process_frame
@@ -72,6 +148,12 @@ func _run() -> void:
 	await process_frame
 	_expect(not state_label.visible, "revive clears death state")
 	_expect(health_value.text == "40 / 200", "revive restores health display")
+	if damage_bar != null:
+		await create_timer(0.16).timeout
+		_expect(
+			is_equal_approx(damage_bar.value, 0.2),
+			"revive cancels the lethal damage tween and keeps both bars synchronized"
+		)
 
 	frame.call(&"unbind_unit")
 	first_unit.apply_healing(10.0)
@@ -96,6 +178,8 @@ func _run() -> void:
 	await process_frame
 	_expect(not frame.visible and not bool(frame.call(&"is_bound")), "source tree exit unbinds safely")
 
+	comparison_frame.queue_free()
+	comparison_unit.queue_free()
 	frame.queue_free()
 	first_unit.queue_free()
 	await process_frame
@@ -105,6 +189,20 @@ func _run() -> void:
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
+
+
+## 返回对象是否公开指定属性，避免 RED 阶段因尚未新增导出字段产生引擎级无效 set 错误。
+func _has_property(object: Object, property_name: StringName) -> bool:
+	for property_data: Dictionary in object.get_property_list():
+		if StringName(property_data.get("name", &"")) == property_name:
+			return true
+	return false
+
+
+## 读取 ProgressBar 当前实际填充样式并比较颜色；没有 StyleBoxFlat 时安全失败。
+func _fill_color_is(progress: ProgressBar, expected: Color) -> bool:
+	var fill_style := progress.get_theme_stylebox(&"fill") as StyleBoxFlat
+	return fill_style != null and fill_style.bg_color.is_equal_approx(expected)
 
 
 func _finish() -> void:
