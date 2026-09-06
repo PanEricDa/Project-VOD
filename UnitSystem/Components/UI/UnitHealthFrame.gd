@@ -315,14 +315,15 @@ func _make_fill_styles_local() -> void:
 	_apply_health_color(0.0)
 
 
-## 切换倒下视觉状态：显示“倒下”并将整框调暗，复活时恢复。
+## 切换倒下视觉状态：显示“倒下”并将整框（含全部子内容）调暗，复活时恢复。
+## 使用 modulate 而不是 self_modulate，确保变暗传播到生命条、数值与扩展槽内容。
 func _set_dead_state(dead: bool) -> void:
 	_state_label.visible = dead
 	if dead:
 		_state_label.text = DEAD_STATE_TEXT
-		self_modulate = DEAD_FRAME_MODULATE
+		modulate = DEAD_FRAME_MODULATE
 	else:
-		self_modulate = ALIVE_FRAME_MODULATE
+		modulate = ALIVE_FRAME_MODULATE
 
 
 ## 按展示模式应用字号、间距与扩展槽可见性；扩展槽仅在玩家模式且已有内容时显示。

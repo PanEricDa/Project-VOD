@@ -31,10 +31,16 @@ func _run() -> void:
 	var player := player_scene.instantiate() as PlayerBase
 	player.maximum_consecutive_dashes = 2
 	player.dash_cooldown_duration = 2.0
-	player.set_physics_process(false)
 	root.add_child(player)
 	root.add_child(bar)
 	await process_frame
+	# 物理处理在进入场景树后关闭；入树前设置无法保证跨 ENTER_TREE 保持，
+	# 这里以断言固化“物理已停”前提，保证后续等待帧不产生任何业务推进。
+	player.set_physics_process(false)
+	_expect(
+		not player.is_physics_processing(),
+		"player physics is parked for deterministic dash assertions"
+	)
 
 	var fill_style := bar.get_theme_stylebox(&"fill") as StyleBoxFlat
 	_expect(bar.custom_minimum_size.y == 8.0, "dash bar uses the specified thin height")
@@ -60,6 +66,9 @@ func _run() -> void:
 	player._update_dash_cooldown(0.5)
 	var count_before := player.get_available_dash_count()
 	var cooldown_before := player.get_dash_cooldown_remaining()
+	# process_frame 信号先于节点 _process 触发；等待两帧确保监控条已完成本帧复制，
+	# 同时玩家物理已关闭，业务值在两次等待之间保持不变。
+	await process_frame
 	await process_frame
 	_expect(is_equal_approx(bar.value, player.get_dash_charge_progress()), "partial recharge is mirrored without HUD interpolation")
 	_expect(player.get_available_dash_count() == count_before, "HUD update does not change dash count")
