@@ -136,6 +136,24 @@ func is_bound() -> bool:
 	return is_instance_valid(_bound_unit)
 
 
+## 用唯一 Control 内容替换玩家信息框的扩展显示；UnitHealthFrame 接管其节点生命周期。
+## 内容只在 PLAYER 模式显示，本接口不读取或修改内容承载的业务状态。
+func set_extension_content(content: Control) -> void:
+	clear_extension_content()
+	if not is_instance_valid(content):
+		return
+	_extension_slot.add_child(content)
+	_apply_presentation_mode()
+
+
+## 释放当前扩展内容并折叠槽位；不会调用扩展内容绑定的数据源。
+func clear_extension_content() -> void:
+	for child: Node in _extension_slot.get_children():
+		_extension_slot.remove_child(child)
+		child.queue_free()
+	_apply_presentation_mode()
+
+
 ## 连接当前绑定单位的生命信号与 tree_exiting；全部连接前检查 is_connected() 防止重复。
 func _connect_unit_signals() -> void:
 	if not is_instance_valid(_bound_unit):

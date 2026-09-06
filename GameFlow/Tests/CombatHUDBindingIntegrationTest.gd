@@ -5,6 +5,7 @@ extends SceneTree
 ## 本测试使用真实 Autoload 实例，不手工创建第二个控制器。
 
 const UNIT_PATH := "res://UnitSystem/Base/00_UnitBase.tscn"
+const PLAYER_BASE_PATH := "res://UnitSystem/Player/PlayerBase.tscn"
 
 var _failures: Array[String] = []
 
@@ -29,7 +30,7 @@ func _run() -> void:
 	first_scene.name = "FirstHUDScene"
 	root.add_child(first_scene)
 	current_scene = first_scene
-	var first_player := _add_unit(first_scene, "玩家A", "Player", 200.0)
+	var first_player := _add_player(first_scene, "玩家A", 200.0)
 	var ally_a := _add_unit(first_scene, "守卫", "Ally", 300.0)
 	var ally_b := _add_unit(first_scene, "牧师", "Ally", 100.0)
 	_add_unit(first_scene, "敌人", "Enemy", 100.0)
@@ -61,7 +62,7 @@ func _run() -> void:
 	var second_scene := Node3D.new()
 	second_scene.name = "SecondHUDScene"
 	root.add_child(second_scene)
-	var second_player := _add_unit(second_scene, "玩家B", "Player", 500.0)
+	var second_player := _add_player(second_scene, "玩家B", 500.0)
 	_expect(is_instance_valid(second_player), "second scene player stays valid")
 	_add_unit(second_scene, "新伙伴", "Ally", 120.0)
 	current_scene = second_scene
@@ -70,9 +71,27 @@ func _run() -> void:
 	await process_frame
 	_expect(first_name.text == "玩家B", "scene change rebinds player frame")
 	_expect(ally_frames.get_child_count() == 1, "old ally frames are cleared")
+	var dash_bar := _find_dash_bar(hud)
+	_expect(
+		dash_bar != null and dash_bar.is_bound(),
+		"combat hud keeps the dash bar bound to the active player"
+	)
+	if dash_bar != null:
+		_expect(
+			is_equal_approx(dash_bar.value, second_player.get_dash_charge_progress()),
+			"dash bar follows the new player's business progress"
+		)
 	first_player.apply_damage(10.0)
 	await process_frame
 	_expect(first_name.text == "玩家B", "old scene signals cannot update new binding")
+	if dash_bar != null:
+		first_player._start_dash(Vector3.FORWARD)
+		first_player._finish_dash(Vector3.ZERO)
+		await process_frame
+		_expect(
+			is_equal_approx(dash_bar.value, second_player.get_dash_charge_progress()),
+			"old player dash activity cannot move the rebound dash bar"
+		)
 
 	var no_player_scene := Node3D.new()
 	root.add_child(no_player_scene)
@@ -111,6 +130,26 @@ func _add_unit(
 	unit.maximum_health = maximum
 	parent.add_child(unit)
 	return unit
+
+
+## 以 PlayerBase 创建场景玩家，供 Dash 监控条的真实数据源契约使用。
+func _add_player(parent: Node, player_name: String, maximum: float) -> PlayerBase:
+	var player := (load(PLAYER_BASE_PATH) as PackedScene).instantiate() as PlayerBase
+	player.name = player_name
+	player.maximum_health = maximum
+	parent.add_child(player)
+	return player
+
+
+## 在 HUD 子树中查找唯一 Dash 监控条；未装配时返回 null。
+func _find_dash_bar(node: Node) -> PlayerDashStatusBar:
+	if node is PlayerDashStatusBar:
+		return node as PlayerDashStatusBar
+	for child: Node in node.get_children():
+		var found := _find_dash_bar(child)
+		if found != null:
+			return found
+	return null
 
 
 func _expect(condition: bool, message: String) -> void:

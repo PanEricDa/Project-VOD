@@ -72,7 +72,13 @@ func _run() -> void:
 	var health_border := frame.get_node_or_null(
 		^"FrameContent/CoreInfo/HealthBar/HealthBorder"
 	) as Panel
-	var extension_slot := frame.get_node(^"FrameContent/ExtensionSlot") as Control
+	var extension_slot := frame.get_node_or_null(
+		^"FrameContent/CoreInfo/ExtensionSlot"
+	) as Control
+	_expect(extension_slot != null, "extension slot lives in the core column")
+	if extension_slot == null:
+		_finish()
+		return
 	var frame_style := frame.get_theme_stylebox(&"panel") as StyleBoxFlat
 	_expect(
 		frame_style != null
@@ -103,6 +109,33 @@ func _run() -> void:
 	_expect(
 		name_label.horizontal_alignment == HORIZONTAL_ALIGNMENT_LEFT,
 		"returning to player mode restores left-aligned naming"
+	)
+	_expect(
+		extension_slot.get_parent() == frame.get_node(^"FrameContent/CoreInfo")
+			and extension_slot.get_index() > health_bar.get_index(),
+		"extension slot is directly below the health bar"
+	)
+	_expect(frame.has_method(&"set_extension_content"), "frame exposes extension attachment")
+	_expect(frame.has_method(&"clear_extension_content"), "frame exposes extension cleanup")
+
+	var extension := Control.new()
+	extension.name = "TestExtension"
+	extension.custom_minimum_size = Vector2(0.0, 8.0)
+	frame.call(&"set_extension_content", extension)
+	frame.call(&"set_presentation_mode", UnitHealthFrame.PresentationMode.PLAYER)
+	_expect(
+		extension_slot.visible and extension.get_parent() == extension_slot,
+		"player mode shows attached extension"
+	)
+	frame.call(&"set_presentation_mode", UnitHealthFrame.PresentationMode.COMPACT_ALLY)
+	_expect(not extension_slot.visible, "ally mode collapses attached extension")
+	frame.call(&"set_presentation_mode", UnitHealthFrame.PresentationMode.TARGET)
+	_expect(not extension_slot.visible, "target mode collapses attached extension")
+	frame.call(&"set_presentation_mode", UnitHealthFrame.PresentationMode.PLAYER)
+	frame.call(&"clear_extension_content")
+	_expect(
+		not extension_slot.visible and extension_slot.get_child_count() == 0,
+		"clearing extension collapses the slot"
 	)
 	_expect(
 		centered_health_value != null

@@ -6,6 +6,7 @@ extends SceneTree
 
 const HUD_PATH := "res://GameFlow/UI/CombatHUD.tscn"
 const UNIT_PATH := "res://UnitSystem/Base/00_UnitBase.tscn"
+const PLAYER_BASE_PATH := "res://UnitSystem/Player/PlayerBase.tscn"
 
 var _failures: Array[String] = []
 
@@ -21,7 +22,11 @@ func _run() -> void:
 		return
 	var hud := (load(HUD_PATH) as PackedScene).instantiate() as CanvasLayer
 	root.add_child(hud)
-	var player := _make_unit("玩家", "Player", 300.0)
+	# 玩家夹具使用真实 PlayerBase，Dash 监控条按规格只绑定 PlayerBase 数据源。
+	var player := (load(PLAYER_BASE_PATH) as PackedScene).instantiate() as PlayerBase
+	player.name = "玩家"
+	player.maximum_health = 300.0
+	root.add_child(player)
 	var allies: Array[UnitBase] = []
 	for index: int in 4:
 		allies.append(_make_unit("伙伴%d" % index, "Ally", 100.0))
@@ -38,6 +43,19 @@ func _run() -> void:
 	_expect(hud.visible and player_frame.visible, "valid player shows HUD")
 	_expect(ally_frames.get_child_count() == 4, "one frame exists per ally")
 	_expect(player_frame.custom_minimum_size == Vector2(420, 90), "player size uses default")
+	var extension_slot := player_frame.get_node(
+		^"FrameContent/CoreInfo/ExtensionSlot"
+	) as MarginContainer
+	_expect(extension_slot.get_child_count() == 1, "player frame owns one HUD extension")
+	var dash_bar: PlayerDashStatusBar = (
+		extension_slot.get_child(0) as PlayerDashStatusBar
+		if extension_slot.get_child_count() >= 1
+		else null
+	)
+	_expect(
+		dash_bar != null and dash_bar.is_bound(),
+		"player extension is the bound dash status bar"
+	)
 	for child: Node in ally_frames.get_children():
 		var ally_frame := child as Control
 		_expect(ally_frame != null, "ally frame is Control")
@@ -45,6 +63,12 @@ func _run() -> void:
 			_expect(ally_frame.custom_minimum_size == Vector2(280, 60), "ally is two thirds size")
 			_expect(is_equal_approx(ally_frame.global_position.x, player_frame.global_position.x), "frames align left")
 			_expect(ally_frame.global_position.y < player_frame.global_position.y, "allies appear above player")
+			_expect(
+				ally_frame.get_node(
+					^"FrameContent/CoreInfo/ExtensionSlot"
+				).get_child_count() == 0,
+				"ally frames do not instantiate player dash bars"
+			)
 
 	var duplicate_input: Array[UnitBase] = [allies[0], allies[0], player, null]
 	hud.call(&"refresh_party", player, duplicate_input)

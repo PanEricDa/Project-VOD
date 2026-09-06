@@ -4,12 +4,16 @@ extends CanvasLayer
 ## 屏幕空间队伍生命 HUD 的布局与绑定容器。
 ## 本组件持有一个固定的玩家信息框和一组动态创建的伙伴信息框，负责左下角
 ## 安全区布局、尺寸与间距配置，以及把外部传入的 UnitBase 队伍绑定到各信息框；
-## 同时通过玩家现有 locked_target_changed 信号驱动顶部中央的唯一目标生命框；
-## 它不发现单位（由 GameRunController 在场景变化时收集）、不读取 AI 组件、
-## 不参与战斗逻辑，也不填充玩家框的扩展槽（该槽保留给未来的玩家资源内容）。
+## 同时通过玩家现有 locked_target_changed 信号驱动顶部中央的唯一目标生命框，
+## 并在固定玩家框的扩展槽中装配唯一的玩家 Dash 只读监控条；
+## 它不发现单位（由 GameRunController 在场景变化时收集）、不读取 AI 组件，
+## 也不参与战斗逻辑；Dash 条只镜像 PlayerBase 的只读查询，不计算或写回 Dash 状态。
 
 const UNIT_HEALTH_FRAME_SCENE: PackedScene = preload(
 	"res://UnitSystem/Components/UI/UnitHealthFrame.tscn"
+)
+const PLAYER_DASH_STATUS_BAR_SCENE: PackedScene = preload(
+	"res://UnitSystem/Components/UI/PlayerDashStatusBar.tscn"
 )
 
 @export_category("Layout")
@@ -43,6 +47,8 @@ var target_margin_top: float = 36.0
 var _active_ally_frames: Array[UnitHealthFrame] = []
 ## 当前为顶部目标框提供锁定信号的玩家单位；普通 UnitBase 没有锁定接口时保持 null。
 var _target_source_player: UnitBase
+## 固定玩家框扩展槽中的唯一 Dash 监控条；实例化失败时保持 null 并只跳过 Dash 显示。
+var _player_dash_status_bar: PlayerDashStatusBar
 
 
 ## 用一个玩家和一组伙伴重建队伍显示。玩家无效时安全解绑；伙伴中的 null、重复项和玩家自身会被跳过。
@@ -54,6 +60,8 @@ func bind_party(player: UnitBase, allies: Array[UnitBase]) -> void:
 	_player_frame.set_presentation_mode(UnitHealthFrame.PresentationMode.PLAYER)
 	_player_frame.custom_minimum_size = _sanitize_size(player_frame_size)
 	_player_frame.bind_unit(player)
+	if is_instance_valid(_player_dash_status_bar):
+		_player_dash_status_bar.bind_player(player as PlayerBase)
 	_bind_target_source(player)
 	var seen_ids: Dictionary = {player.get_instance_id(): true}
 	for ally: UnitBase in allies:
@@ -70,6 +78,8 @@ func bind_party(player: UnitBase, allies: Array[UnitBase]) -> void:
 ## 清除所有单位信号和动态伙伴框并隐藏 HUD；不会释放 HUD 自身。
 func unbind_party() -> void:
 	_unbind_target_source()
+	if is_instance_valid(_player_dash_status_bar):
+		_player_dash_status_bar.unbind_player()
 	if is_instance_valid(_player_frame):
 		_player_frame.unbind_unit()
 	for frame: UnitHealthFrame in _active_ally_frames:
@@ -85,10 +95,22 @@ func refresh_party(player: UnitBase, allies: Array[UnitBase]) -> void:
 	bind_party(player, allies)
 
 
-## 进入场景树时应用布局配置并保持未绑定隐藏；在编辑器中直接实例化也安全。
+## 进入场景树时应用布局配置、装配玩家 Dash 监控条并保持未绑定隐藏；在编辑器中直接实例化也安全。
 func _ready() -> void:
 	_apply_layout_configuration()
+	_initialize_player_dash_status_bar()
 	visible = false
+
+
+## 创建固定玩家框的唯一 Dash 监控条并装入扩展槽；实例化失败只关闭该扩展，
+## 不影响生命 HUD、目标 HUD 或战斗流程。
+func _initialize_player_dash_status_bar() -> void:
+	var candidate := PLAYER_DASH_STATUS_BAR_SCENE.instantiate() as PlayerDashStatusBar
+	if not is_instance_valid(candidate):
+		push_error("CombatHUD: PlayerDashStatusBar could not be instantiated.")
+		return
+	_player_dash_status_bar = candidate
+	_player_frame.set_extension_content(_player_dash_status_bar)
 
 
 ## 离开场景树时解绑全部单位并清理动态框，防止场景卸载后残留回调。
