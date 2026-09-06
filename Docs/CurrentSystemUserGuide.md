@@ -224,7 +224,19 @@ Codex 不会自动向测试场景添加单位实例。
 4. 检查 Starting Weapon、Formation Position、技能实例和 CombatSystem。
 5. 保存场景并运行。
 
-## 12. 运行测试与排错
+## 12. 玩家 Dash 逐层恢复与 HUD 监控
+
+- 玩家最大连续 Dash 次数由 `PlayerBase.maximum_consecutive_dashes` 配置，默认 2。
+- 任意一层被消耗后立即按 `dash_cooldown_duration` 开始当前层冷却；每完成一个完整冷却只恢复一层，未满时自动开始下一层，恢复满层后停止计时。
+- 恢复期间再次 Dash 只扣除一个完整次数，当前层的恢复进度不会重置或丢失。
+- 单帧间隔很大（低帧率或调试暂停）时，系统按真实经过时间连续结算多个已完成的层并保留余量。
+- `dash_cooldown_duration <= 0` 表示无冷却：消耗后立即恢复满层，不进入循环计时。
+- 玩家死亡时恢复计时冻结，复活后从冻结处继续；房间结算只禁用输入时恢复计时照常运行。
+- 玩家生命条正下方的淡黄色细条（`PlayerDashStatusBar`）显示“完整次数 + 当前恢复层进度”的连续值；满层为整条，消耗一层立即缩短总长度的 `1/n`。
+- 该 HUD 是严格只读监控：只读取 `PlayerBase.get_dash_charge_capacity()` 与 `get_dash_charge_progress()`，不计算冷却、不推进时间，删除或隐藏它不影响 Dash。
+- 伙伴框与顶部目标框不显示 Dash 条；只有阵营为 `Player` 的 `PlayerBase` 单位会驱动该条。
+
+## 13. 运行测试与排错
 
 重点测试目录：
 

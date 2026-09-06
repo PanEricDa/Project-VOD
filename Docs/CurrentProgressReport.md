@@ -196,3 +196,12 @@ Godot 4.7 独立 headless 编辑器扫描和主场景 `--quit-after 120` 均以�
 - `death_cleanup_mode` 改为 `death_mode`，选项为 `KEEP_FOR_REVIVE`、`REMOVE_AFTER_DELAY`、`REMOVE_IMMEDIATELY`。
 - `destroy_delay` 改为 `remove_after_seconds`，语义为从死亡开始计算的最短保留时间；死亡动画未结束时会自动等待动画完成。
 - `visual_path` 改为内部固定路径 `Visual`，不再让设计者重复输入。
+## 2026-09-06 玩家 Dash 逐层恢复与 HUD 监控
+
+- `PlayerBase` Dash 从“耗尽后整组冷却、整组回满”改为“任意一层消耗后立即开始当前层冷却、每个周期恢复一层”；恢复期间再次消耗不重置当前层进度；大 `delta` 连续结算多周期并保留余量；零冷却立即回满；死亡冻结计时、复活续走。
+- 新增只读查询 `get_dash_charge_capacity()`（不小于 1 的有效最大次数）与 `get_dash_charge_progress()`（完整次数 + 当前恢复层比例的连续值）；`get_dash_cooldown_remaining()` 语义扩大为“当前恢复层剩余 CD”。内部仅用 `_available_dash_count` 与 `_dash_cooldown_remaining` 两个状态，无 Timer 或每层数据结构。
+- 新增 `UnitSystem/Components/UI/PlayerDashStatusBar.gd/.tscn`：8 像素淡黄色只读监控条（填充 `Color(1.0, 0.88, 0.42, 0.95)`），每个显示帧直接复制两个权威查询到 ProgressBar，不计算、不推进、不写回。
+- `UnitHealthFrame` 的 `ExtensionSlot` 从右侧移到 `CoreInfo` 生命条正下方，新增通用 `set_extension_content()` / `clear_extension_content()`（接管内容生命周期并即时刷新可见性）；仅玩家模式显示，伙伴与目标模式折叠。
+- `CombatHUD` 在固定玩家框扩展槽装配唯一 Dash 条并与玩家生命框同步绑定/解绑；非 `PlayerBase` 的玩家阵营单位安全隐藏；实例化失败只输出一次诊断。
+- 文件范围：`UnitSystem/Player/PlayerBase.gd`、`UnitSystem/Components/UI/PlayerDashStatusBar.gd/.tscn`、`UnitSystem/Components/UI/UnitHealthFrame.gd/.tscn`、`GameFlow/UI/CombatHUD.gd` 与对应测试（PlayerDashRechargeTest、PlayerDashStatusBarTest、UnitHealthFrameTest、CombatHUDTest、CombatHUDBindingIntegrationTest 的玩家夹具改用真实 PlayerBase）。
+- 实际执行验证（Godot 4.7 headless，全部 exit code 0）：PlayerDashRechargeTest、PlayerDashStatusBarTest、PlayerDashComboContinuityTest、UnitHealthFrameTest、CombatHUDTest、CombatHUDBindingIntegrationTest、CombatHUDTargetHealthTest、GameRunResultFlowTest；UnitDeathLifecycleTest 保留实施前已存在的唯一 Saber 断言失败（基线哨兵一致，无新增失败）；Godot 4.7 编辑器扫描 exit 0。实际画面检查确认满条、单次消耗下降一半、逐层连续回升、恢复中再次消耗精确下降且不重置进度、伙伴与目标框无 Dash 条。
