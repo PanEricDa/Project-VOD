@@ -217,6 +217,33 @@ func get_dash_cooldown_remaining() -> float:
 	return _dash_cooldown_remaining
 
 
+## 返回不小于 1 的有效最大 Dash 次数；只读消费者无需重复处理 Inspector 异常值。
+func get_dash_charge_capacity() -> int:
+	return maxi(maximum_consecutive_dashes, 1)
+
+
+## 返回 0 到最大 Dash 次数之间的连续业务进度：完整可用次数加当前恢复层完成比例。
+## 本方法只读取 PlayerBase 已有状态，供 HUD 与调试工具监控；调用者不得据此写回或推进 Dash。
+func get_dash_charge_progress() -> float:
+	var maximum_count := get_dash_charge_capacity()
+	var available_count := clampi(_available_dash_count, 0, maximum_count)
+	if available_count >= maximum_count:
+		return float(maximum_count)
+	var cooldown_duration := maxf(dash_cooldown_duration, 0.0)
+	if cooldown_duration <= 0.0 or _dash_cooldown_remaining <= 0.0:
+		return float(available_count)
+	var layer_progress := 1.0 - clampf(
+		_dash_cooldown_remaining / cooldown_duration,
+		0.0,
+		1.0
+	)
+	return clampf(
+		float(available_count) + layer_progress,
+		0.0,
+		float(maximum_count)
+	)
+
+
 ## 请求一次受 CharacterBody3D 碰撞约束的攻击前进位移。
 ##
 ## direction 会在请求时水平化并锁定；后续角色转向不会让同一段攻击轨迹弯曲。
@@ -404,6 +431,7 @@ func _start_dash(input_direction: Vector3) -> void:
 		1.0 - clampf(dash_invulnerability_ratio, 0.0, 1.0)
 	)
 	_available_dash_count = maxi(_available_dash_count - 1, 0)
+	_ensure_dash_recharge_started()
 
 
 func _process_dash(delta: float) -> void:
@@ -442,8 +470,23 @@ func _finish_dash(input_direction: Vector3) -> void:
 	)
 	velocity.x = _regular_horizontal_velocity.x
 	velocity.z = _regular_horizontal_velocity.y
-	if _available_dash_count <= 0:
-		_dash_cooldown_remaining = dash_cooldown_duration
+
+
+## 在 Dash 次数未满且没有活动计时时启动当前层恢复；已有计时保持不变。
+## 次数已满时收束为零计时；零冷却配置在消耗点直接恢复满层，不进入循环计时。
+func _ensure_dash_recharge_started() -> void:
+	var maximum_count := get_dash_charge_capacity()
+	_available_dash_count = clampi(_available_dash_count, 0, maximum_count)
+	if _available_dash_count >= maximum_count:
+		_dash_cooldown_remaining = 0.0
+		return
+	var cooldown_duration := maxf(dash_cooldown_duration, 0.0)
+	if cooldown_duration <= 0.0:
+		_available_dash_count = maximum_count
+		_dash_cooldown_remaining = 0.0
+		return
+	if _dash_cooldown_remaining <= 0.0:
+		_dash_cooldown_remaining = cooldown_duration
 
 
 func _can_start_dash() -> bool:
@@ -454,12 +497,28 @@ func _can_start_dash() -> bool:
 	)
 
 
+## 按本帧 delta 推进当前恢复层，并循环结算跨越的所有完整周期；余量保留到下一层。
+## 次数已满时停止计时；零冷却在进入循环前直接收束为满层，避免死循环。
 func _update_dash_cooldown(delta: float) -> void:
-	if _dash_cooldown_remaining <= 0.0:
+	var maximum_count := get_dash_charge_capacity()
+	_available_dash_count = clampi(_available_dash_count, 0, maximum_count)
+	if _available_dash_count >= maximum_count:
+		_dash_cooldown_remaining = 0.0
 		return
-	_dash_cooldown_remaining = maxf(_dash_cooldown_remaining - delta, 0.0)
+	var cooldown_duration := maxf(dash_cooldown_duration, 0.0)
+	if cooldown_duration <= 0.0:
+		_available_dash_count = maximum_count
+		_dash_cooldown_remaining = 0.0
+		return
 	if _dash_cooldown_remaining <= 0.0:
-		_available_dash_count = maxi(maximum_consecutive_dashes, 1)
+		_dash_cooldown_remaining = cooldown_duration
+	_dash_cooldown_remaining -= maxf(delta, 0.0)
+	while _dash_cooldown_remaining <= 0.0 and _available_dash_count < maximum_count:
+		_available_dash_count += 1
+		if _available_dash_count >= maximum_count:
+			_dash_cooldown_remaining = 0.0
+			break
+		_dash_cooldown_remaining += cooldown_duration
 
 
 func _apply_gravity(delta: float) -> void:
