@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="4_combat"]
 [ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="4_rmpxs"]
 [ext_resource type="PackedScene" uid="uid://cyj2p3visptjw" path="res://SkillSystem/00-Skills/GuardianShield/GuardianShieldSkill.tscn" id="5_skill"]
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/GuardianTaunt/GuardianTauntSkill.tscn" id="7_taunt"]
 [ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="5_xppbt"]
 [ext_resource type="Resource" uid="uid://cnrmochu3ntvo" path="res://UnitSystem/Components/Targeting/AI/Policies/GuardianProtect.tres" id="6_protect"]
 
@@ -31,6 +32,8 @@ hit_movement_lock_duration = 0.04
 
 [node name="GuardianShieldSkill" parent="SkillHost/SkillSocket" index="0" unique_id=2125788544 instance=ExtResource("5_skill")]
 delivery = SubResource("Resource_p24kn")
+
+[node name="GuardianTauntSkill" parent="SkillHost/SkillSocket" index="1" instance=ExtResource("7_taunt")]
 
 [node name="CombatSystem" parent="." index="3" unique_id=1080413471 instance=ExtResource("4_combat")]
 debug_hitbox_enabled = true
