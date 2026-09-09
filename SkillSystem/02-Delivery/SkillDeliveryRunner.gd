@@ -55,7 +55,12 @@ func execute(
 			effects
 		)
 	if config is InstantTargetDeliveryConfig:
-		return _execute_instant_target(context, launch_transform, effects)
+		return _execute_instant_target(
+			config as InstantTargetDeliveryConfig,
+			context,
+			launch_transform,
+			effects
+		)
 	if config is GroundAreaDeliveryConfig:
 		return _execute_ground_area(
 			config as GroundAreaDeliveryConfig,
@@ -84,28 +89,89 @@ func is_busy() -> bool:
 	return _busy
 
 
+## 按配置的目标收集模式执行瞬发交付：逐目标、逐 Effect 应用，任一 Effect 失败即
+## 沿用既有 fail-fast 契约终止；每个目标的全部 Effect 成功后才计入 affected_targets 一次。
 func _execute_instant_target(
+	config: InstantTargetDeliveryConfig,
 	context: SkillContext,
 	launch_transform: Transform3D,
 	effects: Array[SkillEffectBase]
 ) -> bool:
-	if not is_instance_valid(context.resolved_target) or effects.is_empty():
+	var effect_targets := _collect_instant_effect_targets(config, context)
+	if effect_targets.is_empty() or effects.is_empty():
 		return false
-	_begin_delivery(context, launch_transform.origin, context.resolved_target.global_position)
-	var result := _make_success_result(context.resolved_target.global_position)
-	for effect: SkillEffectBase in effects:
-		if not is_instance_valid(effect) or not effect.apply(
-			context,
-			result,
-			context.resolved_target
-		):
-			_finish_failure(&"instant_effect_failed")
-			return false
-		result.affected_targets.append(context.resolved_target)
+	var reference_target: Node3D = effect_targets[0]
+	_begin_delivery(
+		context,
+		launch_transform.origin,
+		reference_target.global_position
+	)
+	var result := _make_success_result(reference_target.global_position)
+	for target: Node3D in effect_targets:
+		for effect: SkillEffectBase in effects:
+			if not is_instance_valid(effect) or not effect.apply(
+				context,
+				result,
+				target
+			):
+				_finish_failure(&"instant_effect_failed")
+				return false
+		result.affected_targets.append(target)
 	var finished_context: SkillContext = _current_context
 	_clear_runtime_state()
 	delivery_finished.emit(finished_context, result)
 	return true
+
+
+## 收集一次瞬发交付的效果目标集合。
+## SINGLE 只返回有效已解析目标；CASTER_RADIUS 以施法者为圆心，从 context.candidate_targets
+## 的请求快照（并在触发目标被意外遗漏时合并它）筛选关系、存活、可选取与水平半径内的单位，
+## 按实例 ID 去重；不修改 context.candidate_targets 原数组。
+func _collect_instant_effect_targets(
+	config: InstantTargetDeliveryConfig,
+	context: SkillContext
+) -> Array[Node3D]:
+	var collected: Array[Node3D] = []
+	if (
+		config.target_collection_mode
+		== InstantTargetDeliveryConfig.TargetCollectionMode.SINGLE
+	):
+		if is_instance_valid(context.resolved_target):
+			collected.append(context.resolved_target)
+		return collected
+
+	var caster := context.caster
+	var candidates: Array[Node3D] = []
+	candidates.append_array(context.candidate_targets)
+	if (
+		is_instance_valid(context.resolved_target)
+		and not candidates.has(context.resolved_target)
+	):
+		candidates.append(context.resolved_target)
+	var seen_ids: Dictionary = {}
+	for candidate: Node3D in candidates:
+		if not is_instance_valid(candidate) or not candidate.is_inside_tree():
+			continue
+		if not TargetResolver.is_candidate_valid(
+			caster,
+			candidate,
+			config.affected_relations,
+			true,
+			true
+		):
+			continue
+		var horizontal_offset: Vector3 = (
+			candidate.global_position - caster.global_position
+		)
+		horizontal_offset.y = 0.0
+		if horizontal_offset.length() > config.effect_radius + 0.05:
+			continue
+		var instance_id := candidate.get_instance_id()
+		if seen_ids.has(instance_id):
+			continue
+		seen_ids[instance_id] = true
+		collected.append(candidate)
+	return collected
 
 
 func _execute_tracking_projectile(

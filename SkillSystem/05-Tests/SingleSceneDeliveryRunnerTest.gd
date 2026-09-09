@@ -7,6 +7,11 @@ extends SceneTree
 
 const RUNNER_PATH := \
 	"res://SkillSystem/02-Delivery/SkillDeliveryRunner.gd"
+const UNIT_SCENE_PATH := \
+	"res://UnitSystem/Base/00_UnitBase.tscn"
+## 与 InstantTargetDeliveryConfig.TargetCollectionMode 声明顺序一致的范围模式数值。
+## 实施前该枚举尚不存在，测试以守卫式数值配置保证 RED 阶段无解析错误。
+const CASTER_RADIUS_MODE := 1
 
 var _failures: Array[String] = []
 var _root: Node3D
@@ -166,6 +171,7 @@ func _run_tests() -> void:
 		_finish()
 		return
 	_verify_instant_delivery(runner_script)
+	_verify_caster_radius_instant_delivery(runner_script)
 	_verify_projectile_delivery(runner_script)
 	_verify_projectile_target_resolution(runner_script)
 	_verify_projectile_target_removed_before_impact(runner_script)
@@ -230,6 +236,172 @@ func _verify_instant_delivery(runner_script: Script) -> void:
 	runner.queue_free()
 	caster.queue_free()
 	target.queue_free()
+
+
+func _verify_caster_radius_instant_delivery(runner_script: Script) -> void:
+	var runner: Node = runner_script.new()
+	_root.add_child(runner)
+	var unit_scene := load(UNIT_SCENE_PATH) as PackedScene
+	var caster := unit_scene.instantiate() as UnitBase
+	caster.team_id = 1
+	var inside_enemy_a := _make_relation_unit(2, Vector3(3.0, 0.0, 0.0))
+	var inside_enemy_b := _make_relation_unit(2, Vector3(0.0, 0.0, -2.4))
+	var boundary_enemy := _make_relation_unit(2, Vector3(5.0, 0.0, 0.0))
+	var outside_enemy := _make_relation_unit(2, Vector3(6.0, 0.0, 0.0))
+	var inside_friendly := _make_relation_unit(1, Vector3(2.0, 0.0, 0.0))
+	var elevated_enemy := _make_relation_unit(2, Vector3(0.0, 10.0, 0.0))
+	_root.add_child(caster)
+	for unit: UnitBase in [
+		inside_enemy_a,
+		inside_enemy_b,
+		boundary_enemy,
+		outside_enemy,
+		inside_friendly,
+		elevated_enemy,
+	]:
+		_root.add_child(unit)
+
+	var config := InstantTargetDeliveryConfig.new()
+	if "target_collection_mode" in config:
+		config.set("target_collection_mode", CASTER_RADIUS_MODE)
+	if "effect_radius" in config:
+		config.set("effect_radius", 5.0)
+	if "affected_relations" in config:
+		config.set("affected_relations", TargetResolver.TargetRelationFlag.HOSTILE)
+	var context := SkillContext.new()
+	context.caster = caster
+	context.resolved_target = inside_enemy_a
+	context.delivery_parent = _root
+	context.candidate_targets = [
+		inside_friendly,
+		outside_enemy,
+		inside_enemy_b,
+		inside_enemy_a,
+		elevated_enemy,
+		boundary_enemy,
+		inside_enemy_a,
+	]
+	var effect := RecordingEffect.new()
+	var effects: Array[SkillEffectBase] = [effect]
+	var finished_count: Array[int] = [0]
+	var delivered_targets: Array[Node3D] = []
+	runner.delivery_finished.connect(
+		func(_context: SkillContext, result: SkillDeliveryResult) -> void:
+			finished_count[0] += 1
+			delivered_targets.assign(result.affected_targets)
+	)
+
+	_expect(
+		bool(runner.call(
+			"execute",
+			config,
+			context,
+			Transform3D.IDENTITY,
+			effects
+		)),
+		"caster-radius instant delivery succeeds with valid hostile targets"
+	)
+	_expect(
+		effect.applied_targets.size() == 4
+			and effect.applied_targets.has(inside_enemy_a)
+			and effect.applied_targets.has(inside_enemy_b)
+			and effect.applied_targets.has(boundary_enemy)
+			and effect.applied_targets.has(elevated_enemy),
+		"caster-radius delivery affects every hostile inside five meters exactly once"
+	)
+	_expect(
+		not effect.applied_targets.has(outside_enemy)
+			and not effect.applied_targets.has(inside_friendly),
+		"caster-radius delivery excludes out-of-range and friendly candidates"
+	)
+	_expect(
+		delivered_targets.size() == 4 and delivered_targets.has(boundary_enemy),
+		"caster-radius result records each affected target exactly once"
+	)
+	_expect(
+		effect.applied_targets.has(elevated_enemy),
+		"caster-radius distance ignores the vertical axis"
+	)
+	_expect(
+		finished_count[0] == 1,
+		"caster-radius delivery finishes exactly once"
+	)
+
+	effect.applied_targets.clear()
+	var missing_snapshot := context.duplicate_context() as SkillContext
+	missing_snapshot.candidate_targets = [inside_enemy_b]
+	_expect(
+		bool(runner.call(
+			"execute",
+			config,
+			missing_snapshot,
+			Transform3D.IDENTITY,
+			effects
+		)),
+		"an omitted trigger target is merged into the effect set"
+	)
+	_expect(
+		effect.applied_targets.size() == 2
+			and effect.applied_targets.has(inside_enemy_a)
+			and effect.applied_targets.has(inside_enemy_b),
+		"merged delivery covers the snapshot and the trigger target"
+	)
+
+	var empty_context := context.duplicate_context() as SkillContext
+	empty_context.candidate_targets = []
+	empty_context.resolved_target = null
+	_expect(
+		not bool(runner.call(
+			"execute",
+			config,
+			empty_context,
+			Transform3D.IDENTITY,
+			effects
+		)),
+		"caster-radius delivery rejects a request with no valid effect targets"
+	)
+
+	_expect(
+		InstantTargetDeliveryConfig.new().validate_configuration().is_empty(),
+		"default single-target configuration remains valid"
+	)
+	var bad_radius := InstantTargetDeliveryConfig.new()
+	if "target_collection_mode" in bad_radius:
+		bad_radius.set("target_collection_mode", CASTER_RADIUS_MODE)
+		bad_radius.set("effect_radius", 0.0)
+	_expect(
+		not bad_radius.validate_configuration().is_empty(),
+		"a zero effect radius is rejected in caster-radius mode"
+	)
+	var bad_relations := InstantTargetDeliveryConfig.new()
+	if "target_collection_mode" in bad_relations:
+		bad_relations.set("target_collection_mode", CASTER_RADIUS_MODE)
+		bad_relations.set("affected_relations", 0)
+	_expect(
+		not bad_relations.validate_configuration().is_empty(),
+		"an empty relation mask is rejected in caster-radius mode"
+	)
+
+	effect.free()
+	runner.queue_free()
+	caster.queue_free()
+	for unit: UnitBase in [
+		inside_enemy_a,
+		inside_enemy_b,
+		boundary_enemy,
+		outside_enemy,
+		inside_friendly,
+		elevated_enemy,
+	]:
+		unit.queue_free()
+
+
+## 创建用于关系筛选的真实 UnitBase 夹具并设置队伍与水平位置。
+func _make_relation_unit(team_id: int, unit_position: Vector3) -> UnitBase:
+	var unit := (load(UNIT_SCENE_PATH) as PackedScene).instantiate() as UnitBase
+	unit.team_id = team_id
+	unit.position = unit_position
+	return unit
 
 
 func _verify_projectile_delivery(runner_script: Script) -> void:
