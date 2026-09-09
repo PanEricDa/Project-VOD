@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="Script" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_delivery"]
+[ext_resource type="Script" path="res://SkillSystem/03-Extensions/ThreatChangeSkillEffect.gd" id="3_threat"]
+
+[sub_resource type="Resource" id="Resource_instant_radius"]
+resource_local_to_scene = true
+script = ExtResource("2_delivery")
+target_collection_mode = 1
+effect_radius = 5.0
+affected_relations = 4
+
+[node name="GuardianTauntSkill" instance=ExtResource("1_template")]
+skill_id = &"guardian_taunt"
+display_name = "Guardian Taunt"
+ai_priority = 80
+target_relations = 4
+target_selection_mode = 1
+cast_range = 0.8
+base_cast_time = 0.2
+can_move_while_casting = false
+can_turn_while_casting = true
+skill_cooldown = 15.0
+threat_multiplier = 1.0
+automatic_cast_enabled = true
+decision_delay_min = 0.0
+decision_delay_max = 0.0
+extra_hesitation_chance = 0.0
+delivery = SubResource("Resource_instant_radius")
+
+[node name="ThreatEffect" type="Node" parent="." index="2"]
+script = ExtResource("3_threat")
+threat_amount = 200.0
