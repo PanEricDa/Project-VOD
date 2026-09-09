@@ -25,6 +25,69 @@ func _initialize() -> void:
 			"Missing animation: %s" % animation_name
 		)
 
+	_expect(
+		ResourceLoader.get_resource_uid(LIBRARY_PATH) != ResourceUID.INVALID_ID,
+		"ShieldAnimationLibrary.res keeps a valid UID"
+	)
+
+	# basic_cast_1 供 RangedSkillTemplate 的 AI 通用外部动作入口使用，
+	# 只允许通用施法与完成标记，不允许近战 Hitbox 或攻击位移标记。
+	var cast_animation: Animation = library.get_animation(&"basic_cast_1")
+	_expect(
+		cast_animation != null,
+		"Shield library provides basic_cast_1 for non-melee skills"
+	)
+	if cast_animation != null:
+		_expect(
+			is_equal_approx(cast_animation.length, 0.60),
+			"Shield cast animation lasts 0.60 seconds"
+		)
+		_expect(
+			_count_method(cast_animation, &"release_action") == 1,
+			"Shield cast has exactly one release marker"
+		)
+		_expect(
+			_count_method(cast_animation, &"finish_action") == 1,
+			"Shield cast has exactly one finish marker"
+		)
+		_expect(
+			_count_method(cast_animation, &"open_attack_hit_window") == 0,
+			"Shield cast never opens a melee hit window"
+		)
+		_expect(
+			_count_method(cast_animation, &"close_attack_hit_window") == 0,
+			"Shield cast never closes a melee hit window"
+		)
+		_expect(
+			_count_method(cast_animation, &"request_attack_motion") == 0,
+			"Shield cast never requests attack motion"
+		)
+		var release_times := _method_marker_times(
+			cast_animation,
+			&"release_action"
+		)
+		if release_times.size() == 1:
+			_expect(
+				is_equal_approx(release_times[0], 0.20),
+				"Shield cast releases at 0.20 seconds"
+			)
+
+	# action_skill_1 是 basic_cast_1 的复制来源；锚定其方法标记，防止复制操作破坏原件。
+	var action_skill: Animation = library.get_animation(&"action_skill_1")
+	_expect(
+		action_skill != null,
+		"Shield library keeps action_skill_1"
+	)
+	if action_skill != null:
+		_expect(
+			_count_method(action_skill, &"release_action") == 1,
+			"action_skill_1 keeps exactly one release marker"
+		)
+		_expect(
+			_count_method(action_skill, &"finish_action") == 1,
+			"action_skill_1 keeps exactly one finish marker"
+		)
+
 	var attack_1: Animation = library.get_animation(&"basic_attack_1")
 	var attack_2: Animation = library.get_animation(&"basic_attack_2")
 	var reset: Animation = library.get_animation(&"RESET")
@@ -127,6 +190,53 @@ func _initialize() -> void:
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		failures.append(message)
+
+
+## 只遍历方法轨道并统计指定方法名的键数量。
+func _count_method(animation: Animation, method_name: StringName) -> int:
+	var count: int = 0
+	for track_index: int in range(animation.get_track_count()):
+		if animation.track_get_type(track_index) != Animation.TYPE_METHOD:
+			continue
+		for key_index: int in range(
+			animation.track_get_key_count(track_index)
+		):
+			var key_value: Variant = animation.track_get_key_value(
+				track_index,
+				key_index
+			)
+			if (
+				key_value is Dictionary
+				and StringName(key_value.get("method", &"")) == method_name
+			):
+				count += 1
+	return count
+
+
+## 收集指定方法名在方法轨道上的全部键时间，用于校验标记位置。
+func _method_marker_times(
+	animation: Animation,
+	method_name: StringName
+) -> Array[float]:
+	var times: Array[float] = []
+	for track_index: int in range(animation.get_track_count()):
+		if animation.track_get_type(track_index) != Animation.TYPE_METHOD:
+			continue
+		for key_index: int in range(
+			animation.track_get_key_count(track_index)
+		):
+			var key_value: Variant = animation.track_get_key_value(
+				track_index,
+				key_index
+			)
+			if (
+				key_value is Dictionary
+				and StringName(key_value.get("method", &"")) == method_name
+			):
+				times.append(
+					animation.track_get_key_time(track_index, key_index)
+				)
+	return times
 
 
 func _finish() -> void:
