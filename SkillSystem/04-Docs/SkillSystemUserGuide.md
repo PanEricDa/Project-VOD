@@ -44,7 +44,9 @@ SkillSystem/
    - `Delivery`：内嵌交付配置。
 5. 在 `Delivery` 字段选择合适类型：
    - `TrackingProjectileDeliveryConfig`：生成并追踪目标的投射物；
-   - `InstantTargetDeliveryConfig`：直接对目标交付效果；
+   - `InstantTargetDeliveryConfig`：立即交付 Effect。默认 `SINGLE` 只影响已解析目标；
+     `CASTER_RADIUS` 以施法者为中心，从本次候选快照筛选指定关系和水平半径内的多个
+     目标（含 0.05 米容差，按实例去重），并对每个目标复用同一组 Effect；
    - `GroundAreaDeliveryConfig`：在目标位置生成地面区域。
 6. 只有技能确实需要特殊规则时，才在根节点下添加
    `SkillConditionBase`、`SkillCostBase` 或 `SkillEffectBase` 子组件。
@@ -85,6 +87,22 @@ SkillSystem/
 - 内嵌目标瞬发配置；
 - `HealthChangeSkillEffect` 直接子节点恢复 25 点生命；
 - 释放表现使用金白色 HolyLight 特效。
+
+### GuardianTaunt（施法者中心范围组合示例）
+
+`00-Skills/GuardianTaunt/GuardianTauntSkill.tscn`
+
+- 同样继承 `RangedSkillTemplate`：模板只提供"动画驱动的外部动作入口"骨架，
+  并不限定技能必须远程；近战触发、范围效果或纯增益技能都可以使用它；
+- 触发目标保持 Guardian 的 0.8 米近战施法距离（`cast_range` 只约束触发目标，
+  不会把范围效果半径或 AI 站位拉远）；
+- 内嵌 `InstantTargetDeliveryConfig` 且 `target_collection_mode = CASTER_RADIUS`、
+  `effect_radius = 5.0`、`affected_relations = HOSTILE`：以 Guardian 自身为圆心，
+  从本次候选快照收集水平 5 米内的全部有效敌方单位；
+- `ThreatChangeSkillEffect` 直接子节点对每个目标提交固定 200 点
+  `ThreatEvent.Kind.SKILL_BONUS` 仇恨：固定值不是强制目标，敌人是否切换目标
+  仍完全由既有仇恨值、当前目标保持和挑战者接管倍率决定；
+- 动画使用盾牌库的 `basic_cast_1`（无 Hitbox、无攻击位移的通用施法动画）。
 
 ## 6. 注意事项
 
