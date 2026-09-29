@@ -393,6 +393,15 @@ func get_post_release_hesitation_remaining() -> float:
 	return _post_release_hesitation_remaining
 
 
+## 返回角色动作层需要的只读负载快照；无近战动作组件时返回空字典。
+## 行为层只能消费此公开结果，不需知道技能场景内部的组件名称或节点路径。
+func get_action_payload() -> Dictionary:
+	for child: Node in get_children():
+		if child is MeleeSkillAction:
+			return (child as MeleeSkillAction).get_action_payload(threat_multiplier)
+	return {}
+
+
 func get_effective_cast_time() -> float:
 	var multiplier: float = 1.0
 	if (

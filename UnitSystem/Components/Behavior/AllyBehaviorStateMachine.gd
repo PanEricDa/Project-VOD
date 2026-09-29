@@ -870,8 +870,7 @@ func _on_skill_action_requested(
 	effective_cast_time: float
 ) -> void:
 	_clear_skill_approach_request()
-	var melee_action := _skill.get_node_or_null(^"MeleeAction") as MeleeSkillAction
-	var action_payload: Dictionary = melee_action.get_action_payload(_skill.threat_multiplier) if melee_action != null else {}
+	var action_payload: Dictionary = _skill.get_action_payload()
 	if is_instance_valid(target):
 		var facing: Vector3 = (
 			target.global_position - _owner_body.global_position

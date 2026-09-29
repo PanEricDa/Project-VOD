@@ -115,6 +115,7 @@ func _run_tests() -> void:
 		_finish()
 		return
 	_verify_scene_contract(scene)
+	_verify_action_payload_contract(scene)
 	_verify_targeting_and_queue(scene)
 	_verify_release_and_cooldown(scene)
 	await _verify_deferred_projectile_failure_lifecycle(scene)
@@ -157,6 +158,27 @@ func _verify_scene_contract(scene: PackedScene) -> void:
 			_has_property(skill, property_name),
 			"SkillBase exposes root property: " + String(property_name)
 		)
+	skill.queue_free()
+
+
+func _verify_action_payload_contract(scene: PackedScene) -> void:
+	var skill := scene.instantiate() as SkillBase
+	_world.add_child(skill)
+	if not skill.has_method(&"get_action_payload"):
+		_expect(false, "SkillBase offers a generic action payload API")
+		skill.queue_free()
+		return
+	_expect((skill.call(&"get_action_payload") as Dictionary).is_empty(), "skill without MeleeSkillAction has empty action payload")
+	var melee := MeleeSkillAction.new()
+	melee.name = "ArbitraryActionComponent"
+	melee.base_damage = 17.0
+	melee.power_ratio = 0.5
+	skill.threat_multiplier = 2.0
+	skill.add_child(melee)
+	var payload := skill.call(&"get_action_payload") as Dictionary
+	_expect(is_equal_approx(float(payload.get("base_damage", -1.0)), 17.0), "skill exposes melee damage through generic API")
+	_expect(is_equal_approx(float(payload.get("power_ratio", -1.0)), 0.5), "skill exposes melee power ratio through generic API")
+	_expect(is_equal_approx(float(payload.get("threat_multiplier", -1.0)), 2.0), "skill exposes threat multiplier through generic API")
 	skill.queue_free()
 
 
