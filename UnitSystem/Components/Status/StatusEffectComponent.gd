@@ -40,6 +40,8 @@ class ModifierRecord extends RefCounted:
 var _owner_unit: UnitBase
 ## 当前全部生效中的修正记录；只由本组件改写，外部只能经公开接口施加或清除效果。
 var _active_modifiers: Array[ModifierRecord] = []
+## 命名限时状态的剩余秒数；与属性修正分离，状态 ID 可供技能连锁读取。
+var _named_status_remaining: Dictionary = {}
 
 
 func _ready() -> void:
@@ -59,6 +61,7 @@ func configure_owner(owner_unit: UnitBase) -> bool:
 		return is_instance_valid(_owner_unit)
 	_disconnect_owner()
 	clear_all_modifiers()
+	clear_all_named_statuses()
 	if not is_instance_valid(owner_unit):
 		_owner_unit = null
 		return false
@@ -106,6 +109,12 @@ func apply_modifier(
 func advance_effects(delta: float) -> void:
 	if delta <= 0.0:
 		return
+	for status_id: StringName in _named_status_remaining.keys():
+		var remaining: float = maxf(float(_named_status_remaining[status_id]) - delta, 0.0)
+		if remaining <= 0.0:
+			_named_status_remaining.erase(status_id)
+		else:
+			_named_status_remaining[status_id] = remaining
 	for index: int in range(_active_modifiers.size() - 1, -1, -1):
 		var record := _active_modifiers[index]
 		if record.remaining_duration < 0.0:
@@ -129,6 +138,40 @@ func get_active_modifier_count() -> int:
 	return _active_modifiers.size()
 
 
+## 施加或刷新一个命名状态；status_id 不得为空，duration_seconds 为有限且大于零的秒数。
+## 同 ID 再次施加会把剩余时间刷新为本次时长，不叠加属性修正或状态层数。
+func apply_named_status(status_id: StringName, duration_seconds: float) -> bool:
+	if (
+		not is_instance_valid(_owner_unit)
+		or _owner_unit.is_dead()
+		or status_id == &""
+		or not is_finite(duration_seconds)
+		or duration_seconds <= 0.0
+	):
+		return false
+	_named_status_remaining[status_id] = duration_seconds
+	return true
+
+
+## 查询指定 ID 是否仍有正数剩余时间；空 ID 或已到期状态返回 false。
+func has_named_status(status_id: StringName) -> bool:
+	return status_id != &"" and _named_status_remaining.has(status_id) and float(_named_status_remaining[status_id]) > 0.0
+
+
+## 返回当前状态 ID 的副本，供一次命中的前置状态快照使用；调用方不能修改容器内部记录。
+func get_active_status_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for status_id: StringName in _named_status_remaining.keys():
+		if has_named_status(status_id):
+			ids.append(status_id)
+	return ids
+
+
+## 清空全部命名状态；死亡或更换持有单位时调用，不影响属性 Modifier。
+func clear_all_named_statuses() -> void:
+	_named_status_remaining.clear()
+
+
 ## 清理指定来源创建的全部效果。## source 必须是原始效果对象；适用于驱散、技能卸载或外部状态结束。
 func remove_modifiers_from_source(source: Object) -> void:
 	if source == null:
@@ -147,6 +190,7 @@ func clear_all_modifiers() -> void:
 
 func _on_owner_died(_source: Node) -> void:
 	clear_all_modifiers()
+	clear_all_named_statuses()
 
 
 func _remove_matching_stat(stat: ModifierStat) -> void:

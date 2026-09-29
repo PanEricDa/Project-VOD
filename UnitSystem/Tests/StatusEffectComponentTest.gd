@@ -46,6 +46,27 @@ func _run() -> void:
 	)
 	status_effects.call(&"advance_effects", 5.1)
 	_expect(is_equal_approx(unit.get_defense(), 35.0), "expired modifier restores base defense")
+	if not status_effects.has_method(&"apply_named_status"):
+		_expect(false, "StatusEffectComponent accepts a generic named status")
+		_finish()
+		return
+	_expect(bool(status_effects.call(&"apply_named_status", &"burning", 4.0)), "burning status is accepted")
+	_expect(bool(status_effects.call(&"has_named_status", &"burning")), "burning is queryable")
+	_expect((status_effects.call(&"get_active_status_ids") as Array).has(&"burning"), "status IDs are available for a pre-hit snapshot")
+	status_effects.call(&"advance_effects", 2.0)
+	_expect(bool(status_effects.call(&"apply_named_status", &"burning", 4.0)), "reapplying refreshes the status")
+	status_effects.call(&"advance_effects", 3.9)
+	_expect(bool(status_effects.call(&"has_named_status", &"burning")), "refreshed status survives old expiry")
+	status_effects.call(&"advance_effects", 0.2)
+	_expect(not bool(status_effects.call(&"has_named_status", &"burning")), "named status expires")
+	_expect(not bool(status_effects.call(&"apply_named_status", &"", 4.0)), "empty status ID is rejected")
+	_expect(not bool(status_effects.call(&"apply_named_status", &"burning", 0.0)), "zero duration is rejected")
+	_expect(not bool(status_effects.call(&"apply_named_status", &"burning", INF)), "non-finite duration is rejected")
+	_expect(bool(status_effects.call(&"apply_named_status", &"burning", 4.0)), "status can be reapplied")
+	status_effects.call(&"clear_all_modifiers")
+	_expect(bool(status_effects.call(&"has_named_status", &"burning")), "clearing modifiers does not erase named status")
+	unit.apply_damage(9999.0, unit)
+	_expect(not bool(status_effects.call(&"has_named_status", &"burning")), "death clears named status")
 
 	_finish()
 
