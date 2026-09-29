@@ -27,6 +27,7 @@ var _launch_in_progress: bool = false
 var _pending_terminal: int = PENDING_TERMINAL_NONE
 var _pending_impact_position: Vector3 = Vector3.ZERO
 var _pending_failure_reason: StringName
+var _arc_sessions: Array[ArcProjectileDeliverySession] = []
 
 
 ## 按配置真实类型执行一次交付。
@@ -38,13 +39,17 @@ func execute(
 	launch_transform: Transform3D,
 	effects: Array[SkillEffectBase]
 ) -> bool:
-	if _busy or config == null or context == null:
+	if config == null or context == null:
 		return false
 	if not launch_transform.is_finite():
 		return false
 	if not config.validate_configuration().is_empty():
 		return false
 	if not _is_context_base_valid(context):
+		return false
+	if config is ArcProjectileDeliveryConfig:
+		return _execute_arc_projectile(config as ArcProjectileDeliveryConfig, context, launch_transform, effects)
+	if _busy:
 		return false
 
 	if config is TrackingProjectileDeliveryConfig:
@@ -74,6 +79,9 @@ func execute(
 ##
 ## 瞬发和地面区域在 execute() 内已经完成，因此只有追踪投射物会长期占用 Runner。
 func cancel(reason: StringName = &"cancelled") -> void:
+	for session: ArcProjectileDeliverySession in _arc_sessions.duplicate():
+		if is_instance_valid(session):
+			session.cancel(reason)
 	if not _busy:
 		return
 	var context: SkillContext = _current_context
@@ -86,7 +94,36 @@ func cancel(reason: StringName = &"cancelled") -> void:
 
 
 func is_busy() -> bool:
-	return _busy
+	return _busy or not _arc_sessions.is_empty()
+
+
+## 为每次 Arc 发射创建互不覆盖的会话；仅转发其终结信号，不占用旧追踪投射物的单实例状态。
+func _execute_arc_projectile(
+	config: ArcProjectileDeliveryConfig,
+	context: SkillContext,
+	launch_transform: Transform3D,
+	effects: Array[SkillEffectBase]
+) -> bool:
+	var session := ArcProjectileDeliverySession.new()
+	add_child(session)
+	session.delivery_finished.connect(_on_arc_finished.bind(session))
+	session.delivery_failed.connect(_on_arc_failed.bind(session))
+	if not session.start(config, context, launch_transform, effects):
+		session.queue_free()
+		return false
+	_arc_sessions.append(session)
+	delivery_started.emit(context)
+	return true
+
+
+func _on_arc_finished(context: SkillContext, result: SkillDeliveryResult, session: ArcProjectileDeliverySession) -> void:
+	_arc_sessions.erase(session)
+	delivery_finished.emit(context, result)
+
+
+func _on_arc_failed(context: SkillContext, reason: StringName, session: ArcProjectileDeliverySession) -> void:
+	_arc_sessions.erase(session)
+	delivery_failed.emit(context, reason)
 
 
 ## 按配置的目标收集模式执行瞬发交付：逐目标、逐 Effect 应用，任一 Effect 失败即
@@ -515,6 +552,10 @@ func _find_named_entry(
 
 
 func _exit_tree() -> void:
+	for session: ArcProjectileDeliverySession in _arc_sessions.duplicate():
+		if is_instance_valid(session):
+			session.cancel(&"runner_exiting")
+	_arc_sessions.clear()
 	if is_instance_valid(_active_projectile):
 		_disconnect_projectile(_active_projectile)
 	_active_projectile = null
