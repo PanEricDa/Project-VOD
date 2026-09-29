@@ -185,16 +185,40 @@ func configure_owner(caster: Node3D, host: Node, delivery_parent: Node) -> void:
 	_delivery_parent = delivery_parent
 
 
-## 接受一次技能请求。范围外的有效目标进入 QUEUED，而不是被拒绝。
+## 接受现有普通技能请求；context 的目标和候选仍由技能自身验证，范围外目标进入 QUEUED。
+## 保留此接口供既有调用方使用，新来源统一从 activate() 进入。
 func request_skill(context: SkillContext) -> bool:
+	return activate(context)
+
+
+## 激活一个技能实例；CHARACTER_ACTION 请求角色动作，DIRECT_TRIGGER 从上下文给出的世界位置直接交付。
+## DIRECT_TRIGGER 要求显式目标及有限发射变换，仍检查本技能条件、目标、消耗和冷却。
+func activate(context: SkillContext) -> bool:
 	if _state != SkillState.READY:
 		return false
-	var prepared := _prepare_context(context)
+	if context == null:
+		return false
+	var direct: bool = context.execution_mode == SkillContext.ExecutionMode.DIRECT_TRIGGER
+	if context.execution_mode not in [
+		SkillContext.ExecutionMode.CHARACTER_ACTION,
+		SkillContext.ExecutionMode.DIRECT_TRIGGER,
+	]:
+		return false
+	if direct and (not context.explicit_target_requested or not context.activation_transform.is_finite()):
+		return false
+	var source := context.duplicate_context() as SkillContext
+	if direct:
+		source.request_source = SkillContext.RequestSource.EXPLICIT
+	var prepared := _prepare_context(source)
 	if prepared == null:
+		return false
+	if direct and not _is_target_in_cast_range(prepared.resolved_target, prepared):
 		return false
 	prepared.threat_multiplier = maxf(threat_multiplier, 0.0)
 	_current_context = prepared
 	_state = SkillState.QUEUED
+	if direct:
+		return _commit_release(prepared, prepared.activation_transform)
 	try_request_action()
 	return true
 
@@ -238,6 +262,18 @@ func release_action(launch_transform: Transform3D) -> bool:
 	if (
 		_state != SkillState.CASTING
 		or _current_context == null
+		or not launch_transform.is_finite()
+	):
+		return false
+	return _commit_release(_current_context, launch_transform)
+
+
+## 两种激活入口共用的真实释放步骤；调用方必须已通过请求预检并占用本技能实例。
+## 消耗提交失败会退还已提交部分；成功时沿用当前信号与自身冷却规则。
+func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bool:
+	if (
+		context == null
+		or context != _current_context
 		or not launch_transform.is_finite()
 		or not is_instance_valid(_delivery_runner)
 		or delivery == null
@@ -442,7 +478,7 @@ func _is_candidate_valid(candidate_value: Variant, include_range: bool) -> bool:
 	return not include_range or _is_target_in_cast_range(candidate)
 
 
-func _is_target_in_cast_range(target_value: Variant) -> bool:
+func _is_target_in_cast_range(target_value: Variant, context: SkillContext = null) -> bool:
 	if (
 		not is_instance_valid(target_value)
 		or not target_value is Node3D
@@ -450,7 +486,15 @@ func _is_target_in_cast_range(target_value: Variant) -> bool:
 	):
 		return false
 	var target := target_value as Node3D
-	var offset: Vector3 = target.global_position - _skill_owner.global_position
+	var origin: Vector3 = _skill_owner.global_position
+	var active_context := context if context != null else _current_context
+	if (
+		active_context != null
+		and active_context.execution_mode == SkillContext.ExecutionMode.DIRECT_TRIGGER
+		and active_context.activation_transform.is_finite()
+	):
+		origin = active_context.activation_transform.origin
+	var offset: Vector3 = target.global_position - origin
 	offset.y = 0.0
 	return offset.length() <= maxf(cast_range, 0.0) + 0.05
 

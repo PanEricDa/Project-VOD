@@ -14,6 +14,15 @@ var resolved_target: Node3D
 var candidate_targets: Array[Node3D] = []
 var target_position: Vector3 = Vector3.INF
 var delivery_parent: Node
+## 本次执行方式只由请求方决定，不是技能场景的固定类型；默认走角色动作和动画释放帧。
+enum ExecutionMode { CHARACTER_ACTION, DIRECT_TRIGGER }
+
+## DIRECT_TRIGGER 跳过角色动作，但仍使用技能自身的验证、消耗、交付和冷却。
+var execution_mode: int = ExecutionMode.CHARACTER_ACTION
+## 直接触发的世界发射变换；默认原点非有限，调用方必须明确填写；普通动作请求忽略此值。
+var activation_transform: Transform3D = Transform3D(Basis.IDENTITY, Vector3.INF)
+## 已经过的技能场景路径，只供触发链拒绝循环；普通施放默认为空。
+var trigger_scene_paths: Array[String] = []
 ## 请求来源只描述施放意图，与是否指定目标无关。
 ## EXPLICIT 包括玩家输入、队伍指令和脚本明确请求；AI_AUTOMATIC 表示 AI 自主选择。
 enum RequestSource { EXPLICIT, AI_AUTOMATIC }
@@ -46,6 +55,9 @@ func duplicate_context() -> RefCounted:
 	copy.delivery_parent = (
 		delivery_parent if is_instance_valid(delivery_parent) else null
 	)
+	copy.execution_mode = execution_mode
+	copy.activation_transform = activation_transform
+	copy.trigger_scene_paths.assign(trigger_scene_paths)
 	copy.request_source = request_source
 	copy.threat_multiplier = maxf(threat_multiplier, 0.0)
 	copy.explicit_target_requested = explicit_target_requested

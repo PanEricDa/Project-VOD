@@ -510,7 +510,7 @@ func _activate_pending_request() -> void:
 		return
 	var context: SkillContext = _pending_context
 	_pending_context = null
-	if not _active_skill.request_skill(context):
+	if not _active_skill.activate(context):
 		_release_active_skill()
 
 
