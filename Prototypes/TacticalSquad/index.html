@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>战场指挥 · 五人小队玩法原型</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><div><span class="eyebrow">VESTIGES OF THE DIVINE / PLAYABLE STUDY 01</span><h1>战场指挥 <span>五人小队玩法原型</span></h1></div><div class="header-actions"><button id="help">操作说明</button><button id="pause">暂停 · Space</button><button id="restart">重试本局</button></div></header>
+  <main>
+    <section class="play-column">
+      <div class="statusbar"><span id="phase">准备出发</span><span id="time">00:00</span><span id="progress">敌人 0 / 0</span><span id="engaged">交战 0</span></div>
+      <div class="arena-wrap">
+        <canvas id="arena" width="1200" height="740" tabindex="0" aria-label="战场：WASD移动，Q拉怪，E设置鼠标处交战点，单击敌人标记，Tab选择爆发区域"></canvas>
+        <div id="banner" aria-live="polite"></div>
+        <div id="overlay" class="overlay"><div class="dialog"><div class="eyebrow">拉怪 · 指挥 · 集中进攻</div><h2 id="dialog-title">由你决定，在哪里打。</h2><div id="dialog-body"></div><button id="start" class="primary">进入战场</button></div></div>
+      </div>
+      <div class="commands">
+        <button id="taunt"><kbd>Q</kbd><strong>先锋挑衅</strong><small>附近敌人跟随你 5 秒</small><span id="taunt-cd">就绪</span></button>
+        <button id="anchor"><kbd>E</kbd><strong>交战位置</strong><small>鼠标落点 · 再点确认</small><span id="anchor-state">跟随先锋</span></button>
+        <button id="follow"><kbd>F</kbd><strong>恢复跟随</strong><small>带队转移，维持各自职责</small><span>移动战线</span></button>
+        <button id="burst"><kbd>Tab</kbd><strong>集中爆发</strong><small>慢速选择区域 · 单击确认</small><span id="burst-cd">45 专注</span></button>
+      </div>
+      <div class="hint"><span><b>WASD</b> 移动　<b>单击敌人</b> 优先击杀　<b>右键地面</b> 交战点　<b>Esc</b> 取消</span><label><input type="checkbox" id="threat-lines"> 显示仇恨连线</label></div>
+    </section>
+    <aside>
+      <section class="panel focus-panel"><div class="section-title">队伍专注 <strong id="focus-value">80 / 100</strong></div><div class="meter"><div id="focus-fill"></div></div><p>有效伤害与击杀恢复专注。空等不恢复；爆发命中不返还专注。</p></section>
+      <section class="panel"><div class="section-title">队伍 <span>1 名先锋 + 4 名 AI</span></div><div id="party"></div></section>
+      <section class="panel"><div class="section-title">本轮判断</div><p id="advice">将近战引向队伍，远程会留在射程内。</p><div id="preview"></div></section>
+      <section class="panel config"><div class="section-title">实验设置</div><label>战斗预设<select id="scenario"><option value="skirmish">01 · 普通敌群 / 一次兑现</option><option value="mixed" selected>02 · 混合合波 / 选择优先级</option><option value="endurance">03 · 多轮战斗 / 转移阵地</option></select></label><label>敌人生命 <output id="hp-label">1.0×</output><input id="hp-scale" type="range" min="0.6" max="2" step="0.1" value="1"></label><label>爆发伤害 <output id="damage-label">1.0×</output><input id="damage-scale" type="range" min="0.5" max="2" step="0.1" value="1"></label><button id="apply">应用设置并重新开始</button><p>预设与倍率重开生效。数值仅用于验证节奏，不代表正式平衡。</p></section>
+      <section class="panel"><div class="section-title">战场记录</div><div id="log" aria-live="polite"></div></section>
+    </aside>
+  </main>
+  <footer>独立 HTML 玩法实验 · 不接入或修改 Godot 战斗逻辑 <span>青色：先锋　蓝：坦克　绿：治疗　紫 / 金：输出　红 / 橙：敌人</span></footer>
+  <script src="simulation.js"></script><script src="app.js"></script>
+</body>
+</html>

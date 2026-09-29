@@ -3,6 +3,8 @@
 [ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
 [ext_resource type="Script" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_delivery"]
 [ext_resource type="Script" path="res://SkillSystem/03-Extensions/ThreatChangeSkillEffect.gd" id="3_threat"]
+[ext_resource type="PackedScene" path="res://SkillSystem/03-Extensions/Conditions/GuardianTauntNeededCondition.tscn" id="4_condition"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/GuardianTaunt/GuardianTauntReleaseEffect.tscn" id="5_release"]
 
 [sub_resource type="Resource" id="Resource_instant_radius"]
 resource_local_to_scene = true
@@ -27,8 +29,12 @@ automatic_cast_enabled = true
 decision_delay_min = 0.0
 decision_delay_max = 0.0
 extra_hesitation_chance = 0.0
+release_effect_scene = ExtResource("5_release")
+release_effect_anchor = 3
 delivery = SubResource("Resource_instant_radius")
 
 [node name="ThreatEffect" type="Node" parent="." index="2"]
 script = ExtResource("3_threat")
 threat_amount = 200.0
+
+[node name="GuardianTauntNeededCondition" parent="." instance=ExtResource("4_condition")]

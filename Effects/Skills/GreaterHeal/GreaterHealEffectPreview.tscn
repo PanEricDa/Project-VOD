@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://j5yvagij47fv"]
+
+[ext_resource type="Script" path="res://Effects/Skills/GreaterHeal/GreaterHealEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" uid="uid://2bmdc06xpmka" path="res://Effects/Skills/GreaterHeal/GreaterHealEffect.tscn" id="2_effect"]
+[ext_resource type="Material" path="res://Materials/MatGridTiffanyBlue.tres" id="3_target"]
+[ext_resource type="Material" path="res://Materials/MatGridLightBrown.tres" id="4_ground"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.025, 0.03, 0.045, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.42, 0.46, 0.56, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 3
+
+[node name="GreaterHealEffectPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -30, 0)
+light_energy = 0.55
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+position = Vector3(0, -0.05, 0)
+material_override = ExtResource("4_ground")
+size = Vector3(4, 0.1, 4)
+use_collision = true
+
+[node name="PreviewTarget" type="Node3D" parent="."]
+
+[node name="Body" type="CSGCylinder3D" parent="PreviewTarget"]
+position = Vector3(0, 0.65, 0)
+material_override = ExtResource("3_target")
+radius = 0.28
+height = 1.3
+
+[node name="GreaterHealEffect" parent="PreviewTarget" instance=ExtResource("2_effect")]
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 42.0
+near = 0.05
+far = 50.0

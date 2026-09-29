@@ -30,6 +30,9 @@ threat_takeover_ratio = 1.05
 threat_action_suppression_at_125 = 0.0
 hit_movement_lock_duration = 0.04
 
+[node name="SkillHost" parent="." index="0" node_paths=PackedStringArray("regular_skills")]
+regular_skills = [NodePath("SkillSocket/GuardianShieldSkill"), NodePath("SkillSocket/GuardianTauntSkill")]
+
 [node name="GuardianShieldSkill" parent="SkillHost/SkillSocket" index="0" unique_id=2125788544 instance=ExtResource("5_skill")]
 delivery = SubResource("Resource_p24kn")
 

@@ -14,11 +14,16 @@ var resolved_target: Node3D
 var candidate_targets: Array[Node3D] = []
 var target_position: Vector3 = Vector3.INF
 var delivery_parent: Node
-var request_source: int = 0
+## 请求来源只描述施放意图，与是否指定目标无关。
+## EXPLICIT 包括玩家输入、队伍指令和脚本明确请求；AI_AUTOMATIC 表示 AI 自主选择。
+enum RequestSource { EXPLICIT, AI_AUTOMATIC }
+
+## 默认显式请求；自动选择入口必须写入 AI_AUTOMATIC，供条件适用范围判断。
+var request_source: int = RequestSource.EXPLICIT
 ## 本次请求快照携带的伤害仇恨倍率。## 由 SkillBase 在请求进入队列时写入；只供伤害交付读取，不会改变伤害数值、治疗数值或目标选择。## 默认 1.0 兼容所有未配置额外仇恨的技能。
 var threat_multiplier: float = 1.0
 ## true 表示调用方已经明确指定本次目标，SkillBase 只验证而不重新执行自动选择。
-## false 表示本次请求来自 AI 自动决策，需要依据技能自身的选择模式解析候选。
+## false 表示依据技能自身的选择模式解析候选；它不代表请求一定来自 AI。
 var explicit_target_requested: bool = false
 
 

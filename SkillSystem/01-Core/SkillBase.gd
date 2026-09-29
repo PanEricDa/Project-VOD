@@ -135,8 +135,8 @@ var _skill_host: Node
 var _delivery_parent: Node
 var _current_context: SkillContext
 var _cooldown_remaining: float = 0.0
-## 成功释放后、独立技能冷却开始前的剩余等待时间，单位为秒。
-## 此值仅由 SkillBase 维护，避免 SkillHost 因等待而持有未开始施法的活动技能。
+## AI 自动施放成功后、独立技能冷却开始前的剩余等待时间，单位为秒。
+## 显式请求不进入此状态；该值仅由 SkillBase 维护，且不会占用 SkillHost 活动技能槽。
 var _post_release_hesitation_remaining: float = 0.0
 var _last_action_transform: Transform3D = Transform3D.IDENTITY
 var _runtime_effect_instances: Array[Node] = []
@@ -286,7 +286,10 @@ func release_action(launch_transform: Transform3D) -> bool:
 	_state = SkillState.RELEASED
 	delivery_started.emit(released_context)
 	_current_context = null
-	_start_post_release_hesitation()
+	if released_context.request_source == SkillContext.RequestSource.AI_AUTOMATIC:
+		_start_post_release_hesitation()
+	else:
+		_start_cooldown()
 	return true
 
 
@@ -348,7 +351,7 @@ func get_cooldown_remaining() -> float:
 	return _cooldown_remaining
 
 
-## 返回成功释放后、独立技能冷却开始前的剩余犹豫时间，单位为秒。
+## 返回 AI 自动施放成功后、独立技能冷却开始前的剩余犹豫时间，单位为秒。
 ## 非释放后等待状态时安全返回零；调用方只可读取，不能借此修改技能状态。
 func get_post_release_hesitation_remaining() -> float:
 	return _post_release_hesitation_remaining
@@ -386,6 +389,8 @@ func _prepare_context(source: SkillContext) -> SkillContext:
 	if not _is_candidate_valid(prepared.resolved_target, false):
 		return null
 	for condition: SkillConditionBase in _collect_conditions():
+		if not condition.applies_to(prepared):
+			continue
 		if not condition.evaluate(prepared):
 			return null
 	for cost: SkillCostBase in _collect_costs():

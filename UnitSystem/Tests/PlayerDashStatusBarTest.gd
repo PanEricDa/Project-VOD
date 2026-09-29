@@ -50,6 +50,8 @@ func _run() -> void:
 		"dash bar uses the approved pale yellow fill"
 	)
 	_expect(not bar.show_percentage, "dash bar does not display text")
+	var separator_overlay := bar.get_node_or_null("SeparatorOverlay") as Control
+	_expect(separator_overlay != null, "dash bar owns a visual separator overlay")
 
 	_expect(bar.has_method(&"bind_player"), "bind_player is public")
 	_expect(bar.has_method(&"unbind_player"), "unbind_player is public")
@@ -60,6 +62,44 @@ func _run() -> void:
 	_expect(bar.visible and bool(bar.call(&"is_bound")), "valid player reveals dash bar")
 	_expect(is_equal_approx(bar.max_value, float(player.get_dash_charge_capacity())), "bar maximum directly mirrors business capacity")
 	_expect(is_equal_approx(bar.value, player.get_dash_charge_progress()), "bar directly mirrors final business progress")
+	if separator_overlay != null:
+		_expect(separator_overlay.mouse_filter == Control.MOUSE_FILTER_IGNORE, "separator overlay ignores input")
+		_expect(separator_overlay.get_child_count() == 1, "two dash charges show one separator")
+		var first_separator := separator_overlay.get_child(0) as ColorRect
+		_expect(first_separator != null, "dash separator is a color rectangle")
+		if first_separator != null:
+			_expect(first_separator.color.is_equal_approx(Color.BLACK), "dash separator is black")
+			_expect(is_equal_approx(first_separator.anchor_left, 0.5), "two charges are divided equally")
+			_expect(is_equal_approx(first_separator.anchor_right, 0.5), "separator keeps a fixed visual width")
+
+	player.maximum_consecutive_dashes = 3
+	await process_frame
+	await process_frame
+	_expect(is_equal_approx(bar.max_value, 3.0), "runtime capacity change updates the bar maximum")
+	if separator_overlay != null:
+		_expect(separator_overlay.get_child_count() == 2, "three dash charges show two separators")
+		var one_third_separator := separator_overlay.get_child(0) as ColorRect
+		var two_thirds_separator := separator_overlay.get_child(1) as ColorRect
+		_expect(
+			one_third_separator != null
+			and is_equal_approx(one_third_separator.anchor_left, 1.0 / 3.0),
+			"first separator marks one third"
+		)
+		_expect(
+			two_thirds_separator != null
+			and is_equal_approx(two_thirds_separator.anchor_left, 2.0 / 3.0),
+			"second separator marks two thirds"
+		)
+
+	player.maximum_consecutive_dashes = 1
+	await process_frame
+	await process_frame
+	if separator_overlay != null:
+		_expect(separator_overlay.get_child_count() == 0, "one dash charge shows no internal separator")
+
+	player.maximum_consecutive_dashes = 2
+	await process_frame
+	await process_frame
 
 	player._start_dash(Vector3.FORWARD)
 	player._finish_dash(Vector3.ZERO)

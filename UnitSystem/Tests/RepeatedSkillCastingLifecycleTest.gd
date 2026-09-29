@@ -98,6 +98,9 @@ func _run() -> void:
 	holy_light.delivery_started.connect(
 		func(_context: SkillContext) -> void:
 			_priest_release_count += 1
+			# 条件化治疗不会再对满血目标空放；每次真实治疗后重新制造等量缺口，
+			# 才能持续压力测试动作槽和移动锁的长期归还。
+			friendly.apply_damage(25.0, enemy)
 	)
 
 	var previous_total: int = 0

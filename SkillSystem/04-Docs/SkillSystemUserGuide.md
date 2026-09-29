@@ -106,6 +106,58 @@ SkillSystem/
 
 ## 6. 注意事项
 
+### 角色技能槽配置
+
+在角色源场景中打开 `SkillHost`。先将技能 `.tscn` 实例化为其 `SkillSocket`
+的直接子节点，再在 `Skill Slots` 分组中把该技能节点拖入 `Regular Skills`
+数组。默认有两个常规槽，可留空或扩充；数组下标就是技能栏槽号。`Finisher
+Skill` 是独立的可空终结技槽，当前角色尚未配置终结技，也没有爆发执行器。
+
+Host 自动注册 `SkillSocket` 下的技能；注册表示技能被 Host 管理，只有装入
+有效常规槽才会被普通 AI 选择或通过 `request_skill()` 明确请求。普通 AI
+继续根据技能自己的 `automatic_cast_enabled`、Condition、冷却和 `ai_priority`
+决定何时释放；相同优先级仍按技能注册顺序选择。未装备技能和终结技不会
+影响日常站位距离。正在施放的技能仍以自身距离为准。
+
+`request_finisher()` 仅请求已装备的终结技，继续遵守原有目标、条件、动作
+占用及冷却合法性。本阶段只提供入口，不执行连击评分或冷却豁免。策划
+无需为普通爆发另建技能实例：未来同一常规技能可在连击中重复选择，仍
+共用其运行时状态和冷却。
+
+空槽合法。重复引用同一技能时，前面的常规槽生效；终结槽与常规槽冲突
+时常规槽生效。跨角色引用、非 `SkillSocket` 子节点、未注册引用均无效。
+Inspector 的配置警告会指出需修复的槽位。本阶段只支持编辑器装配，
+不提供战斗中换装。
+
+### 条件适用范围
+
+条件组件作为技能根节点的直接子节点挂载。每个 `SkillConditionBase` 的 Inspector
+提供“仅自动施放”（默认）和“所有施放”两种适用范围。
+前者只限制 AI 自主请求；后者同时约束玩家、队伍指令和脚本的显式请求。
+多个适用于当前请求的条件必须全部通过；跳过软条件不会跳过目标、冷却或消耗检查。
+
+`SkillHost.request_best_skill()` 自动标记 `AI_AUTOMATIC`；`request_skill()` 默认
+标记 `EXPLICIT`。直接构造 `SkillContext` 的自主决策调用方也必须设置
+`request_source = SkillContext.RequestSource.AI_AUTOMATIC`。
+请求来源与 `explicit_target_requested` 独立，后者只控制目标解析方式。
+只有 `AI_AUTOMATIC` 请求会在成功释放后结算 AI 犹豫时间；`EXPLICIT`
+请求直接开始技能自身冷却，避免玩家或队伍指令被 AI 决策节奏延迟。
+
+可复用组件 `res://SkillSystem/03-Extensions/Conditions/TargetHealthCondition.tscn`
+检查已选中技能目标的生命比例。拖入技能根节点下后，在其 Inspector 设置
+`Health Threshold Percent`（百分比，0～100）：目标生命必须严格低于该值才通过。
+HolyLight 已挂载此组件，默认 100%，表示受伤才自动治疗；默认适用范围为“仅自动施放”。
+例如设为 70 时，生命等于或高于 70% 不通过。该组件不更换现有选中的目标。
+
+`GuardianTauntNeededCondition.tscn` 是 Guardian 群体嘲讽的专用自动施放条件，
+没有额外 Inspector 参数。它直接复用父技能 `CASTER_RADIUS` Delivery 的作用半径；
+范围内至少一个敌人锁定了 Guardian 之外的有效友方时通过。玩家与 AI 友方等价，
+敌人已经锁定 Guardian、没有锁定目标、锁定目标已死亡或敌人在范围外时均不通过。
+
+Guardian 嘲讽继续复用盾牌武器的通用 `basic_cast_1` 动作，并在动作的
+`release_action` 标记处生成 `GuardianTauntReleaseEffect.tscn`。特效锚定施法者脚下，
+以0.5秒橙红冲击环、中心爆发和一次性粒子表达瞬时5米范围；视觉消失不代表仇恨被移除。
+
 - 不再为每个技能维护独立 Definition `.tres` 和 Delivery `.tscn`。
 - `DeliveryConfig` 应保存在技能场景内部，不要另存为第二份人工配置资产。
 - 投射物发射必须使用动作控制器提供的最新世界 `Transform3D`，不得从技能

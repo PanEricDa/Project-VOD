@@ -1,6 +1,6 @@
 # 角色技能槽设计
 
-状态：对话方案已确认；书面规格待审阅。本文不代表已实现。
+状态：核心书面规格已获用户确认；技能槽实现已进入验证阶段。实际结果以配套计划的实施记录为准。
 
 ## 1. 目标与边界
 
@@ -99,3 +99,68 @@ Host 提供以下能力，具体请求参数沿用既有请求上下文约定：
 书面规格审阅后，用 writing-plans 拆分测试驱动任务，明确文件、接口签名及运行命令。执行时先记录现有测试基线，再添加失败测试、实现、迁移和回归验证。现有未提交改动须完整保留；不把其他工作混入本功能提交。
 
 本设计不承诺爆发系统已可运行；它提供的是后续技能扩充和连击选择所需的统一装备入口。
+
+## 10. 详细接口与调用流程
+
+沿用 `request_skill` 的现有签名；只在查找技能后增加有效常规装备资格判断。新增终结技入口签名：
+
+```gdscript
+func request_finisher(
+    target: Node3D,
+    candidate_targets: Array[Node3D] = [],
+    target_position: Vector3 = Vector3.INF
+) -> bool
+```
+
+target 是指定目标，允许 null 进入既有目标解析而非保证可施放；candidate_targets 是本次候选快照，空数组不额外触发全局搜索；target_position 为世界落点，INF 表示未指定。返回 true 仅表示请求被接受，不表示已释放或命中。来源固定为 EXPLICIT，不对调用者暴露 AI_AUTOMATIC 选项。
+
+常规显式请求与终结技请求在装备检查后，共用一个内部入口：
+
+```gdscript
+func _request_resolved_skill(
+    skill: SkillBase,
+    target: Node3D,
+    candidate_targets: Array[Node3D],
+    target_position: Vector3,
+    source: int
+) -> bool
+```
+
+该入口只复用现有 `_can_start_request`、`_create_context`、`can_request`、`_begin_decision`；不重写施放状态机，不新增请求来源枚举。显式目标标志仍按现有显式入口处理，source 则决定 Condition 的适用范围。AI 自动选择继续使用自己的候选快照和非显式目标上下文。
+
+读取槽位的内部校验采用先检查对象存活，再检查父节点、注册资格的顺序；queued-for-deletion 对象也视为无效。不对已释放引用先做类型强转或读取属性。注册列表的遍历与退出断连路径同步防护已释放对象，避免槽位查询安全、Host 退出却报错。
+
+自动选技仍是最高 ai_priority 优先；同优先级保留现有注册顺序的先到者，不能因调整槽位顺序产生新的 AI 权重。槽位只控制装备资格和界面位置。
+
+站位范围区分两种情况：无活动技能时，仅从自动施放开启的有效常规装备中按既有优先级选取，不检查冷却或 Condition；存在活动技能时，保留当前活动技能范围优先的规则，包括正在执行的终结技。这不让终结技影响平时站位，而是避免正在施放时使用错误距离。没有有效自动常规技能时返回 0.0，沿用调用方既有回退。
+
+## 11. 配置生命周期与序列化
+
+两个字段归属 Host，不向 UnitBase、AllyBase 或具体职业脚本复制。基础 Host 默认两个空槽；Archer、Saber 继承默认值，不为表达空槽重复覆盖场景。
+
+编辑器保存的是节点引用关系；运行时每个角色实例解析到自己的子节点，不将节点引用装入共享 Resource。实施时必须实际保存、重载与双实例验证，不将手写场景文本可解析视为引用正确。
+
+字段 setter 更新配置警告时须考虑节点尚未入树。数组元素编辑还需覆盖 Inspector 的实际更新路径，不假定只有整个数组赋值才会变化。优先使用字段 setter 延迟刷新警告，并通过实际 Inspector 编辑验证数组单元素修改、数组缩容以及引用节点移除。如果单元素修改不经过 setter，则只在编辑器模式的 Host 中比较槽位引用快照，变化时刷新警告；不新增 Inspector 插件，不让运行时承担编辑器轮询。
+
+公开槽位读取接口面向运行时，在自动发现完成或手工注册后使用；编辑器配置警告使用独立的结构检查，不调用依赖运行时注册的读取接口。装配完成后不提供换装 API；防御性处理释放或注销不等于支持战斗中换装。
+
+重复普通引用以第一个位置为准；普通与终结技冲突时普通优先。警告应为简体中文，包含槽号或技能名和修复方向。删除节点后被编辑器清空成 null 的槽按合法空槽处理，不声称能追踪已丢失的引用历史。
+
+## 12. 文件责任与兼容性
+
+| 文件 | 本次责任 |
+| --- | --- |
+| SkillSystem/01-Core/SkillHostComponent.gd | 槽位字段、读取校验、请求边界、AI 候选与常规站位过滤 |
+| UnitSystem/AI/Ally/Units/Guardian.tscn | 引用现有护盾和嘲讽节点 |
+| UnitSystem/AI/Ally/Units/Priest.tscn | 引用现有两个治疗节点，保留 Delivery 覆盖 |
+| UnitSystem/AI/Ally/Units/Caster.tscn | 引用现有 Firebolt 节点 |
+| SkillSystem/05-Tests/SkillSlotContractTest.gd（新增） | 默认槽、读取、校验、生命周期、编辑器警告契约 |
+| SkillSystem/05-Tests/SkillSlotRoutingTest.gd（新增） | AI、显式请求、终结技入口及站位规则 |
+| UnitSystem/Tests/CharacterSkillSlotAssemblyTest.gd（新增） | 角色装配、保存重载、双实例隔离 |
+| SkillSystem/04-Docs/SkillSystemUserGuide.md | 策划装配流程、接口说明与迁移注意事项 |
+
+已有 Host 测试和运行时注入技能的测试夹具应补充显式装槽。直接测试 SkillBase 的夹具不强行加入 Host。只需给夹具补装备，不放宽原有行为断言。
+
+本次不新增正式 .tres/.res，不需要槽位资源 UID。新增 .gd 的 .uid 由 Godot 生成并随对应脚本交付；如果实施中确有必要创建正式资源，必须遵守 AGENTS.md 的 ResourceSaver、有效 UID 及强类型索引验证要求。
+
+实施计划：[角色技能槽实现计划](../Plans/2026-09-29-character-skill-slots-implementation-plan.md)。

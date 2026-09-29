@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dgt6rc287fkv8"]
+
+[ext_resource type="Script" path="res://SkillSystem/03-Extensions/Conditions/GuardianTauntNeededCondition.gd" id="1_condition"]
+
+[node name="GuardianTauntNeededCondition" type="Node"]
+script = ExtResource("1_condition")

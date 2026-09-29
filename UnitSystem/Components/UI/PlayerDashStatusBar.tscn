@@ -1,6 +1,6 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://b36mekjgfwjx1"]
 
-[ext_resource type="Script" path="res://UnitSystem/Components/UI/PlayerDashStatusBar.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://of6upf0agog7" path="res://UnitSystem/Components/UI/PlayerDashStatusBar.gd" id="1_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_background"]
 bg_color = Color(0.18, 0.15, 0.06, 0.65)
@@ -16,15 +16,21 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[node name="PlayerDashStatusBar" type="ProgressBar"]
-visible = false
+[node name="PlayerDashStatusBar" type="ProgressBar" unique_id=480829809]
 custom_minimum_size = Vector2(0, 8)
 mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_background")
 theme_override_styles/fill = SubResource("StyleBoxFlat_fill")
-min_value = 0.0
 max_value = 1.0
 step = 0.0
-value = 0.0
 show_percentage = false
 script = ExtResource("1_script")
+
+[node name="SeparatorOverlay" type="Control" parent="." unique_id=1681009401]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

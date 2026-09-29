@@ -113,6 +113,8 @@ func _run_test() -> void:
 	skill.add_child(RecordingEffect.new())
 	socket.add_child(skill)
 	host.call("discover_skills")
+	var equipped_slots: Array[SkillBase] = [skill as SkillBase, null]
+	(host as SkillHostComponent).regular_skills = equipped_slots
 
 	_expect(
 		(host.call("get_registered_skills") as Array).size() == 1,

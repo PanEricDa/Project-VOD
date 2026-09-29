@@ -1,0 +1,90 @@
+[gd_scene format=3 uid="uid://dood1vd6opsa3"]
+
+[ext_resource type="Script" path="res://Effects/Skills/GuardianTaunt/GuardianTauntReleaseEffectPreview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://Effects/Skills/GuardianTaunt/GuardianTauntReleaseEffect.tscn" id="2_effect"]
+
+[sub_resource type="Environment" id="PreviewEnvironment"]
+background_mode = 1
+background_color = Color(0.018, 0.022, 0.032, 1)
+ambient_light_source = 3
+ambient_light_color = Color(0.42, 0.45, 0.52, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 3
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.11, 0.12, 0.15, 1)
+roughness = 0.92
+
+[sub_resource type="TorusMesh" id="ReferenceMesh"]
+inner_radius = 4.94
+outer_radius = 5.0
+rings = 12
+ring_segments = 64
+
+[sub_resource type="StandardMaterial3D" id="ReferenceMaterial"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.45, 0.58, 0.72, 0.24)
+
+[sub_resource type="CylinderMesh" id="GuardianMesh"]
+top_radius = 0.28
+bottom_radius = 0.35
+height = 1.4
+radial_segments = 20
+
+[sub_resource type="StandardMaterial3D" id="GuardianMaterial"]
+albedo_color = Color(0.72, 0.59, 0.24, 1)
+metallic = 0.15
+roughness = 0.68
+
+[sub_resource type="BoxMesh" id="ShieldMesh"]
+size = Vector3(0.65, 0.85, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="ShieldMaterial"]
+albedo_color = Color(0.22, 0.48, 0.68, 1)
+metallic = 0.35
+roughness = 0.48
+
+[node name="GuardianTauntReleaseEffectPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("PreviewEnvironment")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-58, -32, 0)
+light_energy = 0.72
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+position = Vector3(0, -0.06, 0)
+material_override = SubResource("GroundMaterial")
+size = Vector3(12, 0.1, 12)
+
+[node name="RangeReference" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.012, 0)
+cast_shadow = 0
+mesh = SubResource("ReferenceMesh")
+material_override = SubResource("ReferenceMaterial")
+
+[node name="PreviewGuardian" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="PreviewGuardian"]
+position = Vector3(0, 0.7, 0)
+mesh = SubResource("GuardianMesh")
+material_override = SubResource("GuardianMaterial")
+
+[node name="Shield" type="MeshInstance3D" parent="PreviewGuardian"]
+position = Vector3(0.38, 0.72, -0.28)
+rotation_degrees = Vector3(0, -25, 0)
+mesh = SubResource("ShieldMesh")
+material_override = SubResource("ShieldMaterial")
+
+[node name="GuardianTauntReleaseEffect" parent="PreviewGuardian" instance=ExtResource("2_effect")]
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 48.0
+near = 0.05
+far = 60.0

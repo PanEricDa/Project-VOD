@@ -38,6 +38,9 @@ dash_cooldown = 3.0
 dash_acceleration = 35.1
 rotation_speed = 5.0
 
+[node name="SkillHost" parent="." index="0" node_paths=PackedStringArray("regular_skills")]
+regular_skills = [NodePath("SkillSocket/FireboltSkill"), null]
+
 [node name="FireboltSkill" parent="SkillHost/SkillSocket" index="0" unique_id=165098916 instance=ExtResource("4_1dym3")]
 delivery = SubResource("Resource_xggor")
 

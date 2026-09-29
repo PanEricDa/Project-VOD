@@ -28,6 +28,20 @@ signal global_cooldown_finished()
 ## 开启后将本节点的 Node3D 父节点作为施法者自动注入；关闭用于由外部显式指定施法者的特殊装配。
 @export var auto_configure_parent_owner: bool = true
 
+@export_category("Skill Slots")
+## 常规技能节点引用；数组索引即槽号，默认两个空槽。只影响本单位的普通 AI、显式常规请求与后续爆发选技，不修改技能自身配置。
+@export var regular_skills: Array[SkillBase] = [null, null]:
+	set(value):
+		regular_skills = value
+		if is_inside_tree():
+			update_configuration_warnings()
+## 终结技节点引用；默认空，不参加普通 AI 选择，仅供本单位专用请求入口使用。
+@export var finisher_skill: SkillBase = null:
+	set(value):
+		finisher_skill = value
+		if is_inside_tree():
+			update_configuration_warnings()
+
 @export_category("Global Cooldown")
 @export_range(0.0, 30.0, 0.05, "or_greater")
 ## Host 独立管理公共冷却时使用的基础时长，单位为秒；由 Ally 行为层接管时该值不会参与实际计时。
@@ -46,6 +60,7 @@ var _global_cooldown_remaining: float = 0.0
 var _movement_locked: bool = false
 ## 由单位装配层注入的只读感知候选提供者；Host 不依赖具体 AI 组件类型。
 var _target_candidate_provider: Node
+var _editor_slot_signature: PackedInt64Array
 
 
 func _ready() -> void:
@@ -77,6 +92,19 @@ func _physics_process(delta: float) -> void:
 		_active_skill.try_request_action()
 
 
+func _process(_delta: float) -> void:
+	if not Engine.is_editor_hint():
+		return
+	var signature := PackedInt64Array()
+	signature.append(regular_skills.size())
+	for skill_value: Variant in regular_skills:
+		signature.append(skill_value.get_instance_id() if is_instance_valid(skill_value) else 0)
+	signature.append(finisher_skill.get_instance_id() if is_instance_valid(finisher_skill) else 0)
+	if signature != _editor_slot_signature:
+		_editor_slot_signature = signature
+		update_configuration_warnings()
+
+
 func configure_owner(caster: Node3D, delivery_parent: Node = null) -> void:
 	_caster = caster
 	_delivery_parent = delivery_parent
@@ -89,13 +117,16 @@ func configure_owner(caster: Node3D, delivery_parent: Node = null) -> void:
 				else tree.root
 			)
 	for skill: SkillBase in _registered_skills:
-		skill.configure_owner(_caster, self, _delivery_parent)
+		if is_instance_valid(skill) and not skill.is_queued_for_deletion():
+			skill.configure_owner(_caster, self, _delivery_parent)
 
 
 func register_skill(skill: SkillBase) -> bool:
-	if skill == null or skill in _registered_skills:
+	if not is_instance_valid(skill) or skill.is_queued_for_deletion() or skill in _registered_skills:
 		return false
 	for registered: SkillBase in _registered_skills:
+		if not is_instance_valid(registered) or registered.is_queued_for_deletion():
+			continue
 		if registered.skill_id == skill.skill_id:
 			return false
 	_registered_skills.append(skill)
@@ -107,7 +138,7 @@ func register_skill(skill: SkillBase) -> bool:
 
 
 func unregister_skill(skill: SkillBase) -> bool:
-	if skill == null or skill not in _registered_skills:
+	if not is_instance_valid(skill) or skill.is_queued_for_deletion() or skill not in _registered_skills:
 		return false
 	if _active_skill == skill:
 		cancel_active_skill(&"skill_unregistered")
@@ -128,18 +159,96 @@ func discover_skills() -> void:
 			register_skill(child as SkillBase)
 
 
+## 读取从零开始的常规槽号；越界、空槽、跨 Host、重复或未注册引用均返回 null，原索引不压缩。
+func get_regular_skill(slot_index: int) -> SkillBase:
+	if slot_index < 0 or slot_index >= regular_skills.size():
+		return null
+	var skill_value: Variant = regular_skills[slot_index]
+	if not is_instance_valid(skill_value):
+		return null
+	var skill := skill_value as SkillBase
+	if not _is_slot_skill_valid(skill):
+		return null
+	for prior_index: int in range(slot_index):
+		if regular_skills[prior_index] == skill:
+			return null
+	return skill
+
+
+## 按槽号顺序返回本 Host 有效常规技能的列表副本；供普通 AI 使用，列表下标不是原槽号。
+func get_equipped_regular_skills() -> Array[SkillBase]:
+	var result: Array[SkillBase] = []
+	for slot_index: int in range(regular_skills.size()):
+		var skill := get_regular_skill(slot_index)
+		if skill != null:
+			result.append(skill)
+	return result
+
+
+## 读取本 Host 有效终结技；与任何常规槽冲突或未注册时返回 null。
+func get_finisher_skill() -> SkillBase:
+	if not _is_slot_skill_valid(finisher_skill):
+		return null
+	for slot_index: int in range(regular_skills.size()):
+		if get_regular_skill(slot_index) == finisher_skill:
+			return null
+	return finisher_skill
+
+
+func _is_slot_skill_structurally_valid(skill: SkillBase) -> bool:
+	if not is_instance_valid(skill) or skill.is_queued_for_deletion():
+		return false
+	var socket := get_node_or_null(^"SkillSocket")
+	return socket != null and skill.get_parent() == socket
+
+
+func _is_slot_skill_valid(skill: SkillBase) -> bool:
+	return _is_slot_skill_structurally_valid(skill) and skill in _registered_skills
+
+
+## 明确请求 skill_id 对应技能；target 为指定目标，candidate_targets 为候选快照，
+## target_position 为可选世界落点（INF 表示未指定）；source 默认 EXPLICIT，
+## 仅自主决策调用应传 AI_AUTOMATIC。所有底层合法性检查仍正常执行。
 func request_skill(
 	skill_id: StringName,
 	target: Node3D,
 	candidate_targets: Array[Node3D] = [],
 	target_position: Vector3 = Vector3.INF,
-	source: int = 0
+	source: int = SkillContext.RequestSource.EXPLICIT
 ) -> bool:
 	if not _can_start_request():
 		return false
 	var skill := _find_skill(skill_id)
+	if skill == null or skill not in get_equipped_regular_skills():
+		return false
+	return _request_resolved_skill(skill, target, candidate_targets, target_position, source)
+
+
+## 显式请求已装备终结技。target 为指定目标（可空但仍须通过技能目标规则）；candidate_targets 是本次候选快照；
+## target_position 是世界落点，INF 表示未指定。返回 true 表示请求受理，不表示技能已释放或命中。
+func request_finisher(
+	target: Node3D,
+	candidate_targets: Array[Node3D] = [],
+	target_position: Vector3 = Vector3.INF
+) -> bool:
+	if not _can_start_request():
+		return false
+	var skill := get_finisher_skill()
 	if skill == null:
 		return false
+	return _request_resolved_skill(
+		skill, target, candidate_targets, target_position,
+		SkillContext.RequestSource.EXPLICIT
+	)
+
+
+func _request_resolved_skill(
+	skill: SkillBase,
+	target: Node3D,
+	candidate_targets: Array[Node3D],
+	target_position: Vector3,
+	source: int
+) -> bool:
 	var context := _create_context(
 		target,
 		candidate_targets,
@@ -161,7 +270,12 @@ func request_best_skill(target: Node3D) -> bool:
 	var candidate_targets: Array[Node3D] = _get_candidate_snapshot()
 	var selected: SkillBase = null
 	var selected_context: SkillContext = null
-	for skill: SkillBase in _registered_skills:
+	for skill_value: Variant in _registered_skills:
+		if not is_instance_valid(skill_value):
+			continue
+		var skill := skill_value as SkillBase
+		if skill == null or skill.is_queued_for_deletion() or skill not in get_equipped_regular_skills():
+			continue
 		if not skill.automatic_cast_enabled or not skill.is_ready():
 			continue
 		# Host 只提供未经分类的候选集合。友军、敌军、自身、距离和 Conditions
@@ -170,7 +284,7 @@ func request_best_skill(target: Node3D) -> bool:
 			target,
 			candidate_targets,
 			Vector3.INF,
-			0,
+			SkillContext.RequestSource.AI_AUTOMATIC,
 			false
 		)
 		if not skill.can_request(context):
@@ -342,7 +456,12 @@ func get_preferred_cast_range() -> float:
 	if is_instance_valid(_active_skill):
 		return maxf(_active_skill.cast_range, 0.0)
 	var selected: SkillBase = null
-	for skill: SkillBase in _registered_skills:
+	for skill_value: Variant in _registered_skills:
+		if not is_instance_valid(skill_value):
+			continue
+		var skill := skill_value as SkillBase
+		if skill == null or skill.is_queued_for_deletion() or skill not in get_equipped_regular_skills():
+			continue
 		if (
 			not skill.automatic_cast_enabled
 			or (selected != null and skill.ai_priority <= selected.ai_priority)
@@ -415,7 +534,12 @@ func _create_context(
 
 
 func _find_skill(skill_id: StringName) -> SkillBase:
-	for skill: SkillBase in _registered_skills:
+	for skill_value: Variant in _registered_skills:
+		if not is_instance_valid(skill_value):
+			continue
+		var skill := skill_value as SkillBase
+		if skill == null or skill.is_queued_for_deletion():
+			continue
 		if skill.skill_id == skill_id:
 			return skill
 	return null
@@ -510,14 +634,41 @@ func _get_configuration_warnings() -> PackedStringArray:
 				continue
 			var id: StringName = (child as SkillBase).skill_id
 			if ids.has(id):
-				warnings.append("Duplicate skill ID: " + String(id))
-			ids[id] = true
+				warnings.append("技能 ID %s 重复；请为每个技能设置唯一 ID。" % String(id))
+			else:
+				ids[id] = child
+	var seen: Array[SkillBase] = []
+	for slot_index: int in range(regular_skills.size()):
+		var skill: SkillBase = regular_skills[slot_index]
+		if skill == null:
+			continue
+		if not _is_slot_skill_structurally_valid(skill):
+			warnings.append("常规槽 %d 引用了非本 SkillSocket 的技能；请清空或重新选择本单位技能。" % slot_index)
+			continue
+		if ids.get(skill.skill_id) != skill:
+			warnings.append("常规槽 %d 的技能 ID %s 与其他技能重复，运行时无法注册；请修改技能 ID。" % [slot_index, String(skill.skill_id)])
+			continue
+		if skill in seen:
+			warnings.append("常规槽 %d 重复引用同一技能；请改选其他技能或留空。" % slot_index)
+			continue
+		seen.append(skill)
+	if finisher_skill != null:
+		if not _is_slot_skill_structurally_valid(finisher_skill):
+			warnings.append("终结技槽引用了非本 SkillSocket 的技能；请清空或重新选择本单位技能。")
+		elif ids.get(finisher_skill.skill_id) != finisher_skill:
+			warnings.append("终结技槽的技能 ID %s 与其他技能重复，运行时无法注册；请修改技能 ID。" % String(finisher_skill.skill_id))
+		elif finisher_skill in seen:
+			warnings.append("终结技槽与常规槽重复引用同一技能；请改选其他技能或留空。")
 	return warnings
 
 
 func _exit_tree() -> void:
-	for skill: SkillBase in _registered_skills.duplicate():
-		_disconnect_skill(skill)
+	for skill_value: Variant in _registered_skills.duplicate():
+		if not is_instance_valid(skill_value):
+			continue
+		var skill := skill_value as SkillBase
+		if skill != null and not skill.is_queued_for_deletion():
+			_disconnect_skill(skill)
 	_registered_skills.clear()
 	_active_skill = null
 	_target_candidate_provider = null

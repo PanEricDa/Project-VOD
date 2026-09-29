@@ -7,6 +7,9 @@ extends SceneTree
 const SKILL_SCENE_PATH := (
 	"res://SkillSystem/00-Skills/GuardianTaunt/GuardianTauntSkill.tscn"
 )
+const RELEASE_EFFECT_PATH := (
+	"res://Effects/Skills/GuardianTaunt/GuardianTauntReleaseEffect.tscn"
+)
 
 var _failures: Array[String] = []
 
@@ -113,6 +116,15 @@ func _run() -> void:
 	_expect(
 		skill.get_node_or_null(^"MeleeAction") == null,
 		"Guardian Taunt has no melee action child"
+	)
+	_expect(
+		skill.release_effect_scene != null
+			and skill.release_effect_scene.resource_path == RELEASE_EFFECT_PATH,
+		"Guardian Taunt configures its distinct release effect"
+	)
+	_expect(
+		skill.release_effect_anchor == SkillBase.PresentationAnchor.CASTER_FEET,
+		"Guardian Taunt anchors its release effect at the caster feet"
 	)
 	_expect(
 		skill.get_script() != null

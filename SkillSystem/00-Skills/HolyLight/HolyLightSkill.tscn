@@ -4,8 +4,9 @@
 [ext_resource type="PackedScene" path="res://Effects/Skills/HolyLight/HolyLightHealEffect.tscn" id="2_release"]
 [ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="3_delivery"]
 [ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_heal"]
+[ext_resource type="PackedScene" uid="uid://dhe4ytordest2" path="res://SkillSystem/03-Extensions/Conditions/TargetHealthCondition.tscn" id="5_condition"]
 
-[sub_resource type="Resource" id="Resource_138o6"]
+[sub_resource type="Resource" id="Resource_2rm6s"]
 resource_local_to_scene = true
 script = ExtResource("3_delivery")
 
@@ -24,8 +25,11 @@ decision_delay_max = 2.0
 extra_hesitation_chance = 0.05
 release_effect_scene = ExtResource("2_release")
 release_effect_anchor = 1
-delivery = SubResource("Resource_138o6")
+delivery = SubResource("Resource_2rm6s")
 
 [node name="HealEffect" type="Node" parent="." index="2" unique_id=341272012]
 script = ExtResource("4_heal")
 base_amount = 25.0
+power_ratio = 1.2
+
+[node name="TargetHealthCondition" parent="." index="3" unique_id=1900026257 instance=ExtResource("5_condition")]

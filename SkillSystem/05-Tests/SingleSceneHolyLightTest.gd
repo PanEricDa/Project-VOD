@@ -86,7 +86,7 @@ func _run() -> void:
 			),
 		"HolyLight targets both the caster and friendly units"
 	)
-	_expect(is_equal_approx(skill.skill_cooldown, 1.0), "HolyLight cooldown is 1 second")
+	_expect(is_equal_approx(skill.skill_cooldown, 0.8), "HolyLight cooldown is 0.8 seconds")
 	_expect(
 		skill.target_selection_mode
 			== TargetResolver.TargetSelectionMode.LOWEST_HEALTH_RATIO,

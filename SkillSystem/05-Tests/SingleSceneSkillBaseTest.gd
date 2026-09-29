@@ -333,6 +333,7 @@ func _verify_release_and_cooldown(scene: PackedScene) -> void:
 	context.requested_target = enemy
 	context.explicit_target_requested = true
 	context.delivery_parent = _world
+	context.request_source = SkillContext.RequestSource.AI_AUTOMATIC
 	_expect(bool(skill.call("request_skill", context)), "Release test request starts")
 	var cast_transform := Transform3D(Basis.IDENTITY, Vector3(9.0, 1.0, 5.0))
 	_expect(
@@ -357,6 +358,28 @@ func _verify_release_and_cooldown(scene: PackedScene) -> void:
 	_expect(
 		is_equal_approx(float(skill.call("get_cooldown_remaining")), 3.0),
 		"Cooldown starts after the post-release hesitation ends"
+	)
+
+	# 玩家或队伍发出的显式请求不属于 AI 决策节奏，释放后应直接进入技能冷却。
+	skill.call("reset_skill")
+	context.request_source = SkillContext.RequestSource.EXPLICIT
+	_expect(bool(skill.call("request_skill", context)), "Explicit release test request starts")
+	_expect(
+		bool(skill.call("confirm_action_started", cast_transform)),
+		"Explicit action confirmation starts cast"
+	)
+	_expect(
+		bool(skill.call("release_action", release_transform)),
+		"Explicit release starts instant delivery"
+	)
+	_expect(
+		is_zero_approx(float(skill.call("get_post_release_hesitation_remaining"))),
+		"Explicit release does not enter AI post-release hesitation"
+	)
+	_expect(
+		int(skill.call("get_state")) == 5
+		and is_equal_approx(float(skill.call("get_cooldown_remaining")), 3.0),
+		"Explicit release starts cooldown immediately"
 	)
 
 	skill.queue_free()

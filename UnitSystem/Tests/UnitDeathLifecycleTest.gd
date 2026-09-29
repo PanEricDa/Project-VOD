@@ -548,6 +548,13 @@ func _register_test_skill(
 		return null
 	socket.add_child(skill)
 	_expect(host.register_skill(skill), "SkillHost registers %s" % skill_id)
+	var equipped_slots: Array[SkillBase] = host.regular_skills.duplicate()
+	var empty_slot: int = equipped_slots.find(null)
+	if empty_slot >= 0:
+		equipped_slots[empty_slot] = skill
+	else:
+		equipped_slots.append(skill)
+	host.regular_skills = equipped_slots
 	return skill
 
 
