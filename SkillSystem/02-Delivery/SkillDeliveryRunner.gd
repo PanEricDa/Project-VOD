@@ -108,6 +108,7 @@ func _execute_instant_target(
 	)
 	var result := _make_success_result(reference_target.global_position)
 	for target: Node3D in effect_targets:
+		result.current_hit = _make_hit_outcome(target, target.global_position)
 		for effect: SkillEffectBase in effects:
 			if not is_instance_valid(effect) or not effect.apply(
 				context,
@@ -331,6 +332,7 @@ func _complete_projectile_impact(impact_position: Vector3) -> void:
 	):
 		effect_targets.append(original_target)
 	for target: Node3D in effect_targets:
+		result.current_hit = _make_hit_outcome(target, impact_position)
 		result.affected_targets.append(target)
 		for effect: SkillEffectBase in _active_effects:
 			if not is_instance_valid(effect) or not effect.apply(
@@ -417,6 +419,18 @@ func _make_success_result(impact_position: Vector3) -> SkillDeliveryResult:
 	if direction.length_squared() > DIRECTION_EPSILON_SQUARED:
 		result.impact_direction = direction.normalized()
 	return result
+
+
+## 在任何效果执行前读取本目标状态，构成一次命中的独立结果；非 UnitBase 目标保持空状态快照。
+func _make_hit_outcome(target: Node3D, impact_position: Vector3) -> SkillHitOutcome:
+	var outcome := SkillHitOutcome.new()
+	outcome.target = target
+	outcome.impact_position = impact_position
+	if target is UnitBase:
+		var status_component := (target as UnitBase).get_status_effect_component()
+		if is_instance_valid(status_component):
+			outcome.statuses_before_hit.assign(status_component.get_active_status_ids())
+	return outcome
 
 
 func _clear_runtime_state() -> void:

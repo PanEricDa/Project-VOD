@@ -26,7 +26,7 @@ var power_ratio: float = 0.0
 
 func apply(
 	context: SkillContext,
-	_result: SkillDeliveryResult,
+	result: SkillDeliveryResult,
 	target: Node3D
 ) -> bool:
 	if context == null or not target is UnitBase:
@@ -35,7 +35,7 @@ func apply(
 	var unit_target := target as UnitBase
 	match operation:
 		Operation.DAMAGE:
-			CombatValueResolver.apply_damage(
+			var applied_damage: float = CombatValueResolver.apply_damage(
 				caster,
 				unit_target,
 				base_amount,
@@ -43,6 +43,8 @@ func apply(
 				1.0,
 				maxf(context.threat_multiplier, 0.0)
 			)
+			if result != null and result.current_hit != null and result.current_hit.target == target:
+				result.current_hit.actual_damage += applied_damage
 			return true
 		Operation.HEAL:
 			var applied: float = CombatValueResolver.apply_healing(
@@ -51,6 +53,8 @@ func apply(
 				base_amount,
 				power_ratio
 			)
+			if result != null and result.current_hit != null and result.current_hit.target == target:
+				result.current_hit.actual_healing += applied
 			if applied > 0.0 and context.threat_multiplier > 0.0:
 				_submit_heal_threat(applied, context, unit_target)
 			return true

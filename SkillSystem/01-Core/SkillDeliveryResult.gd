@@ -14,3 +14,5 @@ var intended_position: Vector3 = Vector3.ZERO
 var impact_position: Vector3 = Vector3.ZERO
 var impact_direction: Vector3 = Vector3.ZERO
 var failure_reason: StringName = &""
+## 当前正在执行 Effects 的单个目标结果；每目标在首个 Effect 前更新，Delivery 完成后保留最后一目标结果。
+var current_hit: SkillHitOutcome
