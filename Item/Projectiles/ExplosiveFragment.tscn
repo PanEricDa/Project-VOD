@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://baxaiswp3lvvn"]
+
+[ext_resource type="Script" path="res://Item/Projectiles/TrackingArcProjectile.gd" id="1_arc"]
+
+[sub_resource type="StandardMaterial3D" id="Material_fragment"]
+albedo_color = Color(1, 0.71, 0.12, 1)
+emission_enabled = true
+emission = Color(0.8, 0.4, 0.04, 1)
+
+[node name="ExplosiveFragment" type="Node3D"]
+script = ExtResource("1_arc")
+flight_duration = 0.22
+arc_height = 0.5
+
+[node name="FragmentVisual" type="CSGBox3D" parent="."]
+size = Vector3(0.07, 0.07, 0.22)
+material = SubResource("Material_fragment")

@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://bva8v76qriccx"]
+
+[ext_resource type="Script" path="res://Item/Projectiles/TrackingArcProjectile.gd" id="1_arc"]
+
+[sub_resource type="StandardMaterial3D" id="Material_main"]
+albedo_color = Color(1, 0.33, 0.08, 1)
+emission_enabled = true
+emission = Color(0.9, 0.2, 0.025, 1)
+
+[node name="ExplosiveArrow" type="Node3D"]
+script = ExtResource("1_arc")
+flight_duration = 0.32
+arc_height = 0.8
+
+[node name="ArrowVisual" type="CSGBox3D" parent="."]
+size = Vector3(0.09, 0.09, 0.55)
+material = SubResource("Material_main")

@@ -5,11 +5,12 @@
 [ext_resource type="Resource" uid="uid://d1ufbct3qqslr" path="res://Item/Weapon/Bow/BowData.tres" id="3_vwo0i"]
 [ext_resource type="PackedScene" uid="uid://dtta4ibdj8ihd" path="res://UnitSystem/Visuals/Ally/AllyVisual.tscn" id="4_awrw3"]
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIRangedCombatSystem.tscn" id="4_combat"]
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/ExplosiveArrow/ExplosiveArrowSkill.tscn" id="5_explosive_arrow"]
 
 [node name="Archer" unique_id=1491736132 instance=ExtResource("1_0utxq")]
 formation_position = ExtResource("2_0utxq")
 targeting_radius = 7.0
-combat_action_policy = 0
+combat_action_policy = 1
 automatic_skill_cast_enabled = true
 shared_action_cooldown_duration = 1.0
 starting_weapon = ExtResource("3_vwo0i")
@@ -22,6 +23,13 @@ defense = 3.0
 threat_action_suppression_at_125 = 0.5
 hit_movement_lock_duration = 0.1
 
+[node name="SkillHost" parent="." index="0" node_paths=PackedStringArray("regular_skills")]
+regular_skills = [NodePath("SkillSocket/ExplosiveArrowSkill"), null]
+
+[node name="ExplosiveArrowSkill" parent="SkillHost/SkillSocket" index="0" instance=ExtResource("5_explosive_arrow")]
+
 [node name="CombatSystem" parent="." index="3" unique_id=1570772978 instance=ExtResource("4_combat")]
 
 [node name="AllyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=693921659 instance=ExtResource("4_awrw3")]
+
+[editable path="SkillHost"]

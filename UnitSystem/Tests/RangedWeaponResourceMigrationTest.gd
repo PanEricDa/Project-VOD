@@ -99,6 +99,11 @@ func _validate_definition(definition: Dictionary) -> void:
 		definition["library"]
 	) as AnimationLibrary
 	_expect(
+		ResourceLoader.get_resource_uid(definition["library"])
+			== ResourceUID.text_to_id("uid://c1weyjsk4rubw"),
+		"Bow animation library retains the UID referenced by BowData and GoblinBowData"
+	)
+	_expect(
 		library != null,
 		"%s animation library must load" % weapon_name
 	)
@@ -110,10 +115,11 @@ func _validate_definition(definition: Dictionary) -> void:
 	var expected_names: Array[StringName] = [
 		&"RESET",
 		&"basic_attack_1",
+		&"basic_cast_1",
 	]
 	_expect(
 		animation_names == expected_names,
-		"%s library must contain RESET and basic_attack_1 only"
+		"%s library must contain RESET, basic_attack_1 and basic_cast_1"
 		% weapon_name
 	)
 	var reset: Animation = library.get_animation(&"RESET")

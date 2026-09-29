@@ -83,8 +83,8 @@ func _run() -> void:
 	for child: Node in skill.get_children():
 		if child is SkillEffectBase:
 			effects.append(child)
-	_expect(effects.size() == 1, "contains one direct damage effect")
-	if effects.size() == 1:
+	_expect(effects.size() == 2, "contains damage and generic burning effects")
+	if effects.size() == 2:
 		_expect(
 			int(effects[0].get("operation")) == 0,
 			"damage effect operation is DAMAGE"
@@ -100,6 +100,12 @@ func _run() -> void:
 		_expect(
 			not _has_property(effects[0], &"amount"),
 			"damage effect no longer exposes the legacy amount field"
+		)
+		_expect(
+			effects[1] is ApplyNamedStatusSkillEffect
+			and effects[1].status_id == &"burning"
+			and is_equal_approx(effects[1].duration_seconds, 4.0),
+			"second effect applies four-second burning"
 		)
 
 	var caster := (load(UNIT_SCENE_PATH) as PackedScene).instantiate() as UnitBase
@@ -188,6 +194,10 @@ func _run() -> void:
 	_expect(
 		is_equal_approx(target.get_current_health(), 90.0),
 		"Firebolt deals 10 damage: (10 + 10 * 1) * 100 / (100 + 100)"
+	)
+	_expect(
+		target.get_status_effect_component().has_named_status(&"burning"),
+		"Firebolt hit gives the target a timed burning status"
 	)
 	_expect(
 		health_changed_count[0] == 1,

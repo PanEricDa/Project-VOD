@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://d2p0pi40ftwd6"]
+
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="Script" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_delivery"]
+[ext_resource type="Script" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="3_damage"]
+
+[sub_resource type="Resource" id="InstantDelivery"]
+resource_local_to_scene = true
+script = ExtResource("2_delivery")
+
+[node name="BurningSplashSkill" instance=ExtResource("1_template")]
+skill_id = &"burning_splash"
+display_name = "Burning Splash"
+cast_range = 3.0
+base_cast_time = 0.0
+skill_cooldown = 0.0
+automatic_cast_enabled = false
+delivery = SubResource("InstantDelivery")
+
+[node name="DamageEffect" type="Node" parent="." index="2"]
+script = ExtResource("3_damage")
+operation = 0
+base_amount = 2.0
+power_ratio = 0.1
