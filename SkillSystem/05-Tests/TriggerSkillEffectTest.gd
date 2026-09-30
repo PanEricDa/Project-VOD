@@ -93,6 +93,7 @@ func _run() -> void:
 	var self_trigger := (load(TRIGGER_PATH) as Script).new() as SkillEffectBase
 	self_trigger.set("child_skill_scene", firebolt_scene)
 	parent_skill.add_child(self_trigger)
+	_expect(not self_trigger._get_configuration_warnings().is_empty(), "direct self-reference is visible as an Inspector configuration warning")
 	_expect(self_trigger.apply(context, result, hit_target), "direct self-reference safely ends without recursion")
 	_expect(world.get_children().filter(func(node: Node) -> bool: return node is SkillBase).size() == 1, "self-reference does not instantiate another skill")
 	parent_skill.free()

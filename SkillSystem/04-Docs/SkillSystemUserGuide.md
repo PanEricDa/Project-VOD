@@ -26,6 +26,9 @@ SkillSystem/
 └── 05-Tests/        自动测试
 ```
 
+同一 `SkillBase` 场景经命中触发子技能的装配方式见
+[`TriggeredSkillConfigurationGuide.md`](TriggeredSkillConfigurationGuide.md)。
+
 技能本身的美术特效继续放在 `Effects/Skills`，投射物继续放在
 `Item/Projectiles`，角色施法动画由对应角色 Visual 维护。
 
@@ -44,6 +47,7 @@ SkillSystem/
    - `Delivery`：内嵌交付配置。
 5. 在 `Delivery` 字段选择合适类型：
    - `TrackingProjectileDeliveryConfig`：生成并追踪目标的投射物；
+   - `ArcProjectileDeliveryConfig`：复用两参数 `launch(target, start_position)` 的弧线投射物；
    - `InstantTargetDeliveryConfig`：立即交付 Effect。默认 `SINGLE` 只影响已解析目标；
      `CASTER_RADIUS` 以施法者为中心，从本次候选快照筛选指定关系和水平半径内的多个
      目标（含 0.05 米容差，按实例去重），并对每个目标复用同一组 Effect；

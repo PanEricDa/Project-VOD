@@ -13,7 +13,7 @@ func _run() -> void:
 	_check_scene("Guardian", ["GuardianShieldSkill", "GuardianTauntSkill"])
 	_check_scene("Priest", ["HolyLightSkill", "GreaterHealSkill"])
 	_check_scene("Caster", ["FireboltSkill", ""])
-	_check_scene("Archer", ["", ""])
+	_check_scene("Archer", ["ExplosiveArrowSkill", ""])
 	_check_scene("Saber", ["", ""])
 	var priest_scene := load("res://UnitSystem/AI/Ally/Units/Priest.tscn") as PackedScene
 	var first := priest_scene.instantiate() as Node3D

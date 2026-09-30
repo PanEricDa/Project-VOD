@@ -50,6 +50,8 @@ func _run() -> void:
 	_expect(int(archer.combat_action_policy) == 1, "Archer prioritizes skills then uses basic attacks")
 	_expect(host.get_node_or_null(^"SkillSocket/ExplosiveArrowSkill") != null, "Archer equips main arrow in SkillSocket")
 	_expect(host.regular_skills.size() == 2 and host.regular_skills[0] is SkillBase and host.regular_skills[1] == null, "Archer has one equipped regular skill, leaving second slot open")
+	var animation_player := archer.get_node_or_null(^"Visual/AllyVisual/CharacterAnimationPlayer") as CharacterAnimationEventPlayer
+	_expect(animation_player != null and animation_player.has_animation(&"weapon/basic_cast_1"), "Archer visual receives Bow's actual cast animation")
 	var firebolt := (load("res://SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn") as PackedScene).instantiate() as SkillBase
 	root.add_child(firebolt)
 	_expect(_has_burning_effect(firebolt), "Firebolt applies generic four-second burning status")
