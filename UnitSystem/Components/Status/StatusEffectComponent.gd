@@ -21,6 +21,8 @@ enum StackingRule {
 signal modifier_changed(source: Object, stat: ModifierStat, amount: float, remaining_duration: float)
 ## 临时效果被移除、到期或因单位死亡清理时发送。## source 可能已失效，调用方不得依赖其仍处于场景树。
 signal modifier_removed(source: Object, stat: ModifierStat)
+## 命名状态新增或刷新时 active 为 true，到期、主动清除或死亡清理时为 false；status_id 为发生变化的状态标识。
+signal named_status_changed(status_id: StringName, active: bool)
 
 
 class ModifierRecord extends RefCounted:
@@ -113,6 +115,7 @@ func advance_effects(delta: float) -> void:
 		var remaining: float = maxf(float(_named_status_remaining[status_id]) - delta, 0.0)
 		if remaining <= 0.0:
 			_named_status_remaining.erase(status_id)
+			named_status_changed.emit(status_id, false)
 		else:
 			_named_status_remaining[status_id] = remaining
 	for index: int in range(_active_modifiers.size() - 1, -1, -1):
@@ -150,6 +153,7 @@ func apply_named_status(status_id: StringName, duration_seconds: float) -> bool:
 	):
 		return false
 	_named_status_remaining[status_id] = duration_seconds
+	named_status_changed.emit(status_id, true)
 	return true
 
 
@@ -167,9 +171,12 @@ func get_active_status_ids() -> Array[StringName]:
 	return ids
 
 
-## 清空全部命名状态；死亡或更换持有单位时调用，不影响属性 Modifier。
+## 清空全部命名状态并逐个发送移除信号；死亡或更换持有单位时调用，不影响属性 Modifier。
 func clear_all_named_statuses() -> void:
+	var removed_ids: Array = _named_status_remaining.keys()
 	_named_status_remaining.clear()
+	for status_id: StringName in removed_ids:
+		named_status_changed.emit(status_id, false)
 
 
 ## 清理指定来源创建的全部效果。## source 必须是原始效果对象；适用于驱散、技能卸载或外部状态结束。

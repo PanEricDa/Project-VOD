@@ -153,13 +153,13 @@ func _run() -> void:
 		"hidden health bar disables its private viewport"
 	)
 	_expect(
-		viewport.size == Vector2i(102, 22),
-		"viewport reserves a three-pixel margin around the bar for the threat outline"
+		viewport.size == Vector2i(102, 34),
+		"viewport reserves the threat outline margin and an upper debuff row"
 	)
 	health_bar.set("threat_outline_margin", 5)
 	health_bar.set("threat_outline_width", 4)
 	_expect(
-		viewport.size == Vector2i(106, 26),
+		viewport.size == Vector2i(106, 38),
 		"independent threat outline margin is configurable without changing the health bar size"
 	)
 	health_bar.call("set_threat_indicator_state", 2)

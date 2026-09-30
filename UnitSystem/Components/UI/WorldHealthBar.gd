@@ -9,10 +9,15 @@ enum ThreatIndicatorState {
 	CURRENT_TARGET,
 }
 
+const DEBUFF_ROW_HEIGHT: int = 12
+const DEBUFF_DOT_SIZE: int = 8
+const BURNING_DOT_COLOR: Color = Color(1.0, 0.31, 0.12)
+
 ## 可拆卸的世界空间头顶血条。
 ##
-## 本组件只订阅 UnitBase 已公开的生命信号。UnitBase 不持有本组件的引用，因此删除
-## WorldHealthBar 或整个 WorldUIRoot 都不会影响生命、战斗、移动和索敌逻辑。
+## 本组件只订阅 UnitBase 的生命信号与 StatusEffectComponent 的命名状态变化。
+## UnitBase 不持有本组件的引用，因此删除 WorldHealthBar 或整个 WorldUIRoot
+## 都不会影响生命、状态、战斗、移动和索敌逻辑。
 
 @export_category("Placement")
 ## 血条相对于单位根节点的局部偏移。不同身高角色可以在继承场景中单独覆盖。
@@ -31,7 +36,7 @@ enum ThreatIndicatorState {
 @export_range(0.0, 3.0, 0.01) var damage_decay_duration: float = 0.35
 
 @export_category("Layout")
-## SubViewport 的像素尺寸。世界中的实际尺寸由 BarSprite.pixel_size 决定。
+## 血条本体的像素尺寸；SubViewport 额外为仇恨框和上方状态圆点留白。世界实际尺寸由 BarSprite.pixel_size 决定。
 @export var bar_pixel_size: Vector2i = Vector2i(128, 16)
 ## 白色外框宽度，单位为 UI 像素。
 @export_range(0, 8, 1) var border_width: int = 2
@@ -68,6 +73,7 @@ enum ThreatIndicatorState {
 		_apply_threat_outline_style()
 
 @onready var _viewport: SubViewport = $HealthBarViewport
+@onready var _debuff_dots: HBoxContainer = $HealthBarViewport/DebuffDots
 @onready var _bar_root: Control = $HealthBarViewport/BarRoot
 @onready var _empty_slot: Panel = $HealthBarViewport/BarRoot/EmptySlot
 @onready var _damage_progress: ProgressBar = \
@@ -79,6 +85,7 @@ enum ThreatIndicatorState {
 @onready var _bar_sprite: Sprite3D = $BarSprite
 
 var _health_source: UnitBase
+var _status_source: StatusEffectComponent
 var _damage_tween: Tween
 var _visibility_tween: Tween
 ## 当前仅由玩家仇恨焦点控制器写入的外框视觉状态。
@@ -101,7 +108,7 @@ func _exit_tree() -> void:
 	unbind_health_source()
 
 
-## 绑定新的生命数据来源。重复绑定同一个单位只刷新数值，不重复连接信号。
+## 绑定新的单位数据来源，同时读取生命与命名状态；重复绑定只刷新显示，不重复连接信号。
 func bind_health_source(source: UnitBase) -> void:
 	if source == _health_source and is_instance_valid(_health_source):
 		refresh_immediately()
@@ -118,6 +125,9 @@ func bind_health_source(source: UnitBase) -> void:
 		_health_source.damaged.connect(_on_damaged)
 	if not _health_source.died.is_connected(_on_health_source_died):
 		_health_source.died.connect(_on_health_source_died)
+	_status_source = _health_source.get_status_effect_component() as StatusEffectComponent
+	if is_instance_valid(_status_source) and not _status_source.named_status_changed.is_connected(_on_named_status_changed):
+		_status_source.named_status_changed.connect(_on_named_status_changed)
 	refresh_immediately()
 
 
@@ -130,13 +140,18 @@ func unbind_health_source() -> void:
 			_health_source.damaged.disconnect(_on_damaged)
 		if _health_source.died.is_connected(_on_health_source_died):
 			_health_source.died.disconnect(_on_health_source_died)
+	if is_instance_valid(_status_source) and _status_source.named_status_changed.is_connected(_on_named_status_changed):
+		_status_source.named_status_changed.disconnect(_on_named_status_changed)
+	_status_source = null
 	_health_source = null
+	_refresh_debuff_dots()
 	_kill_damage_tween()
 	hide_immediately()
 
 
-## 立即从当前生命来源读取数值。该方法只同步显示，不主动显示隐藏中的血条。
+## 立即从当前单位读取生命与命名状态；未满血或带有可见 Debuff 时保持显示。
 func refresh_immediately() -> void:
+	_refresh_debuff_dots()
 	if not is_instance_valid(_health_source):
 		return
 	if _health_source.is_dead():
@@ -148,14 +163,14 @@ func refresh_immediately() -> void:
 	)
 	_health_progress.value = ratio
 	_damage_progress.value = ratio
-	if ratio < 1.0:
+	if ratio < 1.0 or _has_visible_debuff():
 		_show_indefinitely()
 
 
 ## 显示血条并从头开始隐藏倒计时。连续伤害会安全刷新同一条 Tween。
 func show_temporarily() -> void:
 	_show_immediately()
-	if _threat_indicator_state != ThreatIndicatorState.NONE:
+	if _threat_indicator_state != ThreatIndicatorState.NONE or _has_visible_debuff():
 		return
 	if not _is_current_health_full():
 		return
@@ -216,7 +231,7 @@ func set_threat_indicator_state(state: int) -> void:
 	if _threat_indicator_state != ThreatIndicatorState.NONE:
 		_show_immediately()
 		return
-	if _is_current_health_full():
+	if _is_current_health_full() and not _has_visible_debuff():
 		hide_immediately()
 	else:
 		_show_indefinitely()
@@ -237,6 +252,39 @@ func _auto_bind_ancestor() -> void:
 			bind_health_source(ancestor as UnitBase)
 			return
 		ancestor = ancestor.get_parent()
+
+
+func _on_named_status_changed(_status_id: StringName, _active: bool) -> void:
+	_refresh_debuff_dots()
+	if not is_instance_valid(_health_source) or _health_source.is_dead():
+		hide_immediately()
+	elif _has_visible_debuff():
+		_show_indefinitely()
+	elif _threat_indicator_state == ThreatIndicatorState.NONE and _is_current_health_full():
+		hide_immediately()
+
+
+func _refresh_debuff_dots() -> void:
+	if not is_instance_valid(_debuff_dots):
+		return
+	for child: Node in _debuff_dots.get_children():
+		_debuff_dots.remove_child(child)
+		child.free()
+	if not is_instance_valid(_status_source) or not _status_source.has_named_status(&"burning"):
+		return
+	var dot := Panel.new()
+	dot.name = "BurningDot"
+	dot.custom_minimum_size = Vector2(DEBUFF_DOT_SIZE, DEBUFF_DOT_SIZE)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = BURNING_DOT_COLOR
+	_set_corner_radius(style, DEBUFF_DOT_SIZE / 2)
+	dot.add_theme_stylebox_override(&"panel", style)
+	_debuff_dots.add_child(dot)
+
+
+func _has_visible_debuff() -> bool:
+	return is_instance_valid(_debuff_dots) and _debuff_dots.get_child_count() > 0
 
 
 func _on_health_changed(
@@ -318,7 +366,7 @@ func _start_damage_decay() -> void:
 
 
 func _finish_visibility_hide() -> void:
-	if _threat_indicator_state != ThreatIndicatorState.NONE:
+	if _threat_indicator_state != ThreatIndicatorState.NONE or _has_visible_debuff():
 		_show_immediately()
 		return
 	visible = false
@@ -355,13 +403,15 @@ func _sanitize_configuration() -> void:
 func _configure_layout() -> void:
 	var viewport_size := Vector2i(
 		bar_pixel_size.x + threat_outline_margin * 2,
-		bar_pixel_size.y + threat_outline_margin * 2
+		bar_pixel_size.y + threat_outline_margin * 2 + DEBUFF_ROW_HEIGHT
 	)
 	_viewport.size = viewport_size
+	_debuff_dots.position = Vector2.ZERO
+	_debuff_dots.size = Vector2(viewport_size.x, DEBUFF_DOT_SIZE)
 	# 血条本体维持原尺寸并向内平移，外框向外扩展的像素完整落在 SubViewport 渲染范围内。
 	_bar_root.position = Vector2(
 		threat_outline_margin,
-		threat_outline_margin
+		threat_outline_margin + DEBUFF_ROW_HEIGHT
 	)
 	_bar_root.size = Vector2(bar_pixel_size)
 	_threat_outline.offset_left = -threat_outline_margin
