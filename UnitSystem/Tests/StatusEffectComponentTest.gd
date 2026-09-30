@@ -62,6 +62,23 @@ func _run() -> void:
 	_expect(not bool(status_effects.call(&"apply_named_status", &"", 4.0)), "empty status ID is rejected")
 	_expect(not bool(status_effects.call(&"apply_named_status", &"burning", 0.0)), "zero duration is rejected")
 	_expect(not bool(status_effects.call(&"apply_named_status", &"burning", INF)), "non-finite duration is rejected")
+	var removed_events: Array[StringName] = []
+	status_effects.named_status_changed.connect(func(status_id: StringName, active: bool) -> void:
+		if not active:
+			removed_events.append(status_id)
+	)
+	status_effects.call(&"apply_named_status", &"frostbite", 4.0)
+	status_effects.call(&"apply_named_status", &"burning", 4.0)
+	if status_effects.has_method(&"remove_named_status"):
+		_expect(bool(status_effects.call(&"remove_named_status", &"burning")), "removing an active named status succeeds")
+		_expect(not bool(status_effects.call(&"has_named_status", &"burning")), "removed status is no longer active")
+		_expect(bool(status_effects.call(&"has_named_status", &"frostbite")), "removing one status preserves others")
+		_expect(removed_events == [&"burning"], "removing a status emits exactly one inactive change")
+		_expect(not bool(status_effects.call(&"remove_named_status", &"burning")), "repeated removal has no effect")
+		_expect(removed_events == [&"burning"], "repeated removal emits no duplicate change")
+	else:
+		_expect(false, "StatusEffectComponent supports generic named-status removal")
+	status_effects.call(&"clear_all_named_statuses")
 	_expect(bool(status_effects.call(&"apply_named_status", &"burning", 4.0)), "status can be reapplied")
 	status_effects.call(&"clear_all_modifiers")
 	_expect(bool(status_effects.call(&"has_named_status", &"burning")), "clearing modifiers does not erase named status")

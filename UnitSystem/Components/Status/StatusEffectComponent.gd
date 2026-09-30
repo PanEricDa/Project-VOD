@@ -162,6 +162,16 @@ func has_named_status(status_id: StringName) -> bool:
 	return status_id != &"" and _named_status_remaining.has(status_id) and float(_named_status_remaining[status_id]) > 0.0
 
 
+## 移除指定的命名状态；status_id 不能为空。仅当状态当前存在时返回 true，
+## 并发送一次 named_status_changed(status_id, false)；不影响其他状态或属性修正。
+func remove_named_status(status_id: StringName) -> bool:
+	if status_id == &"" or not _named_status_remaining.has(status_id):
+		return false
+	_named_status_remaining.erase(status_id)
+	named_status_changed.emit(status_id, false)
+	return true
+
+
 ## 返回当前状态 ID 的副本，供一次命中的前置状态快照使用；调用方不能修改容器内部记录。
 func get_active_status_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []
