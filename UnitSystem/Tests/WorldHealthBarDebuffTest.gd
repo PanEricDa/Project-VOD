@@ -25,12 +25,22 @@ func _run() -> void:
 	_expect(row.get_child_count() == 0 and not bar.visible, "full healthy unit starts without a marker")
 	_expect(status.apply_named_status(&"burning", 4.0), "burning applies")
 	_expect(row.get_child_count() == 1 and bar.visible, "burning draws one marker even at full health")
+	await process_frame
 	if row.get_child_count() == 1:
 		var dot := row.get_child(0) as Panel
 		var style := dot.get_theme_stylebox(&"panel") as StyleBoxFlat
 		_expect(style != null and style.bg_color == Color(1.0, 0.31, 0.12), "burning marker is orange-red")
 		var health_root := bar.get_node(^"HealthBarViewport/BarRoot") as Control
-		_expect(row.position.y + dot.size.y <= health_root.position.y, "marker sits above the health bar")
+		_expect(dot.size == Vector2(12, 12), "debuff marker is 1.5 times the previous 8-pixel size")
+		_expect(
+			is_equal_approx(row.position.x + dot.position.x, health_root.position.x),
+			"first marker aligns with the health bar's left edge"
+		)
+		_expect(
+			is_equal_approx(health_root.position.y - (row.position.y + dot.size.y), 4.0),
+			"marker has a four-pixel gap above the health bar"
+		)
+		_expect(row.alignment == BoxContainer.ALIGNMENT_BEGIN, "future markers append toward the right")
 	_expect(status.apply_named_status(&"burning", 4.0), "burning refreshes")
 	_expect(row.get_child_count() == 1, "refresh does not duplicate the marker")
 	status.advance_effects(4.1)

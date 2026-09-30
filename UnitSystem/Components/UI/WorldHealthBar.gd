@@ -9,8 +9,8 @@ enum ThreatIndicatorState {
 	CURRENT_TARGET,
 }
 
-const DEBUFF_ROW_HEIGHT: int = 12
-const DEBUFF_DOT_SIZE: int = 8
+const DEBUFF_ROW_HEIGHT: int = 16
+const DEBUFF_DOT_SIZE: int = 12
 const BURNING_DOT_COLOR: Color = Color(1.0, 0.31, 0.12)
 
 ## 可拆卸的世界空间头顶血条。
@@ -406,8 +406,8 @@ func _configure_layout() -> void:
 		bar_pixel_size.y + threat_outline_margin * 2 + DEBUFF_ROW_HEIGHT
 	)
 	_viewport.size = viewport_size
-	_debuff_dots.position = Vector2.ZERO
-	_debuff_dots.size = Vector2(viewport_size.x, DEBUFF_DOT_SIZE)
+	_debuff_dots.position = Vector2(threat_outline_margin, threat_outline_margin)
+	_debuff_dots.size = Vector2(bar_pixel_size.x, DEBUFF_DOT_SIZE)
 	# 血条本体维持原尺寸并向内平移，外框向外扩展的像素完整落在 SubViewport 渲染范围内。
 	_bar_root.position = Vector2(
 		threat_outline_margin,

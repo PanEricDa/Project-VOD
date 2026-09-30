@@ -14,7 +14,7 @@ render_target_update_mode = 4
 [node name="DebuffDots" type="HBoxContainer" parent="HealthBarViewport"]
 layout_mode = 3
 mouse_filter = 2
-alignment = 1
+theme_override_constants/separation = 3
 
 [node name="BarRoot" type="Control" parent="HealthBarViewport" unique_id=621797383]
 layout_mode = 3
