@@ -126,8 +126,8 @@ func _run() -> void:
 		)
 		_expect(
 			_has_property(effects[0], &"power_ratio")
-			and is_zero_approx(float(effects[0].get("power_ratio"))),
-			"HolyLight keeps fixed-value healing"
+			and is_equal_approx(float(effects[0].get("power_ratio")), 1.2),
+			"HolyLight adds 120% of UnitBase caster attack power"
 		)
 		_expect(
 			not _has_property(effects[0], &"amount"),

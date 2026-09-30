@@ -62,7 +62,7 @@ func _run() -> void:
 		"Saber equips IronSword through the inherited CombatSystem"
 	)
 	_expect(
-		is_equal_approx(behavior.get_effective_combat_distance(), 1.1),
+		is_equal_approx(behavior.get_effective_combat_distance(), 1.0),
 		"behavior reads the equipped sword attack range"
 	)
 

@@ -202,7 +202,7 @@ func _verify_role_stat_baselines() -> void:
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Guardian.tscn",
-			"health": 200.0, "attack": 8.0, "defense": 35.0,
+			"health": 250.0, "attack": 8.0, "defense": 35.0,
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Saber.tscn",

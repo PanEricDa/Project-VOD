@@ -94,7 +94,7 @@ func _run() -> void:
 		"HolyLight resolves the nearest damaged friendly target"
 	)
 	_expect(
-		is_equal_approx(friendly_target.get_current_health(), 75.0),
+		is_equal_approx(friendly_target.get_current_health(), 88.2),
 		"HolyLight selects and heals the nearby friendly target"
 	)
 	await _cleanup(player, priest, friendly_target)

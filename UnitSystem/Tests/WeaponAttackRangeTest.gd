@@ -12,12 +12,12 @@ func _initialize() -> void:
 	_expect(sword != null, "IronSwordData loads as WeaponData")
 	if sword != null:
 		_expect(
-			is_equal_approx(sword.attack_range, 1.1),
-			"IronSword attack range is 1.1m"
+			is_equal_approx(sword.attack_range, 1.0),
+			"IronSword attack range is 1.0m"
 		)
 		_expect(
-			is_equal_approx(sword.attack_range_tolerance, 0.1),
-			"IronSword attack range tolerance is 0.1m"
+			is_equal_approx(sword.attack_range_tolerance, 0.4),
+			"IronSword attack range tolerance is 0.4m"
 		)
 	_finish()
 

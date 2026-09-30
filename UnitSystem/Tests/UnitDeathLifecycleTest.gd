@@ -281,6 +281,11 @@ func _test_ai_death_lifecycle() -> void:
 	saber.velocity = Vector3(-2.0, 0.0, 4.0)
 	var detection_configuration: bool = targeting.detection_enabled
 	var suspend_before: float = targeting.get_detection_suspend_remaining()
+	var external_action_cancel_count: Array[int] = [0]
+	attack_controller.external_action_cancelled.connect(
+		func() -> void:
+			external_action_cancel_count[0] += 1
+	)
 	saber.apply_damage(saber.maximum_health)
 
 	_expect(saber.is_dead(), "Saber reaches the dead state")
@@ -309,8 +314,13 @@ func _test_ai_death_lifecycle() -> void:
 		"Saber death releases the behavior movement lock"
 	)
 	_expect(
-		attack_controller.can_attack(),
-		"Saber death releases external action controller occupancy"
+		external_action_cancel_count[0] == 1
+		and int(attack_controller.get("_state")) == AIAttackController.AttackState.IDLE,
+		"Saber death cancels the external action and clears controller occupancy"
+	)
+	_expect(
+		not attack_controller.can_attack(),
+		"dead Saber remains ineligible to attack after action cancellation"
 	)
 	_expect_horizontal_velocity_zero(saber, "Saber death zeros horizontal velocity")
 	_expect(

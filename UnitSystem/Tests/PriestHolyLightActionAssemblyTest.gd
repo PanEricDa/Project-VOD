@@ -88,7 +88,7 @@ func _run() -> void:
 	)
 	animation_player.advance(5.0)
 	_expect(
-		is_equal_approx(target.get_current_health(), 75.0),
+		is_equal_approx(target.get_current_health(), 88.2),
 		"Staff animation release marker delivers HolyLight once"
 	)
 

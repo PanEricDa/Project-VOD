@@ -152,7 +152,7 @@ func _verify_combat_wander() -> void:
 	)
 	_expect(
 		owner.get_current_movement_target().is_equal_approx(
-			Vector3(0.0, owner.global_position.y, 1.1)
+			Vector3(0.0, owner.global_position.y, 1.0)
 		),
 		"chase targets the attack ring from the incoming direction"
 	)

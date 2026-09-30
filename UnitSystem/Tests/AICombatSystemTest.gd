@@ -100,7 +100,7 @@ func _run() -> void:
 		"starting weapon equips during configuration"
 	)
 	_expect(
-		is_equal_approx(float(combat.call("get_attack_range")), 1.1),
+		is_equal_approx(float(combat.call("get_attack_range")), 1.0),
 		"combat system exposes the equipped weapon range"
 	)
 
