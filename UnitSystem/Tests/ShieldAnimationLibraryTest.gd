@@ -29,6 +29,10 @@ func _initialize() -> void:
 		ResourceLoader.get_resource_uid(LIBRARY_PATH) != ResourceUID.INVALID_ID,
 		"ShieldAnimationLibrary.res keeps a valid UID"
 	)
+	_expect(
+		ResourceLoader.get_resource_uid(LIBRARY_PATH) == ResourceUID.text_to_id("uid://njpdtps8x2gh"),
+		"ShieldAnimationLibrary.res keeps the UID referenced by shield data and workbench"
+	)
 
 	# basic_cast_1 供 RangedSkillTemplate 的 AI 通用外部动作入口使用，
 	# 只允许通用施法与完成标记，不允许近战 Hitbox 或攻击位移标记。
