@@ -3,8 +3,8 @@ extends SceneTree
 ## 三段连锁全部由同一 SkillBase 模板、通用 Delivery 和 Trigger Effect 装配。
 
 const A_PATH := "res://SkillSystem/00-Skills/ExplosiveArrow/ExplosiveArrowSkill.tscn"
-const B_PATH := "res://SkillSystem/00-Skills/ExplosiveFragment/ExplosiveFragmentSkill.tscn"
-const C_PATH := "res://SkillSystem/00-Skills/BurningSplash/BurningSplashSkill.tscn"
+const B_PATH := "res://SkillSystem/00-Skills/Trig_ExplosiveFragment/ExplosiveFragmentSkill.tscn"
+const C_PATH := "res://SkillSystem/00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn"
 var failures: Array[String] = []
 
 
@@ -49,12 +49,12 @@ func _run() -> void:
 	var host := archer.get_node(^"SkillHost") as SkillHostComponent
 	_expect(int(archer.combat_action_policy) == 1, "Archer prioritizes skills then uses basic attacks")
 	_expect(host.get_node_or_null(^"SkillSocket/ExplosiveArrowSkill") != null, "Archer equips main arrow in SkillSocket")
-	_expect(host.regular_skills.size() == 2 and host.regular_skills[0] is SkillBase and host.regular_skills[1] == null, "Archer has one equipped regular skill, leaving second slot open")
+	_expect(host.regular_skills.size() == 2 and host.regular_skills[0] is SkillBase and host.regular_skills[1] is SkillBase, "Archer equips explosive arrow and rapid shot in separate regular slots")
 	var animation_player := archer.get_node_or_null(^"Visual/AllyVisual/CharacterAnimationPlayer") as CharacterAnimationEventPlayer
 	_expect(animation_player != null and animation_player.has_animation(&"weapon/basic_cast_1"), "Archer visual receives Bow's actual cast animation")
 	var firebolt := (load("res://SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn") as PackedScene).instantiate() as SkillBase
 	root.add_child(firebolt)
-	_expect(_has_burning_effect(firebolt), "Firebolt applies generic four-second burning status")
+	_expect(_has_burning_effect(firebolt), "Firebolt applies generic eight-second burning status")
 	var library := load("res://Item/Weapon/Bow/BowAnimationLibrary.res") as AnimationLibrary
 	_expect(library != null and library.has_animation(&"basic_cast_1"), "Bow supports generic external cast animation")
 	if library != null and library.has_animation(&"basic_cast_1"):
@@ -84,7 +84,7 @@ func _count_costs(skill: SkillBase) -> int:
 
 func _has_burning_effect(skill: SkillBase) -> bool:
 	for child: Node in skill.get_children():
-		if child is ApplyNamedStatusSkillEffect and child.status_id == &"burning" and child.duration_seconds == 4.0:
+		if child is ApplyNamedStatusSkillEffect and child.status_id == &"burning" and child.duration_seconds == 8.0:
 			return true
 	return false
 

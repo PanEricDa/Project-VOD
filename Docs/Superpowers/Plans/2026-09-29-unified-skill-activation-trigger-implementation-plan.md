@@ -182,8 +182,8 @@ $godotExe = 'G:\Godot\Godot_v4.7.1-stable_win64_console.exe'
 
 **Files:**
 - Create: `SkillSystem/00-Skills/ExplosiveArrow/ExplosiveArrowSkill.tscn`
-- Create: `SkillSystem/00-Skills/ExplosiveFragment/ExplosiveFragmentSkill.tscn`
-- Create: `SkillSystem/00-Skills/BurningSplash/BurningSplashSkill.tscn`
+- Create: `SkillSystem/00-Skills/Trig_ExplosiveFragment/ExplosiveFragmentSkill.tscn`
+- Create: `SkillSystem/00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn`
 - Create: `Item/Projectiles/ExplosiveArrow.tscn`、`Item/Projectiles/ExplosiveFragment.tscn`
 - Modify: `SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn`
 - Modify: `UnitSystem/AI/Ally/Units/Archer.tscn`

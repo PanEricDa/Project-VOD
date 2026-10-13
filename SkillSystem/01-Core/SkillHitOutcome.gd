@@ -5,6 +5,8 @@ extends RefCounted
 
 ## 本次实际结算的目标；后续 Effect 不得将其他目标的结果写入这里。
 var target: Node3D
+## 一个目标的一次真实命中身份；同次多个伤害效果共享，逐发/子目标另建，不作为配置导出。
+var hit_id: int = CombatDamageContext.allocate_id()
 ## 命中前已经存在的命名状态快照；同次命中施加的新状态不会出现在这里。
 var statuses_before_hit: Array[StringName] = []
 ## 本目标由本次效果序列造成的实际生命损失，单位为生命值，默认 0。

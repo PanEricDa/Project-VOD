@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://blkrjyi4or5gr"]
+
+[ext_resource type="Script" uid="uid://chool36wgp2te" path="res://UnitSystem/Components/Combat/Squad/SquadFocusComponent.gd" id="1_grcwh"]
+
+[node name="SquadFocusComponent" type="Node" unique_id=1471205558]
+script = ExtResource("1_grcwh")

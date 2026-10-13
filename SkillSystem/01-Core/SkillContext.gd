@@ -14,6 +14,8 @@ var resolved_target: Node3D
 var candidate_targets: Array[Node3D] = []
 var target_position: Vector3 = Vector3.INF
 var delivery_parent: Node
+## 单次伤害来源快照；空表示尚未创建。复制必须独立，衍生交付继承根归属与收益。
+var damage_context: CombatDamageContext
 ## 本次执行方式只由请求方决定，不是技能场景的固定类型；默认走角色动作和动画释放帧。
 enum ExecutionMode { CHARACTER_ACTION, DIRECT_TRIGGER }
 
@@ -52,6 +54,7 @@ func duplicate_context() -> RefCounted:
 		if is_instance_valid(candidate):
 			copy.candidate_targets.append(candidate)
 	copy.target_position = target_position
+	copy.damage_context = damage_context.duplicate_context() if damage_context != null else null
 	copy.delivery_parent = (
 		delivery_parent if is_instance_valid(delivery_parent) else null
 	)

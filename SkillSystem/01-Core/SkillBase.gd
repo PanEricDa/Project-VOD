@@ -140,6 +140,8 @@ var _cooldown_remaining: float = 0.0
 var _post_release_hesitation_remaining: float = 0.0
 var _last_action_transform: Transform3D = Transform3D.IDENTITY
 var _runtime_effect_instances: Array[Node] = []
+## 当前施法期特效；仅支持 configure_cast 的组件使用受控生命周期。
+var _cast_effect_instance: Node3D
 ## SkillBase 自己的随机来源；只用于成功释放后的等待采样，不影响外部 AI、目标或战斗随机逻辑。
 var _random := RandomNumberGenerator.new()
 
@@ -252,7 +254,7 @@ func confirm_action_started(cast_transform: Transform3D) -> bool:
 		return false
 	_state = SkillState.CASTING
 	_last_action_transform = cast_transform
-	_spawn_presentation(cast_effect_scene, cast_transform)
+	_spawn_cast_presentation(cast_transform)
 	cast_started.emit(_current_context)
 	return true
 
@@ -305,6 +307,7 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 			return false
 		committed_costs.append(cost)
 
+	_stop_cast_presentation()
 	_spawn_release_presentation(release_effect_scene, launch_transform)
 	release_started.emit(_current_context)
 	var effects := _collect_effects()
@@ -347,6 +350,7 @@ func cancel_skill(reason: StringName = &"cancelled") -> void:
 	]:
 		return
 	var cancelled_context: SkillContext = _current_context
+	_stop_cast_presentation()
 	_spawn_presentation(cancel_effect_scene, _last_action_transform)
 	_current_context = null
 	_state = SkillState.READY
@@ -398,7 +402,10 @@ func get_post_release_hesitation_remaining() -> float:
 func get_action_payload() -> Dictionary:
 	for child: Node in get_children():
 		if child is MeleeSkillAction:
-			return (child as MeleeSkillAction).get_action_payload(threat_multiplier)
+			var payload := (child as MeleeSkillAction).get_action_payload(threat_multiplier)
+			if _current_context != null and _current_context.damage_context != null:
+				payload[&"damage_context"] = _current_context.damage_context.duplicate_context()
+			return payload
 	return {}
 
 
@@ -430,6 +437,10 @@ func _prepare_context(source: SkillContext) -> SkillContext:
 		prepared.delivery_parent = _delivery_parent
 	if not is_instance_valid(prepared.delivery_parent):
 		return null
+	if prepared.damage_context == null:
+		prepared.damage_context = CombatDamageContext.create(_skill_owner, prepared.delivery_parent, CombatDamageContext.Origin.NORMAL, CombatDamageContext.allocate_id(), 0, skill_id)
+	else:
+		prepared.damage_context = prepared.damage_context.for_skill(skill_id)
 	prepared.resolved_target = _resolve_target(prepared)
 	if not _is_candidate_valid(prepared.resolved_target, false):
 		return null
@@ -541,23 +552,49 @@ func _refund_costs(costs: Array[SkillCostBase]) -> void:
 func _spawn_presentation(
 	effect_scene: PackedScene,
 	world_transform: Transform3D
-) -> void:
+) -> Node3D:
 	if (
 		effect_scene == null
 		or not world_transform.is_finite()
 		or _current_context == null
 		or not is_instance_valid(_current_context.delivery_parent)
 	):
-		return
+		return null
 	var instance: Node = effect_scene.instantiate()
 	if not instance is Node3D:
 		if is_instance_valid(instance):
 			instance.free()
-		return
+		return null
 	var effect := instance as Node3D
+	if effect.has_method(&"configure_cast"):
+		effect.set("autoplay", false)
 	_current_context.delivery_parent.add_child(effect)
 	effect.global_transform = world_transform
 	_runtime_effect_instances.append(effect)
+	return effect
+
+
+## 新型蓄力组件可选实现 configure_cast(source, world_origin, duration)：
+## source 为施法者，world_origin 为动作发射变换，duration 为本次实际施法秒数。
+## 旧特效仍沿用自身自动播放，不要求实现此接口。
+func _spawn_cast_presentation(origin: Transform3D) -> void:
+	_stop_cast_presentation()
+	var effect := _spawn_presentation(cast_effect_scene, origin)
+	if not is_instance_valid(effect) or not effect.has_method(&"configure_cast"):
+		return
+	_cast_effect_instance = effect
+	effect.call(&"configure_cast", _skill_owner, origin, get_effective_cast_time())
+	if effect.has_method(&"play"):
+		effect.call(&"play")
+
+
+func _stop_cast_presentation() -> void:
+	if is_instance_valid(_cast_effect_instance):
+		if _cast_effect_instance.has_method(&"stop"):
+			_cast_effect_instance.call(&"stop")
+		_runtime_effect_instances.erase(_cast_effect_instance)
+		_cast_effect_instance.queue_free()
+	_cast_effect_instance = null
 
 
 ## 根据 Release 锚点同时决定特效的父节点和坐标空间。
@@ -701,6 +738,7 @@ func _calculate_post_release_hesitation() -> float:
 
 
 func _fail_active(reason: StringName, delivery_failure: bool) -> void:
+	_stop_cast_presentation()
 	var failed_context: SkillContext = _current_context
 	_current_context = null
 	## 必须先完成技能自身的终止状态迁移，再向 Host 发出失败信号。
@@ -735,6 +773,7 @@ func _on_runner_delivery_failed(
 
 
 func _clear_runtime_effect_references() -> void:
+	_stop_cast_presentation()
 	for effect: Node in _runtime_effect_instances:
 		if is_instance_valid(effect):
 			effect.queue_free()

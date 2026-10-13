@@ -31,6 +31,8 @@ signal health_changed(
 )
 ## 单位受到有效伤害时发送，amount 是扣除上限修正后的实际伤害量。
 signal damaged(amount: float, source: Node)
+## 权威实际扣血事件；event 为只读来源/数值快照，仅正伤害发布一次，不替代旧生命信号。
+signal damage_resolved(event: CombatDamageEvent)
 ## 单位获得有效治疗时发送，amount 是生命上限修正后的实际治疗量。
 signal healed(amount: float, source: Node)
 ## 生命值第一次从大于零降至零时发送。
@@ -105,13 +107,15 @@ func _ready() -> void:
 
 ## 对单位造成伤害并返回实际扣除量。
 ## 负数、零以及对死亡单位的重复伤害都会被忽略；一次致命伤害只触发一次 died。
+## damage_context 为可选来源快照，默认未知来源且无专注收益；不修改实际伤害与旧信号。
 ## 参数 _threat_multiplier 由伤害发起链携带给敌方覆盖实现；UnitBase 本身不记录仇恨，因此该参数不会改变生命、受击或死亡行为。普通调用默认 1.0。
 func apply_damage(
 	amount: float,
 	source: Node = null,
-	_threat_multiplier: float = 1.0
+	_threat_multiplier: float = 1.0,
+	damage_context: CombatDamageContext = null
 ) -> float:
-	if amount <= 0.0 or is_dead():
+	if not is_finite(amount) or amount <= 0.0 or is_dead():
 		return 0.0
 
 	var previous_health: float = _current_health
@@ -123,6 +127,14 @@ func apply_damage(
 	if applied_amount <= 0.0:
 		return 0.0
 	_current_health = maxf(previous_health - applied_amount, minimum_health)
+
+	var provenance := damage_context
+	if provenance == null:
+		var scope: Node = get_tree().current_scene if is_inside_tree() else null
+		provenance = CombatDamageContext.create(source, scope, CombatDamageContext.Origin.UNATTRIBUTED)
+	var event := CombatDamageEvent.create(provenance, self, previous_health, _current_health)
+	if event != null:
+		damage_resolved.emit(event)
 
 	health_changed.emit(previous_health, _current_health, maximum_health, source)
 	damaged.emit(applied_amount, source)

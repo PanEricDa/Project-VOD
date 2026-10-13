@@ -4,7 +4,8 @@
 [ext_resource type="Texture2D" uid="uid://ddqhqbhb1d7we" path="res://Assets/HDR Sky/Sky04.hdr" id="3_f64gm"]
 [ext_resource type="Script" uid="uid://4c7vii5flost" path="res://UnitSystem/Components/Camera/CameraFollowController.gd" id="4_yg4wd"]
 [ext_resource type="PackedScene" uid="uid://hhb1ptr0vdc6" path="res://UnitSystem/Player/Hero/Hero.tscn" id="6_3g3r1"]
-[ext_resource type="PackedScene" uid="uid://dgp6yqvmotjlt" path="res://UnitSystem/AI/Ally/Units/Priest.tscn" id="6_a3nqr"]
+[ext_resource type="PackedScene" uid="uid://dhorinny074d3" path="res://UnitSystem/AI/Ally/Units/Archer.tscn" id="6_a3nqr"]
+[ext_resource type="PackedScene" uid="uid://cnrpfwsspnim8" path="res://UnitSystem/AI/Ally/Units/Caster.tscn" id="7_3g3r1"]
 [ext_resource type="PackedScene" uid="uid://cxm75mad5h74p" path="res://UnitSystem/AI/Enemy/Units/GoblinArcher.tscn" id="7_se0ja"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_a3nqr"]
@@ -82,8 +83,11 @@ maximum_health = 10000.0
 [node name="ThreatDebugDisplay" parent="GoblinArcher" index="5" unique_id=544040748]
 debug_display_enabled = true
 
-[node name="Priest" parent="." unique_id=1491736132 instance=ExtResource("6_a3nqr")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6035438, 0.5, -3.46496)
+[node name="Archer" parent="." unique_id=1491736132 instance=ExtResource("6_a3nqr")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9248538, -4.7683716e-07, -4.2525234)
+
+[node name="Caster" parent="." unique_id=1724576547 instance=ExtResource("7_3g3r1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5392461, 0.5, -4.2187357)
 combat_targeting_radius = 0.0
 
 [editable path="GoblinArcher"]

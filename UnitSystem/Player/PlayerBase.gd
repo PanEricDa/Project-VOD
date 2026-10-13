@@ -178,17 +178,19 @@ func is_dash_invulnerable() -> bool:
 
 
 ## 覆盖 UnitBase 的常规受伤入口，以实现玩家冲刺无敌。
+## damage_context 为可选来源快照，免伤时不发布事件；其余情况原样转发，不改变 Dash 规则。
 ## amount 为请求伤害值，source 为可选伤害来源；无敌期间返回 0 且不发送受伤、血条或死亡信号。
 ## 非无敌阶段完全复用 UnitBase 的伤害结算，确保防御、死亡和其他系统保持同一条逻辑链路。
 ## 参数 threat_multiplier 只负责在玩家作为敌方伤害接收者时继续透传统一仇恨语义；它不影响玩家的无敌判定或实际受伤量。
 func apply_damage(
 	amount: float,
 	source: Node = null,
-	threat_multiplier: float = 1.0
+	threat_multiplier: float = 1.0,
+	damage_context: CombatDamageContext = null
 ) -> float:
 	if is_dash_invulnerable():
 		return 0.0
-	return super.apply_damage(amount, source, threat_multiplier)
+	return super.apply_damage(amount, source, threat_multiplier, damage_context)
 
 
 ## 允许或禁止玩家发起新的本地输入请求。

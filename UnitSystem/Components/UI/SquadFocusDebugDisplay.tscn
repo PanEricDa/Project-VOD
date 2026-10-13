@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://b2qbqaypxoxop"]
+
+[ext_resource type="Script" uid="uid://ckbgrimxu8spp" path="res://UnitSystem/Components/UI/SquadFocusDebugDisplay.gd" id="1_dca5u"]
+
+[node name="SquadFocusDebugDisplay" type="CanvasLayer" unique_id=1081714811]
+layer = 12
+script = ExtResource("1_dca5u")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=720273550]
+custom_minimum_size = Vector2(760, 156)
+offset_left = 28.0
+offset_top = 28.0
+offset_right = 28.0
+offset_bottom = 28.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel" unique_id=93092895]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Panel/VBox" unique_id=505251265]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "专注资源 · 阶段一验证"
+
+[node name="Values" type="Label" parent="Panel/VBox" unique_id=1320358631]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "未绑定"
+
+[node name="Bar" type="ProgressBar" parent="Panel/VBox" unique_id=727001790]
+custom_minimum_size = Vector2(720, 28)
+layout_mode = 2
+show_percentage = false

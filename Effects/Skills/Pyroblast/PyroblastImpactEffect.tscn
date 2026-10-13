@@ -1,0 +1,269 @@
+[gd_scene format=3 uid="uid://5k4vwumkm53"]
+
+[ext_resource type="Script" uid="uid://dvn11gw0d0e5v" path="res://Effects/Skills/Fireball/FireballExplosionEffect.gd" id="1_getep"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_getep"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_color = Color(1, 0.94902, 0.698039, 0.98)
+
+[sub_resource type="SphereMesh" id="SphereMesh_6ua7w"]
+resource_local_to_scene = true
+radius = 0.216
+height = 0.432
+radial_segments = 16
+rings = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rvaop"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+cull_mode = 1
+shading_mode = 0
+albedo_color = Color(1, 0.352941, 0.086275, 0.36)
+
+[sub_resource type="SphereMesh" id="SphereMesh_3v2go"]
+resource_local_to_scene = true
+radius = 1.2
+height = 2.4
+radial_segments = 24
+rings = 12
+
+[sub_resource type="Gradient" id="Gradient_burst"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(1, 0.78, 0.24, 1, 1, 0.22, 0.035, 0.8, 0.45, 0.015, 0.004, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_burst"]
+gradient = SubResource("Gradient_burst")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_tnl1s"]
+resource_local_to_scene = true
+emission_shape = 1
+emission_sphere_radius = 0.08
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 1.0
+initial_velocity_max = 1.8
+gravity = Vector3(0, -0.35, 0)
+scale_min = 0.7
+scale_max = 1.5
+color_ramp = SubResource("GradientTexture_burst")
+
+[sub_resource type="Gradient" id="Gradient_xa1gj"]
+offsets = PackedFloat32Array(0, 0.3, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.8, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_tq1nf"]
+gradient = SubResource("Gradient_xa1gj")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v2xb2"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.352941, 0.086275, 0.92)
+albedo_texture = SubResource("GradientTexture2D_tq1nf")
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="QuadMesh_o3cmf"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_v2xb2")
+size = Vector2(0.1, 0.1)
+
+[sub_resource type="Gradient" id="Gradient_embers"]
+offsets = PackedFloat32Array(0, 0.65, 1)
+colors = PackedColorArray(0.75, 0.08, 0.015, 1, 0.38, 0.018, 0.006, 0.72, 0.12, 0.003, 0.001, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture_embers"]
+gradient = SubResource("Gradient_embers")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_xq3kk"]
+resource_local_to_scene = true
+emission_shape = 1
+emission_sphere_radius = 0.06
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 1.0
+initial_velocity_max = 1.8
+gravity = Vector3(0, -1.2, 0)
+scale_min = 0.5
+scale_max = 1.1
+color_ramp = SubResource("GradientTexture_embers")
+
+[sub_resource type="Gradient" id="Gradient_0y14g"]
+offsets = PackedFloat32Array(0, 0.3, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.8, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_g5kqm"]
+gradient = SubResource("Gradient_0y14g")
+width = 32
+height = 32
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vdpbf"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.560784, 0.113725, 0.047059, 0.92)
+albedo_texture = SubResource("GradientTexture2D_g5kqm")
+billboard_mode = 1
+
+[sub_resource type="QuadMesh" id="QuadMesh_m75rm"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_vdpbf")
+size = Vector2(0.035, 0.065)
+
+[sub_resource type="Animation" id="Animation_reset"]
+resource_local_to_scene = true
+resource_name = "RESET"
+length = 0.1
+
+[sub_resource type="Animation" id="Animation_explode"]
+resource_local_to_scene = true
+resource_name = "explode"
+length = 0.35
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/FlashCore:scale")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.05, 0.11, 0.22, 0.35),
+"transitions": PackedFloat32Array(1, 0.75, 1.2, 1, 1),
+"update": 0,
+"values": [Vector3(0.05, 0.05, 0.05), Vector3(1, 1, 1), Vector3(0.72, 0.72, 0.72), Vector3(0.16, 0.16, 0.16), Vector3(0.05, 0.05, 0.05)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/FlashCore:transparency")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.03, 0.1, 0.22, 0.35),
+"transitions": PackedFloat32Array(1, 0.7, 1.2, 1, 1),
+"update": 0,
+"values": [1.0, 0.0, 0.32, 1.0, 1.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("VisualRoot/ExplosionSphere:scale")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.04, 0.16, 0.27, 0.35),
+"transitions": PackedFloat32Array(1, 0.7, 0.85, 1.2, 1),
+"update": 0,
+"values": [Vector3(0.05, 0.05, 0.05), Vector3(0.24, 0.24, 0.24), Vector3(1, 1, 1), Vector3(1.08, 1.08, 1.08), Vector3(1.12, 1.12, 1.12)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("VisualRoot/ExplosionSphere:transparency")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.04, 0.13, 0.27, 0.35),
+"transitions": PackedFloat32Array(1, 0.7, 1, 1.2, 1),
+"update": 0,
+"values": [1.0, 0.42, 0.08, 0.62, 1.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("ExplosionLight:light_energy")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.04, 0.14, 0.28, 0.35),
+"transitions": PackedFloat32Array(1, 0.7, 1, 1.2, 1),
+"update": 0,
+"values": [0.0, 3.0, 1.08, 0.0, 0.0]
+}
+tracks/5/type = "method"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath(".")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0.01),
+"transitions": PackedFloat32Array(1),
+"values": [{
+"args": [],
+"method": &"_burst_particles"
+}]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_explosion"]
+_data = {
+&"RESET": SubResource("Animation_reset"),
+&"explode": SubResource("Animation_explode")
+}
+
+[node name="PyroblastImpactEffect" type="Node3D" unique_id=1466041819]
+script = ExtResource("1_getep")
+effect_duration = 0.38
+explosion_color = Color(1, 0.28235295, 0.07058824, 1)
+visual_radius = 0.55
+burst_amount = 24
+ember_amount = 10
+light_energy = 1.0
+light_range = 1.2
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=894127866]
+
+[node name="FlashCore" type="MeshInstance3D" parent="VisualRoot" unique_id=618054753]
+material_override = SubResource("StandardMaterial3D_getep")
+cast_shadow = 0
+mesh = SubResource("SphereMesh_6ua7w")
+
+[node name="ExplosionSphere" type="MeshInstance3D" parent="VisualRoot" unique_id=1920085377]
+material_override = SubResource("StandardMaterial3D_rvaop")
+cast_shadow = 0
+mesh = SubResource("SphereMesh_3v2go")
+
+[node name="BurstParticles" type="GPUParticles3D" parent="." unique_id=1350100759]
+cast_shadow = 0
+emitting = false
+amount = 34
+lifetime = 0.28
+one_shot = true
+explosiveness = 1.0
+randomness = 0.32
+visibility_aabb = AABB(-1.8, -1.8, -1.8, 3.6, 3.6, 3.6)
+process_material = SubResource("ParticleProcessMaterial_tnl1s")
+draw_pass_1 = SubResource("QuadMesh_o3cmf")
+
+[node name="EmberBurst" type="GPUParticles3D" parent="." unique_id=1838988170]
+cast_shadow = 0
+emitting = false
+amount = 16
+lifetime = 0.34
+one_shot = true
+explosiveness = 1.0
+randomness = 0.48
+visibility_aabb = AABB(-1.8, -1.8, -1.8, 3.6, 3.6, 3.6)
+process_material = SubResource("ParticleProcessMaterial_xq3kk")
+draw_pass_1 = SubResource("QuadMesh_m75rm")
+
+[node name="ExplosionLight" type="OmniLight3D" parent="." unique_id=2071695308]
+light_color = Color(1, 0.352941, 0.086275, 1)
+light_energy = 0.0
+omni_range = 2.2
+omni_attenuation = 1.5
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=382733875]
+libraries/ = SubResource("AnimationLibrary_explosion")

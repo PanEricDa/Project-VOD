@@ -1,0 +1,141 @@
+[gd_scene format=3 uid="uid://c37c0cclgwydj"]
+
+[ext_resource type="Script" uid="uid://dxy08us5e710c" path="res://Scenes/Previews/SquadFocusFoundationPreview.gd" id="1_5a3va"]
+[ext_resource type="PackedScene" uid="uid://blkrjyi4or5gr" path="res://UnitSystem/Components/Combat/Squad/SquadFocusComponent.tscn" id="2_e7gl5"]
+[ext_resource type="PackedScene" uid="uid://b2qbqaypxoxop" path="res://UnitSystem/Components/UI/SquadFocusDebugDisplay.tscn" id="3_b0gf5"]
+[ext_resource type="PackedScene" uid="uid://c1ie71h3631fa" path="res://UnitSystem/Base/00_UnitBase.tscn" id="4_sick3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b5ouu"]
+albedo_color = Color(0.2, 0.6, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3mylv"]
+size = Vector3(0.8, 1.3, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ikq0p"]
+albedo_color = Color(1, 0.3, 0.12, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bjoks"]
+size = Vector3(0.8, 1.3, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_whhnd"]
+albedo_color = Color(0.12, 0.16, 0.21, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_d2urh"]
+size = Vector2(16, 16)
+
+[node name="SquadFocusFoundationPreview" type="Node3D" unique_id=165188167]
+script = ExtResource("1_5a3va")
+
+[node name="Focus" parent="." unique_id=1471205558 instance=ExtResource("2_e7gl5")]
+auto_bind_parent = false
+
+[node name="DebugDisplay" parent="." unique_id=1081714811 node_paths=PackedStringArray("focus_source") instance=ExtResource("3_b0gf5")]
+focus_source = NodePath("../Focus")
+debug_enabled = true
+
+[node name="Source" parent="." unique_id=1491736132 instance=ExtResource("4_sick3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+maximum_health = 1000.0
+can_die = false
+attack_power = 0.0
+faction_id = "Player"
+team_id = 1
+
+[node name="PreviewBody" type="MeshInstance3D" parent="Source" unique_id=168084420]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+material_override = SubResource("StandardMaterial3D_b5ouu")
+mesh = SubResource("BoxMesh_3mylv")
+
+[node name="Target" parent="." unique_id=833993759 instance=ExtResource("4_sick3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+maximum_health = 1000.0
+can_die = false
+attack_power = 0.0
+faction_id = "Enemy"
+team_id = 2
+
+[node name="PreviewBody" type="MeshInstance3D" parent="Target" unique_id=679159623]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+material_override = SubResource("StandardMaterial3D_ikq0p")
+mesh = SubResource("BoxMesh_bjoks")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=2036922185]
+transform = Transform3D(1, 0, 0, 0, 0.8480481, 0.52991927, 0, -0.52991927, 0.8480481, 0, 7, 10)
+current = true
+
+[node name="Light" type="DirectionalLight3D" parent="." unique_id=1623343946]
+transform = Transform3D(0.90630776, 0.34618863, -0.24240388, 0, 0.57357645, 0.81915206, 0.42261827, -0.74240386, 0.5198368, 0, 0, 0)
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1943592720]
+material_override = SubResource("StandardMaterial3D_whhnd")
+mesh = SubResource("PlaneMesh_d2urh")
+
+[node name="Controls" type="CanvasLayer" parent="." unique_id=447059125]
+layer = 13
+
+[node name="Panel" type="PanelContainer" parent="Controls" unique_id=1709776527]
+custom_minimum_size = Vector2(1000, 290)
+offset_left = 28.0
+offset_top = 214.0
+offset_right = 28.0
+offset_bottom = 214.0
+
+[node name="VBox" type="VBoxContainer" parent="Controls/Panel" unique_id=509114326]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="Controls/Panel/VBox" unique_id=1190490020]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "来源与资源事务验证（不是正式连携操作）"
+
+[node name="Damage" type="HBoxContainer" parent="Controls/Panel/VBox" unique_id=71233376]
+layout_mode = 2
+
+[node name="Normal" type="Button" parent="Controls/Panel/VBox/Damage" unique_id=1554853300]
+custom_minimum_size = Vector2(270, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "普通伤害 100"
+
+[node name="Chain" type="Button" parent="Controls/Panel/VBox/Damage" unique_id=724109437]
+custom_minimum_size = Vector2(270, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "连携伤害 100"
+
+[node name="Finisher" type="Button" parent="Controls/Panel/VBox/Damage" unique_id=1225446614]
+custom_minimum_size = Vector2(270, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "终结伤害 100"
+
+[node name="Transactions" type="HBoxContainer" parent="Controls/Panel/VBox" unique_id=95488525]
+layout_mode = 2
+
+[node name="Reserve" type="Button" parent="Controls/Panel/VBox/Transactions" unique_id=1604711082]
+custom_minimum_size = Vector2(270, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "预留 20"
+
+[node name="Commit" type="Button" parent="Controls/Panel/VBox/Transactions" unique_id=584320632]
+custom_minimum_size = Vector2(270, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "提交 15"
+
+[node name="Refund" type="Button" parent="Controls/Panel/VBox/Transactions" unique_id=2079579610]
+custom_minimum_size = Vector2(270, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "归还预留"
+
+[node name="Reset" type="Button" parent="Controls/Panel/VBox" unique_id=928995226]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "重置开发会话"
+
+[node name="Info" type="Label" parent="Controls/Panel/VBox" unique_id=102177018]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "初始化"

@@ -104,8 +104,8 @@ func _run() -> void:
 		_expect(
 			effects[1] is ApplyNamedStatusSkillEffect
 			and effects[1].status_id == &"burning"
-			and is_equal_approx(effects[1].duration_seconds, 4.0),
-			"second effect applies four-second burning"
+			and is_equal_approx(effects[1].duration_seconds, 8.0),
+			"second effect applies eight-second burning"
 		)
 
 	var caster := (load(UNIT_SCENE_PATH) as PackedScene).instantiate() as UnitBase

@@ -94,14 +94,16 @@ func get_threat_component() -> Node:
 
 
 ## 对敌人结算伤害并把实际扣除量转换为基础仇恨事件。
+## damage_context 原样传入基础扣血入口，默认空保留兼容来源；与仇恨提交相互独立。
 ## amount 为进入 UnitBase 的原始伤害；source 必须传入实际施加伤害的 UnitBase，投射物应传递其施法者而非自身节点。
 ## 参数 threat_multiplier 是本次伤害的仇恨倍率，默认 1.0；它只放大提交到本敌人 ThreatComponent 的威胁，不修改生命扣除、死亡或命中结果。
 func apply_damage(
 	amount: float,
 	source: Node = null,
-	threat_multiplier: float = 1.0
+	threat_multiplier: float = 1.0,
+	damage_context: CombatDamageContext = null
 ) -> float:
-	var applied_amount: float = super.apply_damage(amount, source, threat_multiplier)
+	var applied_amount: float = super.apply_damage(amount, source, threat_multiplier, damage_context)
 	var source_unit := source as UnitBase
 	if (
 		applied_amount > 0.0

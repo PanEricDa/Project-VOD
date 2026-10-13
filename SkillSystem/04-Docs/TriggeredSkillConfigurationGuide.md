@@ -21,8 +21,8 @@
 | 内容 | 文件 | 配置要点 |
 | --- | --- | --- |
 | 主箭 A | `00-Skills/ExplosiveArrow/ExplosiveArrowSkill.tscn` | 装 Archer 常规槽；Arc 主箭、伤害、最多 3 个附近目标触发碎片；冷却 7 秒 |
-| 碎片 B | `00-Skills/ExplosiveFragment/ExplosiveFragmentSkill.tscn` | Arc 碎片、较低伤害；实际伤害为正且目标命中前有 `burning` 时，再向附近最多 3 个目标触发末段 |
-| 末段 C | `00-Skills/BurningSplash/BurningSplashSkill.tscn` | 瞬发追加伤害，无后续 Trigger；冷却 0 |
+| 碎片 B | `00-Skills/Trig_ExplosiveFragment/ExplosiveFragmentSkill.tscn` | Arc 碎片、较低伤害；实际伤害为正且目标命中前有 `burning` 时，再向附近最多 3 个目标触发末段 |
+| 末段 C | `00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn` | 瞬发追加伤害，无后续 Trigger；冷却 0 |
 | 灼烧来源 | `00-Skills/Firebolt/FireboltSkill.tscn` | 伤害后由通用 `ApplyNamedStatusSkillEffect` 赋予 4 秒 `burning` |
 
 主箭/碎片的投射物场景分别在 `Item/Projectiles/ExplosiveArrow.tscn` 与 `ExplosiveFragment.tscn`，共用既有弧线投射物脚本，只区分颜色、尺寸与飞行参数。Archer 的 `SkillHost` 第一个常规槽装 A，第二槽目前为空；Bow 动画库有一个 `basic_cast_1`，其唯一 `release_action` 标记供普通技能释放，普攻继续用 `basic_attack_1`。

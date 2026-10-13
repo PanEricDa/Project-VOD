@@ -37,6 +37,11 @@ var target_height_offset: float = 0.25
 @export_range(0.01, 30.0, 0.05)
 var maximum_lifetime: float = 2.0
 
+@export_category("Presentation")
+## 可选独立命中特效场景；默认空无特效，有效抵达目标时在世界命中位置生成。
+## 特效须自行播放和销毁，仅影响视觉，不改变本投射物的命中、伤害或范围规则。
+@export var impact_effect_scene: PackedScene
+
 var tracked_target: UnitBase
 var launch_position: Vector3 = Vector3.ZERO
 var elapsed_time: float = 0.0
@@ -106,8 +111,21 @@ func _finish_with_hit(hit_position: Vector3, flight_direction: Vector3) -> void:
 	var safe_direction := flight_direction.normalized()
 	if safe_direction.length_squared() <= 0.000001:
 		safe_direction = Vector3.FORWARD
+	_spawn_impact_presentation(hit_position)
 	projectile_hit.emit(tracked_target, hit_position, safe_direction)
 	queue_free()
+
+
+func _spawn_impact_presentation(hit_position: Vector3) -> void:
+	if impact_effect_scene == null or not is_instance_valid(tracked_target) or tracked_target.is_dead():
+		return
+	var instance: Node = impact_effect_scene.instantiate()
+	if not instance is Node3D:
+		instance.free()
+		return
+	var effect := instance as Node3D
+	get_parent().add_child(effect)
+	effect.global_transform = Transform3D(Basis.IDENTITY, hit_position)
 
 
 func _finish_without_hit() -> void:

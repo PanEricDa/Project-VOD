@@ -1,34 +1,32 @@
 [gd_scene format=3 uid="uid://ch04cnxwc7jgg"]
 
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
-[ext_resource type="Script" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="2_arc"]
-[ext_resource type="PackedScene" path="res://Item/Projectiles/ExplosiveArrow.tscn" id="3_projectile"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_damage"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/TriggerSkillEffect.gd" id="5_trigger"]
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/ExplosiveFragment/ExplosiveFragmentSkill.tscn" id="6_child"]
+[ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="2_arc"]
+[ext_resource type="PackedScene" uid="uid://bva8v76qriccx" path="res://Item/Projectiles/ExplosiveArrow.tscn" id="3_projectile"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_damage"]
+[ext_resource type="Script" uid="uid://hxil6may7ooj" path="res://SkillSystem/03-Extensions/TriggerSkillEffect.gd" id="5_trigger"]
+[ext_resource type="PackedScene" uid="uid://cecsxbuy8t6bx" path="res://SkillSystem/00-Skills/Trig_ExplosiveFragment/ExplosiveFragmentSkill.tscn" id="6_child"]
 
-[sub_resource type="Resource" id="ArcDelivery"]
+[sub_resource type="Resource" id="Resource_reuug"]
 resource_local_to_scene = true
 script = ExtResource("2_arc")
 projectile_scene = ExtResource("3_projectile")
 
-[node name="ExplosiveArrowSkill" instance=ExtResource("1_template")]
+[node name="ExplosiveArrowSkill" unique_id=1312029083 instance=ExtResource("1_template")]
 skill_id = &"explosive_arrow"
 display_name = "Explosive Arrow"
 ai_priority = 10
 cast_range = 6.0
 base_cast_time = 0.45
 skill_cooldown = 7.0
-delivery = SubResource("ArcDelivery")
+delivery = SubResource("Resource_reuug")
 
-[node name="DamageEffect" type="Node" parent="." index="2"]
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=1521611483]
 script = ExtResource("4_damage")
 operation = 0
-base_amount = 10.0
 power_ratio = 0.6
 
-[node name="TriggerFragments" type="Node" parent="." index="3"]
+[node name="TriggerFragments" type="Node" parent="." index="3" unique_id=396419253]
 script = ExtResource("5_trigger")
 child_skill_scene = ExtResource("6_child")
-radius_m = 3.0
-max_targets = 3
+radius_m = 5.0

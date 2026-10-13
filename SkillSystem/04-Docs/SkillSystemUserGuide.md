@@ -77,11 +77,26 @@ SkillSystem/
 `00-Skills/Firebolt/FireboltSkill.tscn`
 
 - 敌方指定目标；
-- `character/firebolt_cast`；
+- 使用角色当前武器的通用 `basic_cast_1` 释放动画；
 - 0.75 秒基础施法时间；
 - 内嵌追踪投射物配置；
 - 复用 `Item/Projectiles/FireBall.tscn`；
 - 投射物自行管理飞行、碰撞、爆炸和命中。
+- 爆炸范围内全部有效敌人各受到一次伤害，并被施加或刷新 8 秒 `burning`。
+
+### Pyroblast（Caster 第二常规技能）
+
+`00-Skills/Pyroblast/PyroblastSkill.tscn`
+
+- 1.2 秒施法、6 秒冷却；每枚投射物造成单体伤害，基础 20 + 施法者攻击力 × 1.25（首轮测试值）；
+- 实际释放前由内嵌 `MarkedHostileTargetExpansion` 读取当前战斗中所有带 `burning` 的敌人，
+  与指定主目标去重；每人从 Caster 发射点**同时**收到一枚 `PyroblastProjectile.tscn`，
+  没有范围爆炸、命中后分裂或额外人数上限；
+- 每枚独立命中后用 `ConsumeNamedStatusSkillEffect` 移除该目标当前的 `burning`；未命中不消耗；
+- `MarkedHostileCountCondition` 默认只作用于 AI 自动施放，要求至少 2 名灼烧敌人；
+  显式请求可以只向一个未灼烧目标施放；满足条件时，AI 优先选择炎爆而非 Firebolt；
+- 目标扩展是 `ArcProjectileDeliveryConfig.target_expansion` 的可选资源；留空时普通单箭与
+  连射行为不变。`shot_count` 在有扩展时表示每个入选目标的投射物数量，本技能配置为 1。
 
 ### HolyLight
 
@@ -109,6 +124,21 @@ SkillSystem/
 - 动画使用盾牌库的 `basic_cast_1`（无 Hitbox、无攻击位移的通用施法动画）。
 
 ## 6. 注意事项
+
+### 可复用连射技能
+
+`res://SkillSystem/00-Templates/MultiShotSkillTemplate.tscn` 继承现有远程技能模板，
+根节点仍是 `SkillBase`，并非连射专用脚本。其内嵌 `ArcProjectileDeliveryConfig`
+默认使用普通箭、每次释放 3 箭、相邻发射间隔 0.14 秒。将模板实例化为新的技能场景，
+在该技能中配置独立 `skill_id`、冷却、伤害 Effect、投射物场景与施放／释放表现，
+即可制作其他连射技能；不需要复制发射、命中或伤害代码。Archer 的
+`RapidShotSkill.tscn` 是首个实例，装备在第二常规技能槽。
+
+一次动画的 `release_action` 只启动一轮交付；每支箭各自飞行、命中并执行
+技能 Effect。`SkillDeliveryResult.hit_outcomes` 按实际命中顺序保留每箭的
+实际伤害，`current_hit` 兼容旧单箭用法并指向最后一次命中。目标在连射
+途中死亡时停止尚未发射的箭，已发射的箭照常依投射物规则结束；至少一箭
+成功命中则本轮交付成功。连击评分系统尚未接入，这里只提供独立命中结果。
 
 ### 角色技能槽配置
 

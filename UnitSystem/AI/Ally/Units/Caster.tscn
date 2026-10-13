@@ -4,6 +4,7 @@
 [ext_resource type="Resource" uid="uid://c7xo5naj6san6" path="res://UnitSystem/AI/Ally/Formation/Positions/Defender.tres" id="2_rysu0"]
 [ext_resource type="Resource" uid="uid://dlppmmwgyx6it" path="res://Item/Weapon/MagicGlobe/MagicGlobeData.tres" id="3_ceg2y"]
 [ext_resource type="PackedScene" uid="uid://dofx4arumbdgl" path="res://SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn" id="4_1dym3"]
+[ext_resource type="PackedScene" uid="uid://bpo5nn20cmy75" path="res://SkillSystem/00-Skills/Pyroblast/PyroblastSkill.tscn" id="4_pyroblast"]
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="4_ceg2y"]
 [ext_resource type="PackedScene" uid="uid://iy31womyjbj1" path="res://UnitSystem/Visuals/Ally/CasterVisual.tscn" id="4_rysu0"]
 [ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="5_xggor"]
@@ -39,10 +40,12 @@ dash_acceleration = 35.1
 rotation_speed = 5.0
 
 [node name="SkillHost" parent="." index="0" node_paths=PackedStringArray("regular_skills")]
-regular_skills = [NodePath("SkillSocket/FireboltSkill"), null]
+regular_skills = [NodePath("SkillSocket/FireboltSkill"), NodePath("SkillSocket/PyroblastSkill")]
 
 [node name="FireboltSkill" parent="SkillHost/SkillSocket" index="0" unique_id=165098916 instance=ExtResource("4_1dym3")]
 delivery = SubResource("Resource_xggor")
+
+[node name="PyroblastSkill" parent="SkillHost/SkillSocket" index="1" instance=ExtResource("4_pyroblast")]
 
 [node name="CombatSystem" parent="." index="6" unique_id=1762750344 instance=ExtResource("4_ceg2y")]
 debug_hitbox_enabled = true

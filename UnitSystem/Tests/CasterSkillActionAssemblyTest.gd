@@ -43,8 +43,8 @@ func _initialize() -> void:
 			"Caster mounts the one-scene Firebolt skill without animation coupling"
 		)
 		_expect(
-			(skill_host.call("get_registered_skills") as Array).size() == 1,
-			"Caster registers exactly one skill"
+			(skill_host.call("get_registered_skills") as Array).size() == 2,
+			"Caster registers Firebolt and Pyroblast"
 		)
 		_expect(
 			skill_host.call("get_skill_owner") == caster,

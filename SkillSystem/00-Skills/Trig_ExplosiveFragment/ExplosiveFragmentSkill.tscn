@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://Item/Projectiles/ExplosiveFragment.tscn" id="3_projectile"]
 [ext_resource type="Script" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_damage"]
 [ext_resource type="Script" path="res://SkillSystem/03-Extensions/TriggerSkillEffect.gd" id="5_trigger"]
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/BurningSplash/BurningSplashSkill.tscn" id="6_child"]
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn" id="6_child"]
 
 [sub_resource type="Resource" id="ArcDelivery"]
 resource_local_to_scene = true

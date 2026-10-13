@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/MultiShotSkillTemplate.tscn" id="1_template"]
+[ext_resource type="Script" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="2_damage"]
+
+[node name="RapidShotSkill" instance=ExtResource("1_template")]
+skill_id = &"rapid_shot"
+display_name = "Rapid Shot"
+ai_priority = 8
+cast_range = 6.0
+base_cast_time = 0.4
+skill_cooldown = 5.0
+
+[node name="DamageEffect" type="Node" parent="." index="2"]
+script = ExtResource("2_damage")
+operation = 0
+base_amount = 1.0
+power_ratio = 0.35

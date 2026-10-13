@@ -19,6 +19,7 @@ static func calculate_damage(
 
 
 ## 对有效且存活的目标结算伤害，并返回生命值实际减少的数值。
+## damage_context 为本次交付来源；默认创建普通来源，不在此发布第二笔事件或推测活动技能。
 ## threat_multiplier 与 damage_variance 分别控制仇恨贡献和单次伤害浮动；两者都不影响技能的既有默认行为。
 ## 参数 threat_multiplier 会原样透传给目标的伤害入口，默认 1.0；它仅供 EnemyBase 在实际扣血后提交统一仇恨事件使用，绝不参与伤害公式。
 static func apply_damage(
@@ -28,14 +29,20 @@ static func apply_damage(
 	power_ratio: float = 1.0,
 	multiplier: float = 1.0,
 	threat_multiplier: float = 1.0,
-	damage_variance: float = 0.0
+	damage_variance: float = 0.0,
+	damage_context: CombatDamageContext = null
 ) -> float:
 	if not is_instance_valid(target) or target.is_dead():
 		return 0.0
+	var provenance := damage_context
+	if provenance == null:
+		var scope: Node = source.get_tree().current_scene if is_instance_valid(source) and source.is_inside_tree() else null
+		provenance = CombatDamageContext.create(source, scope)
 	return target.apply_damage(
 		calculate_damage(source, target, base_damage, power_ratio, multiplier, damage_variance),
 		source,
-		threat_multiplier
+		threat_multiplier,
+		provenance
 	)
 
 

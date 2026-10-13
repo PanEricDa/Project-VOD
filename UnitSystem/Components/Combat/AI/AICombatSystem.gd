@@ -396,7 +396,7 @@ func _apply_basic_attack_damage(
 func _apply_resolved_hit_damage(target: UnitBase, attack_index: int) -> float:
 	var payload := _attack_controller.get_external_melee_payload() if is_instance_valid(_attack_controller) else {}
 	if not payload.is_empty() and _owner_body != null:
-		return CombatValueResolver.apply_damage(_owner_body, target, float(payload.get("base_damage", 0.0)), float(payload.get("power_ratio", 0.0)), float(payload.get("damage_multiplier", 1.0)), float(payload.get("threat_multiplier", 1.0)))
+		return CombatValueResolver.apply_damage(_owner_body, target, float(payload.get("base_damage", 0.0)), float(payload.get("power_ratio", 0.0)), float(payload.get("damage_multiplier", 1.0)), float(payload.get("threat_multiplier", 1.0)), 0.0, payload.get(&"damage_context") as CombatDamageContext)
 	return _apply_basic_attack_damage(target, attack_index)
 
 

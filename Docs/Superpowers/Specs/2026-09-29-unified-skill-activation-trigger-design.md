@@ -81,14 +81,14 @@ SkillSystem/00-Skills/ExplosiveArrow/ExplosiveArrowSkill.tscn
   TriggerSkillEffect：要求本次实际伤害 > 0；半径、数量 = 3；
     child_skill_scene = ExplosiveFragmentSkill.tscn
 
-SkillSystem/00-Skills/ExplosiveFragment/ExplosiveFragmentSkill.tscn
+SkillSystem/00-Skills/Trig_ExplosiveFragment/ExplosiveFragmentSkill.tscn
   SkillBase：冷却 = 0；无资源消耗；不装角色槽
   Delivery：Arc 投射物，引用碎片场景
   DamageEffect：较低的碎片伤害
   TriggerSkillEffect：要求命中前灼烧且本次实际伤害 > 0；
     半径、数量 = 3；child_skill_scene = BurningSplashSkill.tscn
 
-SkillSystem/00-Skills/BurningSplash/BurningSplashSkill.tscn
+SkillSystem/00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn
   SkillBase：冷却 = 0；无资源消耗；不装角色槽
   Delivery：现有瞬时目标交付
   DamageEffect：末段追加伤害；无进一步 TriggerSkillEffect

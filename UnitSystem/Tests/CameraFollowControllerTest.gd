@@ -20,12 +20,125 @@ func _run() -> void:
 	_world.name = "CameraFollowControllerTestWorld"
 	root.add_child(_world)
 
+	await _verify_stepped_zoom()
 	await _verify_unique_player_resolution()
 	await _verify_resolution_recovers_after_player_is_removed()
 	await _verify_living_focus_falls_back_from_player_to_ally_then_enemy()
 	await _verify_multiple_players_are_not_bound()
 	_verify_combat_room_structure()
 	_finish()
+
+
+## 真实输入管线验证档位边界、按键重绑定、独立平滑和焦点切换保留档位。
+func _verify_stepped_zoom() -> void:
+	var rig := Node3D.new()
+	rig.set_script(load(CAMERA_CONTROLLER_SCRIPT_PATH))
+	var camera := Camera3D.new()
+	camera.name = "Camera3D"
+	camera.rotation_degrees.x = -50.0
+	camera.position = Vector3(0.2, 0.1, 0.0)
+	camera.fov = 45.0
+	var baseline := camera.position
+	rig.add_child(camera)
+	_world.add_child(rig)
+	rig.set_process(false)
+	camera.make_current()
+	_expect(rig.get("zoom_distances") != null, "Camera has configured zoom steps")
+	_expect(InputMap.has_action(&"camera_zoom_in") and InputMap.has_action(&"camera_zoom_out"), "Zoom bindings exist in project InputMap")
+	if rig.get("zoom_distances") == null or not InputMap.has_action(&"camera_zoom_in") or not InputMap.has_action(&"camera_zoom_out"):
+		rig.free()
+		return
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 3.0), "Standard step initially moves camera along its viewing axis")
+	var has_wheel_up := false
+	var has_wheel_down := false
+	for event: InputEvent in InputMap.action_get_events(&"camera_zoom_in"):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			has_wheel_up = true
+	for event: InputEvent in InputMap.action_get_events(&"camera_zoom_out"):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			has_wheel_down = true
+	_expect(has_wheel_up and has_wheel_down, "Project binds both wheel directions")
+	await _send_zoom_action(&"camera_zoom_out")
+	var before := camera.position
+	rig.call("_process", 0.05)
+	_expect(camera.position.distance_to(before) > 0.0 and camera.position.distance_to(baseline) < 6.0, "Zoom interpolates instead of jumping")
+	rig.call("_process", 2.0)
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 6.0), "One action advances exactly one step")
+	for _index: int in range(6):
+		await _send_zoom_action(&"camera_zoom_out")
+	rig.call("_process", 2.0)
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 9.0), "Zoom stops at farthest step")
+	_expect(is_equal_approx(camera.fov, 45.0), "Zoom preserves projection FOV")
+	var player := _create_unit("ZoomPlayer", "Player")
+	var ally := _create_unit("ZoomAlly", "Ally")
+	_world.add_child(player)
+	_world.add_child(ally)
+	rig.call("_resolve_follow_target")
+	player.apply_damage(player.get_current_health())
+	rig.call("_resolve_follow_target")
+	_expect(rig.call("get_resolved_target") == ally, "Death still switches to ally")
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 9.0), "Focus switch retains current zoom")
+	player.free()
+	ally.free()
+	for _index: int in range(6):
+		await _send_zoom_action(&"camera_zoom_in")
+	rig.call("_process", 2.0)
+	_expect(camera.position.is_equal_approx(baseline), "Zoom stops at closest step")
+	var original_events := InputMap.action_get_events(&"camera_zoom_out")
+	InputMap.action_erase_events(&"camera_zoom_out")
+	var key_binding := InputEventKey.new()
+	key_binding.physical_keycode = KEY_Z
+	InputMap.action_add_event(&"camera_zoom_out", key_binding)
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_Z
+	key.pressed = true
+	Input.parse_input_event(key)
+	await process_frame
+	key = InputEventKey.new()
+	key.physical_keycode = KEY_Z
+	key.pressed = false
+	Input.parse_input_event(key)
+	await process_frame
+	rig.call("_process", 2.0)
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 3.0), "Rebinding works without changing camera code")
+	InputMap.action_erase_events(&"camera_zoom_out")
+	for event: InputEvent in original_events:
+		InputMap.action_add_event(&"camera_zoom_out", event)
+	var wheel := InputEventMouseButton.new()
+	wheel.device = 0
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel.pressed = true
+	Input.parse_input_event(wheel)
+	await process_frame
+	wheel = InputEventMouseButton.new()
+	wheel.device = 0
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel.pressed = false
+	Input.parse_input_event(wheel)
+	await process_frame
+	rig.call("_process", 2.0)
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 6.0), "Physical mouse wheel matches project binding")
+	var other := Camera3D.new()
+	_world.add_child(other)
+	other.make_current()
+	await _send_zoom_action(&"camera_zoom_out")
+	rig.call("_process", 2.0)
+	_expect(camera.position.is_equal_approx(baseline + camera.basis.z * 6.0), "Inactive camera ignores zoom input")
+	other.free()
+	rig.free()
+
+
+func _send_zoom_action(action: StringName) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	Input.parse_input_event(event)
+	await process_frame
+	event = InputEventAction.new()
+	event.action = action
+	event.pressed = false
+	Input.parse_input_event(event)
+	await process_frame
 
 
 func _verify_unique_player_resolution() -> void:

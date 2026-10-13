@@ -35,13 +35,19 @@ func apply(
 	var unit_target := target as UnitBase
 	match operation:
 		Operation.DAMAGE:
+			var provenance := context.damage_context
+			if provenance == null:
+				provenance = CombatDamageContext.create(caster, context.delivery_parent)
+			var hit_id: int = result.current_hit.hit_id if result != null and result.current_hit != null and result.current_hit.target == target else 0
 			var applied_damage: float = CombatValueResolver.apply_damage(
 				caster,
 				unit_target,
 				base_amount,
 				power_ratio,
 				1.0,
-				maxf(context.threat_multiplier, 0.0)
+				maxf(context.threat_multiplier, 0.0),
+				0.0,
+				provenance.for_hit(hit_id)
 			)
 			if result != null and result.current_hit != null and result.current_hit.target == target:
 				result.current_hit.actual_damage += applied_damage

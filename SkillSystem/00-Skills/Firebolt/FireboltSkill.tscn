@@ -34,4 +34,4 @@ power_ratio = 1.0
 [node name="BurningStatusEffect" type="Node" parent="." index="3"]
 script = ExtResource("6_status")
 status_id = &"burning"
-duration_seconds = 4.0
+duration_seconds = 8.0

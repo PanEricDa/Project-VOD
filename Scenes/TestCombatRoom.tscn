@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://b57b7knoialwy"]
 
+[ext_resource type="PackedScene" uid="uid://b2qbqaypxoxop" path="res://UnitSystem/Components/UI/SquadFocusDebugDisplay.tscn" id="1_1lfos"]
 [ext_resource type="Material" uid="uid://c40gw7vteanxu" path="res://Materials/MatGridDark.tres" id="1_snkud"]
+[ext_resource type="PackedScene" uid="uid://blkrjyi4or5gr" path="res://UnitSystem/Components/Combat/Squad/SquadFocusComponent.tscn" id="2_8boc2"]
 [ext_resource type="Texture2D" uid="uid://ddqhqbhb1d7we" path="res://Assets/HDR Sky/Sky04.hdr" id="2_so4i8"]
 [ext_resource type="Script" uid="uid://4c7vii5flost" path="res://UnitSystem/Components/Camera/CameraFollowController.gd" id="3_5f76c"]
 [ext_resource type="PackedScene" uid="uid://cqp35eaph02gm" path="res://UnitSystem/AI/Enemy/Units/GoblinWarrior.tscn" id="4_5f76c"]
@@ -44,6 +46,12 @@ agent_height = 0.5
 agent_radius = 0.25
 
 [node name="TestCombatRoom" type="Node3D" unique_id=369100259]
+
+[node name="SquadFocusDebugDisplay" parent="." unique_id=1081714811 node_paths=PackedStringArray("focus_source") instance=ExtResource("1_1lfos")]
+focus_source = NodePath("../SquadFocusComponent")
+debug_enabled = true
+
+[node name="SquadFocusComponent" parent="." unique_id=1471205558 instance=ExtResource("2_8boc2")]
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=1165615627]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
@@ -161,7 +169,6 @@ combat_targeting_radius = 0.0
 
 [node name="Archer" parent="." unique_id=1871583316 instance=ExtResource("12_q71sd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.892951, 0, 10.451373)
-combat_targeting_radius = 0.0
 hit_movement_lock_duration = 0.3
 
 [editable path="EnemyContainer/Pack_C/GoblinWarrior"]

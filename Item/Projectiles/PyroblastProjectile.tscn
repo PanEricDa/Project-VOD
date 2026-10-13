@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://bf6jnj6t1rq0b"]
+
+[ext_resource type="Script" uid="uid://bu0pxpairgi7s" path="res://Item/Projectiles/TrackingArcProjectile.gd" id="1_arc"]
+[ext_resource type="PackedScene" uid="uid://5k4vwumkm53" path="res://Effects/Skills/Pyroblast/PyroblastImpactEffect.tscn" id="2_en0rn"]
+[ext_resource type="PackedScene" uid="uid://ba8uu0jcqk3kb" path="res://Effects/Skills/Pyroblast/PyroblastFlightEffect.tscn" id="3_yhikg"]
+
+[node name="PyroblastProjectile" type="Node3D" unique_id=1243191133]
+script = ExtResource("1_arc")
+flight_duration = 0.48
+arc_height = 0.55
+impact_effect_scene = ExtResource("2_en0rn")
+
+[node name="PyroblastFlightEffect" parent="." unique_id=701813066 instance=ExtResource("3_yhikg")]

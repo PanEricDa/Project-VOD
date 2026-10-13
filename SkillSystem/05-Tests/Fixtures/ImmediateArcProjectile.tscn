@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://SkillSystem/05-Tests/Fixtures/ImmediateArcProjectile.gd" id="1_fixture"]
+
+[node name="ImmediateArcProjectile" type="Node3D"]
+script = ExtResource("1_fixture")

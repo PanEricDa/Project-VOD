@@ -1,0 +1,44 @@
+[gd_scene format=3 uid="uid://bpo5nn20cmy75"]
+
+[ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="PackedScene" uid="uid://b12ptqu14mkj8" path="res://Effects/Skills/Pyroblast/PyroblastCastChargeEffect.tscn" id="2_8i22q"]
+[ext_resource type="PackedScene" uid="uid://bf6jnj6t1rq0b" path="res://Item/Projectiles/PyroblastProjectile.tscn" id="3_projectile"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="4_delivery"]
+[ext_resource type="Script" uid="uid://dbomxnas7fyr" path="res://SkillSystem/02-Delivery/MarkedHostileTargetExpansion.gd" id="5_targets"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="6_damage"]
+[ext_resource type="Script" uid="uid://bge4b56l2s45t" path="res://SkillSystem/03-Extensions/ConsumeNamedStatusSkillEffect.gd" id="7_consume"]
+[ext_resource type="Script" uid="uid://cdw1b3fjjoax2" path="res://SkillSystem/03-Extensions/Conditions/MarkedHostileCountCondition.gd" id="8_condition"]
+
+[sub_resource type="Resource" id="Resource_xaf3l"]
+resource_local_to_scene = true
+script = ExtResource("5_targets")
+status_id = &"burning"
+
+[sub_resource type="Resource" id="Resource_00tmo"]
+resource_local_to_scene = true
+script = ExtResource("4_delivery")
+projectile_scene = ExtResource("3_projectile")
+target_expansion = SubResource("Resource_xaf3l")
+
+[node name="PyroblastSkill" unique_id=1106987929 instance=ExtResource("1_template")]
+skill_id = &"pyroblast"
+display_name = "Pyroblast"
+ai_priority = 20
+cast_range = 6.0
+base_cast_time = 1.2
+cast_effect_scene = ExtResource("2_8i22q")
+delivery = SubResource("Resource_00tmo")
+
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=1724851517]
+script = ExtResource("6_damage")
+operation = 0
+base_amount = 20.0
+power_ratio = 1.25
+
+[node name="ConsumeBurningEffect" type="Node" parent="." index="3" unique_id=19649925]
+script = ExtResource("7_consume")
+status_id = &"burning"
+
+[node name="MarkedHostileCountCondition" type="Node" parent="." index="4" unique_id=788983055]
+script = ExtResource("8_condition")
+target_query = SubResource("Resource_xaf3l")

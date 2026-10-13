@@ -1,0 +1,138 @@
+[gd_scene format=3 uid="uid://dnuuo524t0vij"]
+
+[ext_resource type="Script" uid="uid://c1qijfwwcy075" path="res://Effects/Skills/Pyroblast/PyroblastEffectPreview.gd" id="1_33dfc"]
+[ext_resource type="Material" uid="uid://c6rgg66w6cmn1" path="res://Materials/MatGridLightBrown.tres" id="2_n6q2x"]
+[ext_resource type="Material" uid="uid://ccx73bp1urikv" path="res://Materials/MatGridPurple.tres" id="3_cmag2"]
+[ext_resource type="PackedScene" uid="uid://b12ptqu14mkj8" path="res://Effects/Skills/Pyroblast/PyroblastCastChargeEffect.tscn" id="4_st3nm"]
+[ext_resource type="PackedScene" uid="uid://ba8uu0jcqk3kb" path="res://Effects/Skills/Pyroblast/PyroblastFlightEffect.tscn" id="6_8ecym"]
+[ext_resource type="PackedScene" uid="uid://5k4vwumkm53" path="res://Effects/Skills/Pyroblast/PyroblastImpactEffect.tscn" id="8_88ih3"]
+
+[sub_resource type="Environment" id="Environment_5q5km"]
+background_mode = 1
+background_color = Color(0.025, 0.032, 0.05, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.65, 0.75, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_087q2"]
+size = Vector2(10, 7)
+
+[sub_resource type="BoxMesh" id="BoxMesh_4ie08"]
+size = Vector3(0.45, 0.65, 0.45)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ttx5e"]
+albedo_color = Color(0.46666667, 0.2784314, 0.24313726, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tyf5k"]
+size = Vector3(0.45, 0.7, 0.45)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ude52"]
+albedo_color = Color(0.46666667, 0.2784314, 0.24313726, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1m78n"]
+size = Vector3(0.45, 0.7, 0.45)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7hsnk"]
+albedo_color = Color(0.46666667, 0.2784314, 0.24313726, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_l41ue"]
+size = Vector3(0.45, 0.7, 0.45)
+
+[node name="PyroblastFlightEffectPreview" type="Node3D" unique_id=161978992]
+script = ExtResource("1_33dfc")
+preview_mode = 1
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=668698547]
+environment = SubResource("Environment_5q5km")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1398736203]
+transform = Transform3D(0.8660254, 0.43301272, -0.24999999, 0, 0.49999997, 0.86602545, 0.5, -0.75, 0.43301266, 0, 0, 0)
+light_energy = 0.7
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=307170541]
+material_override = ExtResource("2_n6q2x")
+mesh = SubResource("PlaneMesh_087q2")
+
+[node name="PreviewCaster" type="Node3D" parent="." unique_id=1514759751]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+
+[node name="Body" type="MeshInstance3D" parent="PreviewCaster" unique_id=1482420696]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.325, 0)
+material_override = ExtResource("3_cmag2")
+mesh = SubResource("BoxMesh_4ie08")
+
+[node name="ProjectileOrigin" type="Marker3D" parent="PreviewCaster" unique_id=691725437]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.8, 0)
+
+[node name="PyroblastCastChargeEffect" parent="PreviewCaster" unique_id=1630196662 instance=ExtResource("4_st3nm")]
+autoplay = false
+
+[node name="FlightCarriers" type="Node3D" parent="." unique_id=1983717131]
+
+[node name="FlightCarrier0" type="Node3D" parent="FlightCarriers" unique_id=663179057]
+
+[node name="PyroblastFlightEffect" parent="FlightCarriers/FlightCarrier0" unique_id=701813066 instance=ExtResource("6_8ecym")]
+autoplay = false
+
+[node name="FlightCarrier1" type="Node3D" parent="FlightCarriers" unique_id=2011136079]
+
+[node name="PyroblastFlightEffect" parent="FlightCarriers/FlightCarrier1" unique_id=576244722 instance=ExtResource("6_8ecym")]
+autoplay = false
+
+[node name="FlightCarrier2" type="Node3D" parent="FlightCarriers" unique_id=386405630]
+
+[node name="PyroblastFlightEffect" parent="FlightCarriers/FlightCarrier2" unique_id=825723130 instance=ExtResource("6_8ecym")]
+autoplay = false
+
+[node name="TargetPoints" type="Node3D" parent="." unique_id=2022501809]
+
+[node name="ImpactPoint0" type="Node3D" parent="TargetPoints" unique_id=933844876]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 0.4, -1.3)
+
+[node name="TargetBody" type="MeshInstance3D" parent="TargetPoints/ImpactPoint0" unique_id=1283681023]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+material_override = SubResource("StandardMaterial3D_ttx5e")
+mesh = SubResource("BoxMesh_tyf5k")
+
+[node name="PyroblastImpactEffect" parent="TargetPoints/ImpactPoint0" unique_id=1466041819 instance=ExtResource("8_88ih3")]
+autoplay = false
+auto_free_on_finished = false
+
+[node name="ImpactPoint1" type="Node3D" parent="TargetPoints" unique_id=342669768]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9, 0.4, 0)
+
+[node name="TargetBody" type="MeshInstance3D" parent="TargetPoints/ImpactPoint1" unique_id=1464314725]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+material_override = SubResource("StandardMaterial3D_ude52")
+mesh = SubResource("BoxMesh_1m78n")
+
+[node name="PyroblastImpactEffect" parent="TargetPoints/ImpactPoint1" unique_id=1470956285 instance=ExtResource("8_88ih3")]
+autoplay = false
+auto_free_on_finished = false
+
+[node name="ImpactPoint2" type="Node3D" parent="TargetPoints" unique_id=2033453420]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 0.4, 1.3)
+
+[node name="TargetBody" type="MeshInstance3D" parent="TargetPoints/ImpactPoint2" unique_id=1650713315]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+material_override = SubResource("StandardMaterial3D_7hsnk")
+mesh = SubResource("BoxMesh_l41ue")
+
+[node name="PyroblastImpactEffect" parent="TargetPoints/ImpactPoint2" unique_id=839818359 instance=ExtResource("8_88ih3")]
+autoplay = false
+auto_free_on_finished = false
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1820255598]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.8, 3.2, 6)
+current = true
+fov = 43.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1842774292]
+
+[node name="Caption" type="Label" parent="CanvasLayer" unique_id=1966388126]
+offset_left = 22.0
+offset_top = 20.0
+offset_right = 22.0
+offset_bottom = 20.0
+theme_override_font_sizes/font_size = 22

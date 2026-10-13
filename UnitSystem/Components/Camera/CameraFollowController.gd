@@ -24,9 +24,13 @@ enum FocusMode {
 ## 该间隔只影响“玩家后加入场景”或“原目标已删除”时的重新绑定响应；
 ## 相机已经绑定有效目标后不会重复进行场景树扫描。
 const TARGET_RESOLUTION_RETRY_INTERVAL: float = 0.25
+## 镜头靠近一档的 InputMap 动作；具体滚轮或键盘绑定由项目设置维护。
+const ZOOM_IN_ACTION: StringName = &"camera_zoom_in"
+## 镜头远离一档的 InputMap 动作；脚本不判断鼠标按键编号。
+const ZOOM_OUT_ACTION: StringName = &"camera_zoom_out"
 
-## 摄像机相对于玩家的固定世界坐标偏移，单位为米。
-## X 控制横向偏移、Y 控制高度、Z 控制镜头位于玩家后方的距离。
+## CameraRig 相对于跟随目标的基础世界坐标偏移，单位为米。
+## X 控制横向偏移、Y 控制高度、Z 控制后方距离；分档缩放在此基础上独立移动子相机。
 @export var camera_offset: Vector3 = Vector3(0.0, 9.0, 6.8)
 
 ## 摄像机追赶期望位置时的指数平滑强度。
@@ -56,6 +60,17 @@ const TARGET_RESOLUTION_RETRY_INTERVAL: float = 0.25
 ## 是否锁定镜头垂直跟随高度。
 ## 开启后，跳跃或物理起伏不会带动镜头上下晃动；XZ 水平跟随保持正常。
 @export var lock_vertical_follow: bool = true
+
+@export_category("Zoom")
+## 各档相对 Camera3D 初始位置沿镜头后方增加的距离，单位米；须为非负、有限且从小到大排列。
+## 默认 [0, 3, 6, 9] 提供四档，只移动子相机，不改变跟随、俯视角度或 FOV；空数组关闭缩放。
+@export var zoom_distances: PackedFloat32Array = PackedFloat32Array([0.0, 3.0, 6.0, 9.0])
+## 初始缩放档位，下标从 0 开始；默认 1 为标准档，越界时限制到有效档位。
+## 仅影响本 CameraRig 的初始视距，切换跟随目标不会重置当前档位。
+@export_range(0, 16, 1, "or_greater") var initial_zoom_step: int = 1
+## 分档切换的指数平滑强度，单位每秒；默认 15 约在 0.2 秒完成 95% 过渡。
+## 仅影响子相机缩放；连续输入更新目标档位，不排队播放，也不受最大跟随距离限制。
+@export_range(0.1, 40.0, 0.1, "or_greater") var zoom_smoothness: float = 15.0
 
 @export_category("Debug")
 ## 只读显示当前自动解析到的镜头焦点节点路径。
@@ -104,17 +119,26 @@ var _target_resolution_elapsed: float = 0.0
 ## 当候选恢复为零个或唯一一个时会自动复位，下一次真正的多玩家歧义仍会给出一次提示。
 var _has_warned_multiple_players: bool = false
 
+## 缩放只作用于既有直接子节点 Camera3D；未装配相机时保留原跟随功能。
+var _zoom_camera: Camera3D
+var _zoom_levels: PackedFloat32Array = PackedFloat32Array()
+var _zoom_step: int = 0
+var _zoom_distance: float = 0.0
+var _base_camera_position: Vector3 = Vector3.ZERO
+
 
 ## Godot 节点初始化回调。
 ## 控制器会立即尝试自动解析目标；找不到唯一玩家属于可恢复等待状态，不会关闭相机处理或输出配置错误。
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	_initialize_zoom()
 	_resolve_follow_target()
 
 
-## Godot 每个渲染帧回调，负责目标重解析、速度预留和帧率无关的平滑跟随。
+## Godot 每个渲染帧回调，负责子相机分档缩放、目标重解析、速度预留和帧率无关的平滑跟随。
 ## 参数 delta 是当前渲染帧经过的秒数。
 func _process(delta: float) -> void:
+	_update_zoom(delta)
 	if not _has_valid_target():
 		_clear_target()
 		_resolve_follow_target()
@@ -146,6 +170,54 @@ func _process(delta: float) -> void:
 	if remaining_offset.length() > maximum_follow_distance:
 		smoothed_position = desired_position - remaining_offset.normalized() * maximum_follow_distance
 	global_position = smoothed_position
+
+
+## 接收未被 UI 消费的 InputMap 动作；只处理当前活动相机的首次按下事件。
+## event 可以来自滚轮、键盘或手柄，具体绑定只由项目 Input Map 决定。
+func _unhandled_input(event: InputEvent) -> void:
+	if not is_instance_valid(_zoom_camera) or _zoom_levels.is_empty() or not _zoom_camera.is_current():
+		return
+	var direction: int = 0
+	if event.is_action_pressed(ZOOM_IN_ACTION):
+		direction = -1
+	elif event.is_action_pressed(ZOOM_OUT_ACTION):
+		direction = 1
+	if direction == 0:
+		return
+	_zoom_step = clampi(_zoom_step + direction, 0, _zoom_levels.size() - 1)
+	get_viewport().set_input_as_handled()
+
+
+func _initialize_zoom() -> void:
+	_zoom_camera = get_node_or_null(^"Camera3D") as Camera3D
+	if _zoom_camera == null or zoom_distances.is_empty():
+		return
+	var previous: float = -1.0
+	for distance: float in zoom_distances:
+		if not is_finite(distance) or distance < 0.0 or distance < previous:
+			push_warning("CameraFollowController: Zoom distances must be finite, nonnegative and ordered from near to far.")
+			return
+		previous = distance
+	_zoom_levels = zoom_distances.duplicate()
+	_base_camera_position = _zoom_camera.position
+	_zoom_step = clampi(initial_zoom_step, 0, _zoom_levels.size() - 1)
+	_zoom_distance = _zoom_levels[_zoom_step]
+	_apply_zoom_position()
+
+
+func _update_zoom(delta: float) -> void:
+	if not is_instance_valid(_zoom_camera) or _zoom_levels.is_empty():
+		return
+	var desired: float = _zoom_levels[_zoom_step]
+	var weight: float = 1.0 - exp(-zoom_smoothness * maxf(delta, 0.0))
+	_zoom_distance = lerpf(_zoom_distance, desired, weight)
+	if absf(_zoom_distance - desired) < 0.001:
+		_zoom_distance = desired
+	_apply_zoom_position()
+
+
+func _apply_zoom_position() -> void:
+	_zoom_camera.position = _base_camera_position + _zoom_camera.basis.z.normalized() * _zoom_distance
 
 
 ## 根据 CharacterBody3D 的水平速度计算移动方向预留偏移。

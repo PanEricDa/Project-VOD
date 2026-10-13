@@ -64,6 +64,7 @@ func apply(context: SkillContext, result: SkillDeliveryResult, target: Node3D) -
 		child.skill_cancelled.connect(_release_failed_child.bind(child), CONNECT_ONE_SHOT)
 		var child_context := SkillContext.new()
 		child_context.caster = context.caster
+		child_context.damage_context = context.damage_context.duplicate_context() if context.damage_context != null else null
 		child_context.host = context.host
 		child_context.delivery_parent = context.delivery_parent
 		child_context.requested_target = candidate

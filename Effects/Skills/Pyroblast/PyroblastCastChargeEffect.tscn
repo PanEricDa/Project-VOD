@@ -1,0 +1,135 @@
+[gd_scene format=3 uid="uid://b12ptqu14mkj8"]
+
+[ext_resource type="Script" uid="uid://wa4v77pj2xwp" path="res://Effects/Skills/Pyroblast/PyroblastCastChargeEffect.gd" id="1_c0sp6"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wrbbb"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.3, 0.03, 0.7)
+
+[sub_resource type="TorusMesh" id="TorusMesh_yy2xc"]
+resource_local_to_scene = true
+inner_radius = 0.46
+outer_radius = 0.55
+rings = 48
+ring_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1f7p5"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.3, 0.03, 0.5)
+
+[sub_resource type="SphereMesh" id="SphereMesh_aqe3f"]
+resource_local_to_scene = true
+radius = 0.16
+height = 0.32
+radial_segments = 20
+rings = 10
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dpo1i"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.3, 0.03, 0.5)
+
+[sub_resource type="SphereMesh" id="SphereMesh_iygq6"]
+resource_local_to_scene = true
+radius = 0.28
+height = 0.56
+radial_segments = 20
+rings = 10
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oj1et"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+vertex_color_use_as_albedo = true
+
+[sub_resource type="SphereMesh" id="SphereMesh_wqah0"]
+radial_segments = 6
+rings = 3
+
+[sub_resource type="MultiMesh" id="MultiMesh_ihnq4"]
+resource_local_to_scene = true
+transform_format = 1
+use_colors = true
+mesh = SubResource("SphereMesh_wqah0")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_c0sp6"]
+resource_local_to_scene = true
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.42, 0.08, 0.75)
+
+[sub_resource type="TorusMesh" id="TorusMesh_wrbbb"]
+resource_local_to_scene = true
+inner_radius = 0.46
+outer_radius = 0.55
+rings = 48
+ring_segments = 8
+
+[sub_resource type="Animation" id="Animation_t7tm0"]
+resource_local_to_scene = true
+length = 1.2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/ChargeRing:rotation:y")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [0.0, 1.6]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_6qxyq"]
+resource_local_to_scene = true
+_data = {
+&"charge": SubResource("Animation_t7tm0")
+}
+
+[node name="PyroblastCastChargeEffect" type="Node3D" unique_id=1630196662]
+script = ExtResource("1_c0sp6")
+spark_size = 0.065
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1762423652]
+
+[node name="ChargeRing" type="MeshInstance3D" parent="VisualRoot" unique_id=1964142286]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.035, 0)
+material_override = SubResource("StandardMaterial3D_wrbbb")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_yy2xc")
+
+[node name="ChargeCore" type="MeshInstance3D" parent="VisualRoot" unique_id=290391618]
+material_override = SubResource("StandardMaterial3D_1f7p5")
+cast_shadow = 0
+mesh = SubResource("SphereMesh_aqe3f")
+
+[node name="ChargeShell" type="MeshInstance3D" parent="VisualRoot" unique_id=679847089]
+material_override = SubResource("StandardMaterial3D_dpo1i")
+cast_shadow = 0
+mesh = SubResource("SphereMesh_iygq6")
+
+[node name="RisingSparks" type="MultiMeshInstance3D" parent="VisualRoot" unique_id=501357783]
+material_override = SubResource("StandardMaterial3D_oj1et")
+cast_shadow = 0
+custom_aabb = AABB(-2, -0.2, -2, 4, 4, 4)
+multimesh = SubResource("MultiMesh_ihnq4")
+
+[node name="ExpansionRing" type="MeshInstance3D" parent="VisualRoot" unique_id=1402713522]
+transform = Transform3D(0.55, 0, 0, 0, 0.55, 0, 0, 0, 0.55, 0, 0.04, 0)
+material_override = SubResource("StandardMaterial3D_c0sp6")
+transparency = 1.0
+cast_shadow = 0
+mesh = SubResource("TorusMesh_wrbbb")
+
+[node name="ChargeLight" type="OmniLight3D" parent="." unique_id=1872204302]
+light_energy = 0.0
+omni_range = 1.5
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=441260332]
+libraries/ = SubResource("AnimationLibrary_6qxyq")
