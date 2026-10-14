@@ -13,6 +13,7 @@ script = ExtResource("3_delivery")
 [node name="GreaterHealSkill" unique_id=1373932239 instance=ExtResource("1_template")]
 skill_id = &"greater_heal"
 display_name = "Greater Heal"
+skill_type = 1
 ai_priority = 100
 target_relations = 3
 target_selection_mode = 3

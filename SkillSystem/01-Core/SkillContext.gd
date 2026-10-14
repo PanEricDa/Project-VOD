@@ -16,6 +16,15 @@ var target_position: Vector3 = Vector3.INF
 var delivery_parent: Node
 ## 单次伤害来源快照；空表示尚未创建。复制必须独立，衍生交付继承根归属与收益。
 var damage_context: CombatDamageContext
+## 请求用途；普通默认REGULAR，CHAIN仅用于角色动作根连携，不传给触发子技能。
+enum Purpose { REGULAR, CHAIN }
+var purpose: int = Purpose.REGULAR
+## 可选首选目标意图；技能自行验证关系，默认空，不改变AI长期锁定。
+var preferred_target: Node3D
+## 根指令生命周期，复制时共享；普通技能为空，子交付继承但不重新收费。
+var command_request: SkillCommandRequest
+## 本次交付身份；execute前分配，触发子context从0创建自己的token。
+var delivery_token_id: int = 0
 ## 本次执行方式只由请求方决定，不是技能场景的固定类型；默认走角色动作和动画释放帧。
 enum ExecutionMode { CHARACTER_ACTION, DIRECT_TRIGGER }
 
@@ -58,6 +67,10 @@ func duplicate_context() -> RefCounted:
 	copy.delivery_parent = (
 		delivery_parent if is_instance_valid(delivery_parent) else null
 	)
+	copy.purpose = purpose
+	copy.preferred_target = preferred_target if is_instance_valid(preferred_target) else null
+	copy.command_request = command_request
+	copy.delivery_token_id = delivery_token_id
 	copy.execution_mode = execution_mode
 	copy.activation_transform = activation_transform
 	copy.trigger_scene_paths.assign(trigger_scene_paths)

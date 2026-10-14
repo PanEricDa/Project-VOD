@@ -21,6 +21,8 @@ signal global_cooldown_finished()
 signal external_action_released()
 signal external_action_finished()
 signal external_action_cancelled()
+## 转发动作原request_id和release/finish/cancel阶段；普通身份0兼容旧调用。
+signal external_action_lifecycle(request_id: int, event: StringName)
 
 @export_category("Weapon")
 ## 由 AIUnitBase 根节点转交的共享武器数据；不作为子节点 Inspector 配置项。
@@ -167,7 +169,8 @@ func cancel_current_action() -> void:
 
 
 ## 将外部动作请求转交给角色动画控制器；本层不认识具体技能类型。
-func request_external_action(effective_cast_time: float, target: UnitBase = null, action_payload: Dictionary = {}) -> bool:
+## request_id默认0为普通动作，连携用正身份；仅转发，不读取技能/费用配置。
+func request_external_action(effective_cast_time: float, target: UnitBase = null, action_payload: Dictionary = {}, request_id: int = 0) -> bool:
 	if (
 		not is_instance_valid(_owner_body)
 		or not _owner_body.is_inside_tree()
@@ -178,7 +181,7 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 	return (
 		_configured
 		and is_instance_valid(_attack_controller)
-		and _attack_controller.request_external_action(effective_cast_time, target, action_payload)
+		and _attack_controller.request_external_action(effective_cast_time, target, action_payload, request_id)
 	)
 
 
@@ -211,6 +214,11 @@ func can_request_basic_attack(target: UnitBase) -> bool:
 	return offset.length() <= (
 		get_attack_range() + get_attack_range_tolerance()
 	)
+
+
+## 查询实际动作占用，包含外部技能；冷却不算占用。
+func is_action_in_progress() -> bool:
+	return is_instance_valid(_attack_controller) and _attack_controller.is_action_in_progress()
 
 
 func is_attacking() -> bool:
@@ -307,6 +315,7 @@ func _is_valid_target(target: UnitBase) -> bool:
 
 func _connect_controller_signals() -> void:
 	var connections: Array[Array] = [
+		[_attack_controller.external_action_lifecycle, _on_external_action_lifecycle],
 		[_attack_controller.weapon_equipped, _on_weapon_equipped],
 		[_attack_controller.weapon_unequipped, _on_weapon_unequipped],
 		[_attack_controller.attack_started, _on_attack_started],
@@ -408,6 +417,10 @@ func _on_controller_attack_hit(
 ) -> void:
 	_apply_resolved_hit_damage(target, attack_index)
 	attack_hit.emit(target, hit_position, hit_direction, attack_index)
+
+
+func _on_external_action_lifecycle(request_id: int, event: StringName) -> void:
+	external_action_lifecycle.emit(request_id, event)
 
 
 func _on_external_action_released() -> void:

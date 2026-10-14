@@ -164,6 +164,7 @@ var _shared_action_cooldown_remaining: float = 0.0
 var _skill_movement_locked: bool = false
 ## 当前排队技能实际要求靠近的已解析目标。该目标可能是友军，不能用敌方锁定目标替代。
 var _skill_approach_target: Node3D
+var _skill_approach_request_id: int = 0
 var _skill_approach_range: float = 0.0
 var _skill_approach_best_distance: float = INF
 var _skill_approach_no_progress_elapsed: float = 0.0
@@ -276,7 +277,6 @@ func get_follow_target() -> CharacterBody3D:
 func physics_tick(delta: float) -> void:
 	if not _configured:
 		return
-	_update_protection(delta)
 	_shared_action_cooldown_remaining = maxf(
 		_shared_action_cooldown_remaining - delta,
 		0.0
@@ -288,6 +288,21 @@ func physics_tick(delta: float) -> void:
 	if not is_instance_valid(_player) or not _player.is_inside_tree():
 		## 原目标失效时，统一经公开接口恢复到默认 Player 阵营目标。
 		set_follow_target(null)
+	# 连携动作/缓存先于保护、脱战与普通决策；原普通计时已在上方照常推进。
+	if is_instance_valid(_skill_host) and (_skill_host.has_pending_command() or _skill_host.has_command_action_lock()):
+		var preferred: UnitBase
+		if is_instance_valid(_player) and _player.has_method(&"get_locked_target"):
+			preferred = _player.call(&"get_locked_target") as UnitBase
+		if _skill_host.advance_pending_command(preferred, delta):
+			if _skill_host.has_command_action_lock() or _skill_movement_locked:
+				if _skill_movement_locked: _owner_body.clear_movement_target()
+			elif is_instance_valid(_combat_system) and _combat_system.is_attacking():
+				var normal_target := _combat_system.get_attack_controller().get_current_target()
+				if is_instance_valid(normal_target): _submit_active_basic_attack_movement(normal_target, delta)
+			elif not (is_instance_valid(_combat_system) and _combat_system.is_action_in_progress()):
+				_update_skill_approach_movement(delta)
+			return
+	_update_protection(delta)
 	if not is_instance_valid(_player):
 		_owner_body.clear_movement_target()
 		return
@@ -717,6 +732,9 @@ func _configure_action_executors() -> void:
 			_combat_system.attack_started.connect(_on_basic_attack_started)
 	if is_instance_valid(_skill_host):
 		_skill_host.set_use_external_global_cooldown(true)
+		_skill_host.set_action_state_provider(_combat_system)
+		if not _skill_host.command_failed.is_connected(_on_command_failed):
+			_skill_host.command_failed.connect(_on_command_failed)
 		if not _skill_host.action_requested.is_connected(
 			_on_skill_action_requested
 		):
@@ -740,25 +758,8 @@ func _configure_action_executors() -> void:
 				_on_skill_movement_lock_requested
 			)
 	if is_instance_valid(_combat_system):
-		if not _combat_system.external_action_released.is_connected(
-			_on_external_action_released
-		):
-			_combat_system.external_action_released.connect(
-				_on_external_action_released
-			)
-		if not _combat_system.external_action_finished.is_connected(
-			_on_external_action_finished
-		):
-			_combat_system.external_action_finished.connect(
-				_on_external_action_finished
-			)
-		if not _combat_system.external_action_cancelled.is_connected(
-			_on_external_action_cancelled
-		):
-			_combat_system.external_action_cancelled.connect(
-				_on_external_action_cancelled
-			)
-
+		if not _combat_system.external_action_lifecycle.is_connected(_on_external_action_lifecycle):
+			_combat_system.external_action_lifecycle.connect(_on_external_action_lifecycle)
 
 func _try_request_automatic_skill(preferred_target: UnitBase) -> bool:
 	if (
@@ -860,7 +861,8 @@ func _on_basic_attack_started(_target: UnitBase, _attack_index: int) -> void:
 
 
 func _on_skill_released(_context: SkillContext) -> void:
-	_start_shared_action_cooldown()
+	if _context.purpose != SkillContext.Purpose.CHAIN:
+		_start_shared_action_cooldown()
 
 
 ## SkillHost 只提出通用动作请求；状态机把它转交给现有 AICombatSystem 动画入口。
@@ -871,6 +873,8 @@ func _on_skill_action_requested(
 ) -> void:
 	_clear_skill_approach_request()
 	var action_payload: Dictionary = _skill.get_action_payload()
+	var context := _skill.get_current_context()
+	var request_id: int = context.command_request.request_id if context != null and context.command_request != null else 0
 	if is_instance_valid(target):
 		var facing: Vector3 = (
 			target.global_position - _owner_body.global_position
@@ -881,12 +885,12 @@ func _on_skill_action_requested(
 			_owner_body.snap_visual_facing(facing.normalized())
 	if (
 		not is_instance_valid(_combat_system)
-		or not _combat_system.request_external_action(effective_cast_time, target as UnitBase, action_payload)
+		or not _combat_system.request_external_action(effective_cast_time, target as UnitBase, action_payload, request_id)
 	):
 		_skill_host.cancel_active_skill(&"action_driver_rejected")
 		return
 	var launch_transform := _combat_system.get_action_launch_transform()
-	if not _skill_host.confirm_active_action_started(launch_transform):
+	if not _skill_host.confirm_active_action_started(launch_transform, request_id):
 		_combat_system.cancel_external_action()
 		_skill_host.cancel_active_skill(&"action_confirmation_failed")
 
@@ -909,31 +913,48 @@ func _on_skill_approach_requested(
 	):
 		_skill_approach_best_distance = INF
 		_skill_approach_no_progress_elapsed = 0.0
+	_skill_approach_request_id = context.command_request.request_id if context.command_request != null else 0
 	_skill_approach_target = next_target
 	_skill_approach_range = next_range
 	if is_in_combat():
 		_transition_to(BehaviorState.COMBAT_APPROACH)
 
 
-func _on_external_action_released() -> void:
-	if not is_instance_valid(_skill_host):
-		return
-	if not _skill_host.release_active_action(
-		_combat_system.get_action_launch_transform()
-	):
-		_combat_system.cancel_external_action()
+func _on_external_action_lifecycle(request_id: int, event: StringName) -> void:
+	if not is_instance_valid(_skill_host): return
+	if request_id != _skill_host.get_active_command_id(): return
+	match event:
+		&"release":
+			var context: SkillContext = _skill_host.get_active_skill().get_current_context() if _skill_host.get_active_skill() != null else null
+			if context == null:
+				# 普通技能已被直接取消，原释放帧负责关闭其旧动作；不能取消正ID连携。
+				if request_id == 0: _combat_system.cancel_external_action()
+				return
+			if not _skill_host.release_active_action(_combat_system.get_action_launch_transform(), request_id):
+				_combat_system.cancel_external_action()
+		&"finish":
+			_clear_skill_approach_request()
+			_skill_host.finish_active_action(request_id)
+		&"cancel":
+			_clear_skill_approach_request()
+			if request_id > 0: _skill_host.cancel_command(request_id, &"action_driver_cancelled")
+			else: _skill_host.cancel_active_skill(&"action_driver_cancelled")
 
 
-func _on_external_action_finished() -> void:
-	_clear_skill_approach_request()
-	if is_instance_valid(_skill_host):
-		_skill_host.finish_active_action()
+func _on_command_failed(request_id: int, _reason: StringName) -> void:
+	if is_instance_valid(_combat_system):
+		var driver := _combat_system.get_attack_controller()
+		if driver != null and driver.get_external_request_id() == request_id:
+			_combat_system.cancel_external_action()
+	if _skill_approach_request_id == request_id:
+		_clear_skill_approach_request()
+		_owner_body.clear_movement_target()
 
 
-func _on_external_action_cancelled() -> void:
-	_clear_skill_approach_request()
-	if is_instance_valid(_skill_host):
-		_skill_host.cancel_active_skill(&"action_driver_cancelled")
+# 保留内部普通兼容入口供旧调用方，运行装配只连接带身份的一套通知。
+func _on_external_action_released() -> void: _on_external_action_lifecycle(0, &"release")
+func _on_external_action_finished() -> void: _on_external_action_lifecycle(0, &"finish")
+func _on_external_action_cancelled() -> void: _on_external_action_lifecycle(0, &"cancel")
 
 
 ## 技能本身决定施法时是否可移动；状态机仅将这项通用意图落实为不提交导航目标。
@@ -1028,6 +1049,7 @@ func _update_skill_approach_movement(delta: float) -> bool:
 
 
 func _clear_skill_approach_request() -> void:
+	_skill_approach_request_id = 0
 	_skill_approach_target = null
 	_skill_approach_range = 0.0
 	_skill_approach_best_distance = INF

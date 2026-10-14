@@ -45,6 +45,12 @@
 
 它们已经通过 `ResourceSaver` 创建、写入 UID 并通过独立 UID 契约测试。只有确定多项技能要共用同一份 Delivery 基础配置时，才在 `Delivery` 字段使用 Quick Load 选择它们。若某技能要单独调速度、半径或投射物场景，应继续使用内嵌配置，避免修改一个预设连带改变所有技能。
 
+## 成功释放表现资产
+
+技能根节点 `Presentation → Release` 配置视觉场景、原有锚点，以及新增 `Release Audio Stream` / `Release Camera Effect` 两个可空资产字段。底层复用模板已有 `RuntimeEffects`，无需策划追加节点或效果组件。交付接受后每次施放播放一次，原有 `Cast` 蓄力和 `Cancel` 视觉不改变。
+
+声音自动创建一次性3D播放器；镜头字段仅提供强类型资源与请求信号，本期不执行移动。具体配置与独立预览见 `SkillSystemUserGuide.md` 的“成功释放表现”节。
+
 ## 资源索引维护
 
 新建或重建共享 Delivery 预设时，执行：

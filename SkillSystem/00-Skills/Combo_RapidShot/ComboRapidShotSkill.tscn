@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://d227vrywu5n4j"]
+
+[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/MultiShotSkillTemplate.tscn" id="1_gvcyh"]
+[ext_resource type="PackedScene" uid="uid://cbecfr3g8svqm" path="res://Item/Projectiles/Arrow.tscn" id="2_v3q8w"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="3_8l220"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_d0sbu"]
+[ext_resource type="Script" uid="uid://yucsdny8htx4" path="res://SkillSystem/03-Extensions/ComboFocusCost.gd" id="5_hro22"]
+
+[sub_resource type="Resource" id="Resource_wcxb1"]
+resource_local_to_scene = true
+script = ExtResource("3_8l220")
+projectile_scene = ExtResource("2_v3q8w")
+shot_count = 3
+shot_interval_seconds = 0.14
+
+[node name="ComboRapidShotSkill" unique_id=1190405242 instance=ExtResource("1_gvcyh")]
+skill_id = &"combo_rapid_shot"
+display_name = "连携·连射"
+ai_priority = 8
+cast_range = 6.0
+base_cast_time = 0.4
+skill_cooldown = 0.0
+automatic_cast_enabled = false
+decision_delay_min = 0.0
+decision_delay_max = 0.0
+extra_hesitation_chance = 0.0
+extra_hesitation_min = 0.0
+extra_hesitation_max = 0.0
+delivery = SubResource("Resource_wcxb1")
+
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=1141423784]
+script = ExtResource("4_d0sbu")
+operation = 0
+base_amount = 1.0
+power_ratio = 0.35
+
+[node name="ComboFocusCost" type="Node" parent="." index="3" unique_id=734217053]
+script = ExtResource("5_hro22")

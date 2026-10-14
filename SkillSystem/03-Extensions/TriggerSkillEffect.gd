@@ -60,10 +60,15 @@ func apply(context: SkillContext, result: SkillDeliveryResult, target: Node3D) -
 		context.delivery_parent.add_child(child)
 		child.configure_owner(context.caster, context.host, context.delivery_parent)
 		child.delivery_finished.connect(_release_child.bind(child), CONNECT_ONE_SHOT)
+		child.delivery_failed.connect(_release_failed_child.bind(child), CONNECT_ONE_SHOT)
 		child.skill_failed.connect(_release_failed_child.bind(child), CONNECT_ONE_SHOT)
 		child.skill_cancelled.connect(_release_failed_child.bind(child), CONNECT_ONE_SHOT)
 		var child_context := SkillContext.new()
 		child_context.caster = context.caster
+		child_context.command_request = context.command_request
+		child_context.purpose = SkillContext.Purpose.REGULAR
+		child_context.delivery_token_id = 0
+		child_context.preferred_target = null
 		child_context.damage_context = context.damage_context.duplicate_context() if context.damage_context != null else null
 		child_context.host = context.host
 		child_context.delivery_parent = context.delivery_parent

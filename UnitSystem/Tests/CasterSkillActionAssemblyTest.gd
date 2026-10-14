@@ -43,8 +43,10 @@ func _initialize() -> void:
 			"Caster mounts the one-scene Firebolt skill without animation coupling"
 		)
 		_expect(
-			(skill_host.call("get_registered_skills") as Array).size() == 2,
-			"Caster registers Firebolt and Pyroblast"
+			(skill_host.call("get_registered_skills") as Array).size() == 3
+			and (skill_host.call("get_equipped_regular_skills") as Array).size() == 2
+			and skill_host.call("get_combo_skill") == socket.get_node_or_null(^"ComboFireboltSkill"),
+			"Caster retains two ordinary slots and registers one distinct chain skill"
 		)
 		_expect(
 			skill_host.call("get_skill_owner") == caster,

@@ -16,11 +16,24 @@ signal cast_range_required(context: SkillContext, cast_range: float)
 signal cast_started(context: SkillContext)
 signal release_started(context: SkillContext)
 signal delivery_started(context: SkillContext)
+## 成功释放时请求镜头表现；profile只读，source/target可空或随后失效，world_transform为有限世界快照。
+## 本信号不代表命中、不等待订阅者、不直接改变相机。
+signal camera_effect_requested(profile: CameraEffectProfile, source: Node3D, target: Node3D, world_transform: Transform3D)
 signal delivery_finished(context: SkillContext, result: SkillDeliveryResult)
+## 某次交付最终失败，始终携带原context；不依赖装备技能当前状态，不表示可退款。
+signal delivery_failed(context: SkillContext, reason: StringName)
 signal skill_failed(context: SkillContext, reason: StringName)
 signal skill_cancelled(context: SkillContext, reason: StringName)
 signal cooldown_started(duration: float)
 signal cooldown_finished()
+
+## 技能主要用途的显示分类；编号需保持稳定，不参与伤害、治疗、目标或施放规则判断。
+enum SkillType {
+	DAMAGE = 0,
+	HEALING = 1,
+	BUFF = 2,
+	DEBUFF = 3,
+}
 
 enum PresentationAnchor {
 	ACTION_ORIGIN,
@@ -44,6 +57,10 @@ enum SkillState {
 @export var skill_id: StringName = &"default_skill"
 ## 供 Inspector、调试信息和未来技能栏显示的名称；仅影响文本表现，不参与目标或伤害计算。
 @export var display_name: String = "Default Skill"
+## 技能主要用途：伤害、治疗、强化友方或弱化/干扰敌方（含嘲讽）；默认伤害。
+## 混合技能按主要用途选择；仅决定技能名称提示背景，不改变效果、仇恨、AI 优先级或结算规则。
+@export_enum("伤害技能:0", "治疗技能:1", "强化技能:2", "弱化技能:3")
+var skill_type: int = SkillType.DAMAGE
 ## 可选的技能图标资源；当前不影响运行逻辑，预留给未来技能栏与提示界面使用。
 @export var icon: Texture2D
 ## AI 自动选择多个可用技能时的优先级；数值越大越优先，数值相同则保持当前注册顺序。
@@ -114,14 +131,21 @@ var extra_hesitation_min: float = 3.0
 var extra_hesitation_max: float = 5.0
 
 @export_category("Presentation")
+@export_subgroup("Cast")
 ## 可选的施法开始特效场景；动作确认开始时在角色动作发射点生成，不承担伤害或投射物逻辑。
 @export var cast_effect_scene: PackedScene
-## 可选的技能释放特效场景；release_action 时根据下方锚点规则生成，不承担命中或数值结算。
+@export_subgroup("Release")
+## 可选的成功释放视觉场景；交付接受时在所选锚点生成一次，不承担命中/数值结算；空则不播放。
 @export var release_effect_scene: PackedScene
 ## Release 表现的世界锚点。默认沿用动作发射点；目标瞬发和地面技能可以
 ## 直接通过 Inspector 改用已解析目标或上下文目标位置，不需要技能专用脚本。
 @export var release_effect_anchor: PresentationAnchor = \
 	PresentationAnchor.ACTION_ORIGIN
+## 一次性成功释放音频；默认空不发声，交付接受时从锚点世界位置播放，不参与战斗结算。
+@export var release_audio_stream: AudioStream
+## 可选只读镜头表现资源；默认空不发请求，本期仅提供请求出口，不执行相机移动或暂停。
+@export var release_camera_effect: CameraEffectProfile
+@export_subgroup("Cancel")
 ## 可选的施法取消特效场景；技能在完成释放前被取消时于最近动作位置生成。
 @export var cancel_effect_scene: PackedScene
 
@@ -134,11 +158,16 @@ var _skill_owner: Node3D
 var _skill_host: Node
 var _delivery_parent: Node
 var _current_context: SkillContext
+## 当前execute是否已接受；区分未启动与接受后的最终失败，不作为动作锁。
+var _release_accepted: bool = false
+## 只保留尚未终结的指令交付context；按自身token核对，不按当前技能状态识别旧弹。
+var _inflight_command_contexts: Dictionary = {}
 var _cooldown_remaining: float = 0.0
 ## AI 自动施放成功后、独立技能冷却开始前的剩余等待时间，单位为秒。
 ## 显式请求不进入此状态；该值仅由 SkillBase 维护，且不会占用 SkillHost 活动技能槽。
 var _post_release_hesitation_remaining: float = 0.0
 var _last_action_transform: Transform3D = Transform3D.IDENTITY
+## 只跟踪Cast/Cancel表现；成功Release实例由世界/附着对象及自身结束协议管理。
 var _runtime_effect_instances: Array[Node] = []
 ## 当前施法期特效；仅支持 configure_cast 的组件使用受控生命周期。
 var _cast_effect_instance: Node3D
@@ -154,13 +183,29 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	_random.randomize()
+	var player := get_node_or_null(^"RuntimeEffects") as SkillReleasePresentationPlayer
+	if is_instance_valid(player):
+		player.camera_effect_requested.connect(_on_camera_effect_requested)
+	else:
+		push_warning("Skill RuntimeEffects presentation player is missing; gameplay remains enabled.")
 	if is_instance_valid(_delivery_runner):
+		_delivery_runner.delivery_started.connect(_on_runner_delivery_started)
 		_delivery_runner.delivery_finished.connect(_on_runner_delivery_finished)
 		_delivery_runner.delivery_failed.connect(_on_runner_delivery_failed)
 
 
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
+		return
+	if _is_chain_root(_current_context):
+		# 原有计时照常推进，连携不启动/清空它们，也不以计时替代动作占用。
+		if _post_release_hesitation_remaining > 0.0:
+			_post_release_hesitation_remaining = maxf(_post_release_hesitation_remaining - delta, 0.0)
+			if _post_release_hesitation_remaining <= 0.0:
+				_cooldown_remaining = maxf(skill_cooldown, 0.0)
+		elif _cooldown_remaining > 0.0:
+			_cooldown_remaining = maxf(_cooldown_remaining - delta, 0.0)
+			if _cooldown_remaining <= 0.0: cooldown_finished.emit()
 		return
 	if _state == SkillState.POST_RELEASE_HESITATION:
 		_post_release_hesitation_remaining = maxf(
@@ -196,7 +241,7 @@ func request_skill(context: SkillContext) -> bool:
 ## 激活一个技能实例；CHARACTER_ACTION 请求角色动作，DIRECT_TRIGGER 从上下文给出的世界位置直接交付。
 ## DIRECT_TRIGGER 要求显式目标及有限发射变换，仍检查本技能条件、目标、消耗和冷却。
 func activate(context: SkillContext) -> bool:
-	if _state != SkillState.READY:
+	if not _can_accept_purpose(context):
 		return false
 	if context == null:
 		return false
@@ -294,6 +339,9 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 
 	if is_instance_valid(_current_context.resolved_target):
 		_current_context.target_position = _current_context.resolved_target.global_position
+	if _is_chain_root(context) and not context.command_request.authorize_release():
+		_fail_active(&"command_authorization_failed", false)
+		return false
 	var costs := _collect_costs()
 	for cost: SkillCostBase in costs:
 		if not cost.can_pay(_current_context):
@@ -308,24 +356,37 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 		committed_costs.append(cost)
 
 	_stop_cast_presentation()
-	_spawn_release_presentation(release_effect_scene, launch_transform)
 	release_started.emit(_current_context)
+	# 普通成本/释放前通知可能改变世界或承诺；交付接受前再次核对自己的真实预留。
+	if _is_chain_root(context) and not context.command_request.authorize_release():
+		_refund_costs(committed_costs)
+		_fail_active(&"command_authorization_failed", false)
+		return false
+	if context.command_request != null:
+		context.delivery_token_id = CombatDamageContext.allocate_id()
+		if not context.command_request.retain_delivery(context.delivery_token_id):
+			_refund_costs(committed_costs)
+			_fail_active(&"command_lifetime_closed", false)
+			return false
+		_inflight_command_contexts[context.delivery_token_id] = context
 	var effects := _collect_effects()
+	_release_accepted = false
 	if not _delivery_runner.execute(
 		delivery,
 		_current_context,
 		launch_transform,
 		effects
 	):
+		_finish_command_delivery(context)
 		_refund_costs(committed_costs)
 		_fail_active(&"delivery_start_failed", true)
 		return false
 
-	var released_context: SkillContext = _current_context
-	_state = SkillState.RELEASED
-	delivery_started.emit(released_context)
+	var released_context: SkillContext = context
 	_current_context = null
-	if released_context.request_source == SkillContext.RequestSource.AI_AUTOMATIC:
+	if _is_chain_root(released_context):
+		_state = _idle_timing_state()
+	elif released_context.request_source == SkillContext.RequestSource.AI_AUTOMATIC:
 		_start_post_release_hesitation()
 	else:
 		_start_cooldown()
@@ -353,7 +414,7 @@ func cancel_skill(reason: StringName = &"cancelled") -> void:
 	_stop_cast_presentation()
 	_spawn_presentation(cancel_effect_scene, _last_action_transform)
 	_current_context = null
-	_state = SkillState.READY
+	_state = _idle_timing_state() if _is_chain_root(cancelled_context) else SkillState.READY
 	skill_cancelled.emit(cancelled_context, reason)
 
 
@@ -368,7 +429,7 @@ func reset_skill() -> void:
 
 
 func can_request(context: SkillContext) -> bool:
-	return _state == SkillState.READY and _prepare_context(context) != null
+	return _can_accept_purpose(context) and _prepare_context(context) != null
 
 
 func is_ready() -> bool:
@@ -421,9 +482,44 @@ func get_effective_cast_time() -> float:
 	return maxf(base_cast_time, 0.0) / multiplier
 
 
+## 不占用动作的通用预检；返回新context或null，保留原目标/条件/非专注成本验证，不支付。
+func prepare_request(context: SkillContext) -> SkillContext:
+	return _prepare_context(context)
+
+
+## 更新尚未开始动画的排队请求；保持同一根身份，重新使用通用目标/条件检查，不生成取消事件。
+func refresh_queued_request(context: SkillContext) -> bool:
+	if _state != SkillState.QUEUED or _current_context == null or context == null or _current_context.command_request != context.command_request:
+		return false
+	var prepared := _prepare_context(context)
+	if prepared == null: return false
+	prepared.threat_multiplier = maxf(threat_multiplier, 0.0)
+	_current_context = prepared
+	try_request_action()
+	return true
+
+
+func _is_chain_root(context: SkillContext) -> bool:
+	return context != null and context.purpose == SkillContext.Purpose.CHAIN and context.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION and context.request_source == SkillContext.RequestSource.EXPLICIT and context.command_request != null and context.command_request.get_skill() == self and context.command_request.get_caster() == _skill_owner
+
+
+func _can_accept_purpose(context: SkillContext) -> bool:
+	if _is_chain_root(context):
+		return _state in [SkillState.READY, SkillState.COOLDOWN, SkillState.POST_RELEASE_HESITATION]
+	return _state == SkillState.READY and context != null and context.purpose == SkillContext.Purpose.REGULAR
+
+
+func _idle_timing_state() -> SkillState:
+	if _post_release_hesitation_remaining > 0.0: return SkillState.POST_RELEASE_HESITATION
+	if _cooldown_remaining > 0.0: return SkillState.COOLDOWN
+	return SkillState.READY
+
+
 func _prepare_context(source: SkillContext) -> SkillContext:
 	if (
 		source == null
+		or source.purpose not in [SkillContext.Purpose.REGULAR, SkillContext.Purpose.CHAIN]
+		or (source.purpose == SkillContext.Purpose.CHAIN and (source.execution_mode != SkillContext.ExecutionMode.CHARACTER_ACTION or source.request_source != SkillContext.RequestSource.EXPLICIT))
 		or not is_instance_valid(_skill_owner)
 		or not _skill_owner.is_inside_tree()
 		or delivery == null
@@ -456,6 +552,8 @@ func _prepare_context(source: SkillContext) -> SkillContext:
 
 
 func _resolve_target(context: SkillContext) -> Node3D:
+	if is_instance_valid(context.preferred_target) and TargetResolver.is_candidate_valid(_skill_owner, context.preferred_target, target_relations, require_targetable, require_alive):
+		return context.preferred_target
 	if context.explicit_target_requested:
 		return (
 			context.requested_target
@@ -517,6 +615,16 @@ func _is_target_in_cast_range(target_value: Variant, context: SkillContext = nul
 	var offset: Vector3 = target.global_position - origin
 	offset.y = 0.0
 	return offset.length() <= maxf(cast_range, 0.0) + 0.05
+
+
+## 查找根技能唯一费用组件；缺失、重复或非法返回null，普通技能无需配置。
+func get_combo_focus_cost() -> ComboFocusCost:
+	var found: ComboFocusCost
+	for child: Node in get_children():
+		if child is ComboFocusCost:
+			if found != null: return null
+			found = child as ComboFocusCost
+	return found if found != null and found.validate_configuration().is_empty() else null
 
 
 func _collect_conditions() -> Array[SkillConditionBase]:
@@ -597,107 +705,6 @@ func _stop_cast_presentation() -> void:
 	_cast_effect_instance = null
 
 
-## 根据 Release 锚点同时决定特效的父节点和坐标空间。
-##
-## ACTION_ORIGIN 是一次性的世界发射坐标，适合枪口火焰、法球生成等表现。
-## RESOLVED_TARGET 是持续附着目标的局部坐标，适合治疗、增益和目标身上的状态表现。
-## TARGET_POSITION 是一次性的世界落点，适合地面范围法术。
-##
-## 这里不能只替换 action_transform.origin：那样会错误保留武器插槽的倾斜 Basis，
-## 同时仍把目标特效挂在世界节点下，导致目标移动后特效遗留在旧坐标。
-func _spawn_release_presentation(
-	effect_scene: PackedScene,
-	action_transform: Transform3D
-) -> void:
-	if _current_context == null:
-		return
-	match release_effect_anchor:
-		PresentationAnchor.CASTER_FEET:
-			if is_instance_valid(_skill_owner):
-				_spawn_caster_feet_presentation(effect_scene, action_transform)
-				return
-		PresentationAnchor.RESOLVED_TARGET:
-			if is_instance_valid(_current_context.resolved_target):
-				_spawn_attached_presentation(
-					effect_scene,
-					_current_context.resolved_target
-				)
-				return
-		PresentationAnchor.TARGET_POSITION:
-			if _current_context.target_position.is_finite():
-				_spawn_presentation(
-					effect_scene,
-					Transform3D(
-						Basis.IDENTITY,
-						_current_context.target_position
-					)
-				)
-				return
-	_spawn_presentation(effect_scene, action_transform)
-
-
-## 将“施法者脚底”特效附着到施法者，并以施法者到当前目标的世界水平朝向作为特效正前方。
-## 参数 action_transform 只在没有可用目标方向时作为退回朝向；不会把武器插槽的俯仰或局部动作旋转传给地面特效。
-func _spawn_caster_feet_presentation(
-	effect_scene: PackedScene,
-	action_transform: Transform3D
-) -> void:
-	if effect_scene == null or not is_instance_valid(_skill_owner):
-		return
-	var instance: Node = effect_scene.instantiate()
-	if not instance is Node3D:
-		if is_instance_valid(instance):
-			instance.free()
-		return
-	var effect := instance as Node3D
-	_skill_owner.add_child(effect)
-	effect.global_transform = Transform3D(
-		_get_caster_target_facing_basis(action_transform.basis),
-		_skill_owner.global_position
-	)
-	_runtime_effect_instances.append(effect)
-
-
-## 计算脚底定向特效的世界水平 Basis；优先使用施法者到已解析目标的方向，确保不受 Visual、武器插槽或动作局部旋转影响。
-## 参数 fallback_basis 仅在目标不存在或与施法者重合时提供退回方向，并会自动去除俯仰与侧倾。
-func _get_caster_target_facing_basis(fallback_basis: Basis) -> Basis:
-	var direction := Vector3.ZERO
-	if _current_context != null and is_instance_valid(_current_context.resolved_target):
-		direction = _current_context.resolved_target.global_position - _skill_owner.global_position
-	direction.y = 0.0
-	if direction.length_squared() <= 0.0001:
-		direction = -fallback_basis.z
-		direction.y = 0.0
-	if direction.length_squared() <= 0.0001:
-		return Basis.IDENTITY
-	var normalized_direction := direction.normalized()
-	return Basis(
-		Vector3.UP,
-		atan2(-normalized_direction.x, -normalized_direction.z)
-	)
-
-
-## 把目标类表现直接挂到已解析目标的根节点。
-##
-## 单位根节点约定在脚底中心，因此局部原点 Vector3.ZERO 就是治疗光环的地面起点。
-## 使用局部单位 Basis，不读取法杖、ProjectileOrigin 或施法动画的旋转。
-func _spawn_attached_presentation(
-	effect_scene: PackedScene,
-	target: Node3D
-) -> void:
-	if effect_scene == null or not is_instance_valid(target):
-		return
-	var instance: Node = effect_scene.instantiate()
-	if not instance is Node3D:
-		if is_instance_valid(instance):
-			instance.free()
-		return
-	var effect := instance as Node3D
-	target.add_child(effect)
-	effect.transform = Transform3D.IDENTITY
-	_runtime_effect_instances.append(effect)
-
-
 func _start_cooldown() -> void:
 	_post_release_hesitation_remaining = 0.0
 	_cooldown_remaining = maxf(skill_cooldown, 0.0)
@@ -746,11 +753,32 @@ func _fail_active(reason: StringName, delivery_failure: bool) -> void:
 	## Host 会在信号回调中检查技能是否已经离开 QUEUED、ACTION_REQUESTED 或
 	## CASTING。若先发送信号、后改状态，Host 会误判请求仍在运行，从而永久保留
 	## active_skill，后续自动施法便无法再次开始。
-	if delivery_failure and cooldown_on_failed_release:
+	if delivery_failure and cooldown_on_failed_release and not _is_chain_root(failed_context):
 		_start_cooldown()
 	else:
-		_state = SkillState.READY
+		_state = _idle_timing_state() if _is_chain_root(failed_context) else SkillState.READY
 	skill_failed.emit(failed_context, reason)
+
+
+## Runner在产生任何接受后的效果前通知；只接当前execute，恰好一次向Host转发。
+func _on_runner_delivery_started(context: SkillContext) -> void:
+	if context != _current_context or _release_accepted: return
+	_release_accepted = true
+	_state = SkillState.RELEASED
+	var player := get_node_or_null(^"RuntimeEffects") as SkillReleasePresentationPlayer
+	var snapshot: Dictionary = {}
+	if is_instance_valid(player):
+		snapshot = player.prepare_release(context, _last_action_transform, release_effect_scene,
+			release_effect_anchor, release_audio_stream, release_camera_effect)
+	# 原有Host/专注提交先完成；表现只使用此前准备的快照，不重新读_current_context。
+	delivery_started.emit(context)
+	if is_instance_valid(player) and player.is_inside_tree() and not player.is_queued_for_deletion():
+		player.play_release(snapshot)
+
+# RuntimeEffects的同步请求只向根节点转发；不让消费者依赖内部节点路径。
+func _on_camera_effect_requested(profile: CameraEffectProfile, source: Node3D,
+		target: Node3D, world_transform: Transform3D) -> void:
+	camera_effect_requested.emit(profile, source, target, world_transform)
 
 
 func _on_runner_delivery_finished(
@@ -758,18 +786,27 @@ func _on_runner_delivery_finished(
 	result: SkillDeliveryResult
 ) -> void:
 	delivery_finished.emit(context, result)
+	_finish_command_delivery(context)
 
 
 func _on_runner_delivery_failed(
 	context: SkillContext,
 	reason: StringName
 ) -> void:
+	delivery_failed.emit(context, reason)
 	if _state in [
 		SkillState.RELEASED,
 		SkillState.POST_RELEASE_HESITATION,
 		SkillState.COOLDOWN,
 	]:
 		skill_failed.emit(context, reason)
+	_finish_command_delivery(context)
+
+
+func _finish_command_delivery(context: SkillContext) -> void:
+	if context == null or context.command_request == null or not _inflight_command_contexts.has(context.delivery_token_id): return
+	_inflight_command_contexts.erase(context.delivery_token_id)
+	context.command_request.finish_delivery(context.delivery_token_id)
 
 
 func _clear_runtime_effect_references() -> void:
@@ -792,9 +829,24 @@ func _get_configuration_warnings() -> PackedStringArray:
 		warnings.append("SkillBase requires its fixed DeliveryRunner child.")
 	if get_node_or_null(^"RuntimeEffects") == null:
 		warnings.append("SkillBase requires its fixed RuntimeEffects child.")
+	elif not _presentation_script_is_configured():
+		warnings.append("RuntimeEffects requires SkillReleasePresentationPlayer; gameplay still runs without presentation.")
 	return warnings
 
 
+# 编辑器非tool子脚本可能是占位对象，沿Script继承链检查，允许合法播放器子类。
+func _presentation_script_is_configured() -> bool:
+	var node := get_node_or_null(^"RuntimeEffects")
+	var script: Script = node.get_script() if node != null else null
+	while script != null:
+		if script.get_global_name() == &"SkillReleasePresentationPlayer":
+			return true
+		script = script.get_base_script()
+	return false
+
 func _exit_tree() -> void:
+	for context in _inflight_command_contexts.values():
+		_finish_command_delivery(context)
+	_inflight_command_contexts.clear()
 	_clear_runtime_effect_references()
 	_current_context = null

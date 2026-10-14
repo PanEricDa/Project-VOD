@@ -19,6 +19,10 @@ signal approach_requested(context: SkillContext, cast_range: float)
 signal facing_requested(context: SkillContext)
 signal movement_lock_requested(locked: bool)
 signal skill_released(context: SkillContext)
+## 某个指令失败/取消；仅报告身份与原因，队伍所有者统一退款，成功释放不回滚。
+signal command_failed(request_id: int, reason: StringName)
+## 等待/动作阶段改变，供只读界面更新；不表示接受交付或付款。
+signal command_state_changed()
 signal global_cooldown_started(duration: float)
 signal global_cooldown_finished()
 
@@ -42,6 +46,13 @@ signal global_cooldown_finished()
 		if is_inside_tree():
 			update_configuration_warnings()
 
+## 连携技能独立节点引用；默认空，不参加普通AI选择，需直接费用组件且不与其他槽共享实例。
+@export var combo_skill: SkillBase = null:
+	set(value):
+		combo_skill = value
+		if is_inside_tree():
+			update_configuration_warnings()
+
 @export_category("Global Cooldown")
 @export_range(0.0, 30.0, 0.05, "or_greater")
 ## Host 独立管理公共冷却时使用的基础时长，单位为秒；由 Ally 行为层接管时该值不会参与实际计时。
@@ -52,6 +63,11 @@ var _delivery_parent: Node
 var _registered_skills: Array[SkillBase] = []
 var _active_skill: SkillBase
 var _pending_context: SkillContext
+var _pending_command: SkillCommandRequest
+var _active_command: SkillCommandRequest
+var _active_action_context: SkillContext
+var _action_state_provider: Node
+var _cancelling_command_id: int = 0
 var _skill_casting_enabled: bool = true
 var _cast_blocked: bool = false
 var _use_external_global_cooldown: bool = false
@@ -77,6 +93,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
+	if (_pending_command != null or _active_command != null) and not _command_cast_allowed():
+		_cancel_all_commands(&"command_cast_unavailable")
 	if not _use_external_global_cooldown and _global_cooldown_remaining > 0.0:
 		_global_cooldown_remaining = maxf(
 			_global_cooldown_remaining - delta,
@@ -87,6 +105,8 @@ func _physics_process(delta: float) -> void:
 
 	if (
 		is_instance_valid(_active_skill)
+		and _pending_command == null
+		and _active_command == null
 		and _active_skill.get_state() == SkillBase.SkillState.QUEUED
 	):
 		_active_skill.try_request_action()
@@ -100,6 +120,7 @@ func _process(_delta: float) -> void:
 	for skill_value: Variant in regular_skills:
 		signature.append(skill_value.get_instance_id() if is_instance_valid(skill_value) else 0)
 	signature.append(finisher_skill.get_instance_id() if is_instance_valid(finisher_skill) else 0)
+	signature.append(combo_skill.get_instance_id() if is_instance_valid(combo_skill) else 0)
 	if signature != _editor_slot_signature:
 		_editor_slot_signature = signature
 		update_configuration_warnings()
@@ -193,6 +214,141 @@ func get_finisher_skill() -> SkillBase:
 		if get_regular_skill(slot_index) == finisher_skill:
 			return null
 	return finisher_skill
+
+
+## 返回有效连携实例；结构/注册/ID/其他槽冲突与费用不合法都返回null。
+func get_combo_skill() -> SkillBase:
+	if not _is_slot_skill_valid(combo_skill) or combo_skill.skill_id.is_empty():
+		return null
+	if combo_skill in regular_skills or combo_skill == finisher_skill:
+		return null
+	for skill: SkillBase in _registered_skills:
+		if is_instance_valid(skill) and skill != combo_skill and skill.skill_id == combo_skill.skill_id:
+			return null
+	return combo_skill if combo_skill.get_combo_focus_cost() != null else null
+
+
+## 注入动作占用查询者，只须is_action_in_progress接口；不要求具体AI类，null可卸载。
+func set_action_state_provider(provider: Node) -> void:
+	_action_state_provider = provider
+
+
+## 连携预检共享技能目标/条件/成本规则；不激活、不支付、不冻结本次目标，范围外仍可接近。
+func prepare_command_context(preferred_target: UnitBase = null) -> SkillContext:
+	var skill := get_combo_skill()
+	if skill == null or not _command_cast_allowed(): return null
+	var target: Node3D
+	if is_instance_valid(_target_candidate_provider) and _target_candidate_provider.has_method(&"get_locked_target"):
+		target = _target_candidate_provider.call(&"get_locked_target") as Node3D
+	var context := _create_context(target, _get_candidate_snapshot(), Vector3.INF, SkillContext.RequestSource.EXPLICIT, false)
+	context.purpose = SkillContext.Purpose.CHAIN
+	context.preferred_target = preferred_target
+	var prepared := skill.prepare_request(context)
+	# 只在既有CURRENT模式的旧AI目标失效时请求其原策略刷新；不写入玩家锁定。
+	if prepared == null and skill.target_selection_mode == TargetResolver.TargetSelectionMode.CURRENT_COMBAT_TARGET and not TargetResolver.is_candidate_valid(_caster, target, skill.target_relations, skill.require_targetable, skill.require_alive) and is_instance_valid(_target_candidate_provider) and _target_candidate_provider.has_method(&"refresh_target"):
+		_target_candidate_provider.call(&"refresh_target")
+		context.requested_target = _target_candidate_provider.call(&"get_locked_target") as Node3D
+		context.candidate_targets = _get_candidate_snapshot()
+		prepared = skill.prepare_request(context)
+	return prepared
+
+
+## 只缓存一条尚未开始的根请求；true是受理，不在本调用播放动画或释放。
+func enqueue_command(request: SkillCommandRequest) -> bool:
+	if request == null or _pending_command != null or not _command_cast_allowed() or request.has_failed() or request.has_released() or request.has_action_started():
+		return false
+	if request.get_caster() != _caster or request.get_skill() != get_combo_skill() or not is_instance_valid(_delivery_parent) or request.scene_scope_id != _delivery_parent.get_instance_id():
+		return false
+	_pending_command = request
+	command_state_changed.emit()
+	return true
+
+
+## 是否有一条未开始请求，包括接近与等待旧动作；不包含已开始动作。
+func has_pending_command() -> bool: return _pending_command != null
+## 从动画开始到动作终结的占用；技能释放/READY不提前解锁。
+func has_command_action_lock() -> bool: return _active_command != null and _active_command.has_action_started() and not _active_command.has_action_finished()
+## 返回等待请求身份；空为0，供只读显示与带ID回调。
+func get_pending_command_id() -> int: return _pending_command.request_id if _pending_command != null else 0
+## 返回已开始动作身份；空为0，不能用此识别旧投射物。
+func get_active_command_id() -> int: return _active_command.request_id if _active_command != null else 0
+## 只读指令动作阶段，与技能冷却/交付结束分开。
+func get_command_phase() -> StringName:
+	if _active_command != null: return &"released" if _active_command.has_released() else &"casting"
+	if _pending_command != null:
+		if is_instance_valid(_active_skill) and _active_skill == _pending_command.get_skill() and _active_skill.get_state() == SkillBase.SkillState.QUEUED: return &"approaching"
+		return &"waiting"
+	return &"idle"
+
+
+## 行为层每物理帧推进一次；true表示本帧由等待/接近/动作接管，不等于已释放。
+## preferred_target是当前玩家敌方锁定，delta是本帧有限非负秒数，换目标不重置截止。
+func advance_pending_command(preferred_target: UnitBase, delta: float) -> bool:
+	if _pending_command != null:
+		_pending_command.tick_wait(delta)
+		if _pending_command.has_wait_expired(): cancel_command(_pending_command.request_id, &"command_wait_timeout")
+	if not _command_cast_allowed():
+		_cancel_all_commands(&"command_cast_unavailable")
+		return false
+	if has_command_action_lock(): return true
+	if _pending_command == null: return false
+	if is_instance_valid(_action_state_provider) and _action_state_provider.has_method(&"is_action_in_progress") and _action_state_provider.call(&"is_action_in_progress"):
+		return true
+	var request := _pending_command
+	var skill := request.get_skill()
+	if skill == null or skill != get_combo_skill():
+		cancel_command(request.request_id, &"command_skill_invalid")
+		return true
+	if is_instance_valid(_active_skill) and _active_skill != skill:
+		if _active_skill.get_state() == SkillBase.SkillState.CASTING: return true
+		cancel_active_skill(&"unstarted_action_yields")
+	var context := prepare_command_context(preferred_target)
+	if context == null:
+		cancel_command(request.request_id, &"command_target_invalid")
+		return true
+	context.command_request = request
+	context.damage_context = CombatDamageContext.create(_caster, _delivery_parent, CombatDamageContext.Origin.CHAIN, request.request_id, request.round_id, request.skill_id)
+	if _active_skill == skill:
+		if skill.get_state() == SkillBase.SkillState.QUEUED and not skill.refresh_queued_request(context):
+			cancel_command(request.request_id, &"command_preflight_failed")
+		return true
+	if not _begin_decision(skill, context):
+		cancel_command(request.request_id, &"command_activation_failed")
+	return true
+
+
+## 取消指定等待或活动动作；只发一次事实通知、不取消其他已释放在途交付、不支付/退款。
+func cancel_command(request_id: int, reason: StringName) -> void:
+	if _cancelling_command_id != 0: return
+	var request: SkillCommandRequest
+	if _pending_command != null and _pending_command.request_id == request_id:
+		request = _pending_command
+		_pending_command = null
+	elif _active_command != null and _active_command.request_id == request_id:
+		request = _active_command
+		_active_command = null
+	if request == null: return
+	_cancelling_command_id = request_id
+	if is_instance_valid(_active_skill) and _active_skill == request.get_skill() and _active_action_context != null and _active_action_context.command_request == request:
+		_active_skill.cancel_skill(reason)
+		_release_active_skill()
+	request.mark_action_finished()
+	command_failed.emit(request_id, reason)
+	_cancelling_command_id = 0
+	command_state_changed.emit()
+
+
+func _cancel_all_commands(reason: StringName) -> void:
+	if _active_command != null: cancel_command(_active_command.request_id, reason)
+	if _pending_command != null: cancel_command(_pending_command.request_id, reason)
+
+
+func _command_cast_allowed() -> bool:
+	return is_instance_valid(_caster) and _caster.is_inside_tree() and not _caster.is_queued_for_deletion() and _skill_casting_enabled and not _cast_blocked and not (_caster.has_method(&"is_dead") and _caster.call(&"is_dead"))
+
+
+func _context_matches_active(context: SkillContext) -> bool:
+	return context != null and _active_action_context != null and context == _active_action_context
 
 
 func _is_slot_skill_structurally_valid(skill: SkillBase) -> bool:
@@ -338,28 +494,55 @@ func _get_candidate_snapshot() -> Array[Node3D]:
 	return candidates
 
 
-func confirm_active_action_started(cast_transform: Transform3D) -> bool:
-	return (
-		is_instance_valid(_active_skill)
-		and _active_skill.confirm_action_started(cast_transform)
-	)
+## 确认动画真正开始；普通expected=0兼容旧调用，连携必须为本等待请求正ID。
+func confirm_active_action_started(cast_transform: Transform3D, expected_request_id: int = 0) -> bool:
+	var request := _pending_command if _pending_command != null and _active_skill == _pending_command.get_skill() else _active_command
+	if request != null and expected_request_id != request.request_id: return false
+	if request == null and expected_request_id != 0: return false
+	if not is_instance_valid(_active_skill) or not _active_skill.confirm_action_started(cast_transform): return false
+	if request != null:
+		if _pending_command != request or request.has_failed() or not is_instance_valid(_active_skill): return false
+		request.mark_action_started()
+		_active_command = request
+		_pending_command = null
+		command_state_changed.emit()
+	return true
 
 
-func release_active_action(launch_transform: Transform3D) -> bool:
-	return (
-		is_instance_valid(_active_skill)
-		and _active_skill.release_action(launch_transform)
-	)
+## 从动作释放标记进入技能交付；连携需匹配当前正ID，迟到/重复标记不命中新动作。
+func release_active_action(launch_transform: Transform3D, expected_request_id: int = 0) -> bool:
+	if _active_command != null:
+		if expected_request_id != _active_command.request_id or _active_command.has_released(): return false
+	elif expected_request_id != 0: return false
+	return is_instance_valid(_active_skill) and _active_skill.release_action(launch_transform)
 
 
-func finish_active_action() -> void:
-	if not is_instance_valid(_active_skill):
+## 关闭本动作；expected标识不匹配不修改任何请求，保留另一条等待指令。
+func finish_active_action(expected_request_id: int = 0) -> void:
+	if _active_command != null:
+		if expected_request_id != _active_command.request_id: return
+		var request := _active_command
+		if not request.has_released():
+			cancel_command(request.request_id, &"action_finished_before_release")
+			return
+		_active_command = null
+		if is_instance_valid(_active_skill): _active_skill.finish_action()
+		_release_active_skill()
+		request.mark_action_finished()
+		command_state_changed.emit()
 		return
+	if expected_request_id != 0 or not is_instance_valid(_active_skill): return
 	_active_skill.finish_action()
 	_release_active_skill()
 
 
 func cancel_active_skill(reason: StringName = &"cancelled") -> void:
+	if _active_command != null:
+		cancel_command(_active_command.request_id, reason)
+		return
+	if _pending_command != null and _active_skill == _pending_command.get_skill():
+		cancel_command(_pending_command.request_id, reason)
+		return
 	if is_instance_valid(_active_skill):
 		_active_skill.cancel_skill(reason)
 	_release_active_skill()
@@ -367,11 +550,18 @@ func cancel_active_skill(reason: StringName = &"cancelled") -> void:
 
 func set_cast_blocked(blocked: bool) -> void:
 	_cast_blocked = blocked
+	if blocked: _cancel_all_commands(&"cast_blocked")
+
+
+## 返回实际施法封锁，供指令资格/UI只读使用；不包含冷却或动作忙碌。
+func is_cast_blocked() -> bool:
+	return _cast_blocked
 
 
 func set_skill_casting_enabled(enabled: bool) -> void:
 	_skill_casting_enabled = enabled
 	if not enabled:
+		_cancel_all_commands(&"skill_casting_disabled")
 		cancel_active_skill(&"skill_casting_disabled")
 
 
@@ -487,6 +677,7 @@ func _can_start_request() -> bool:
 		and not _cast_blocked
 		and is_global_cooldown_ready()
 		and not is_instance_valid(_active_skill)
+		and _pending_command == null and _active_command == null
 		and is_instance_valid(_caster)
 	)
 
@@ -576,6 +767,7 @@ func _on_skill_action_requested(
 	if skill != _active_skill:
 		return
 	var context: SkillContext = skill.get_current_context()
+	_active_action_context = context
 	facing_requested.emit(context)
 	_set_movement_locked(not skill.can_move_while_casting)
 	# 施法时间在 Skill 层计算完成后作为只读请求数据向外传递。
@@ -588,11 +780,16 @@ func _on_skill_cast_range_required(
 	required_range: float
 ) -> void:
 	if is_instance_valid(_active_skill):
+		_active_action_context = context
 		approach_requested.emit(context, required_range)
 
 
 func _on_skill_delivery_started(context: SkillContext) -> void:
+	if not _context_matches_active(context): return
 	skill_released.emit(context)
+	if context.purpose == SkillContext.Purpose.CHAIN:
+		command_state_changed.emit()
+		return
 	if not _use_external_global_cooldown:
 		start_global_cooldown()
 
@@ -601,16 +798,20 @@ func _on_skill_terminal(
 	_context: SkillContext,
 	_reason: StringName
 ) -> void:
-	if (
-		is_instance_valid(_active_skill)
-		and _active_skill.get_state() == SkillBase.SkillState.READY
-	):
+	if not _context_matches_active(_context): return
+	if _context.command_request != null:
+		if _cancelling_command_id == _context.command_request.request_id: return
+		if not _context.command_request.has_released():
+			cancel_command(_context.command_request.request_id, _reason)
+		return
+	if is_instance_valid(_active_skill) and _active_skill.get_state() not in [SkillBase.SkillState.QUEUED, SkillBase.SkillState.ACTION_REQUESTED, SkillBase.SkillState.CASTING]:
 		_release_active_skill()
 
 
 func _release_active_skill() -> void:
 	_active_skill = null
 	_pending_context = null
+	_active_action_context = null
 	_set_movement_locked(false)
 	active_skill_changed.emit(null)
 
@@ -659,10 +860,21 @@ func _get_configuration_warnings() -> PackedStringArray:
 			warnings.append("终结技槽的技能 ID %s 与其他技能重复，运行时无法注册；请修改技能 ID。" % String(finisher_skill.skill_id))
 		elif finisher_skill in seen:
 			warnings.append("终结技槽与常规槽重复引用同一技能；请改选其他技能或留空。")
+	if is_instance_valid(combo_skill):
+		if not _is_slot_skill_structurally_valid(combo_skill):
+			warnings.append("连携槽必须引用本SkillSocket中的技能。")
+		elif ids.get(combo_skill.skill_id) != combo_skill:
+			warnings.append("连携槽技能ID重复或为空，无法注册。")
+		elif combo_skill in regular_skills or combo_skill == finisher_skill:
+			warnings.append("连携槽不能与常规或终结槽引用同一实例。")
+		elif combo_skill.get_combo_focus_cost() == null:
+			warnings.append("连携技能须挂一个直接ComboFocusCost，费用必须有限非负。")
 	return warnings
 
 
 func _exit_tree() -> void:
+	_cancel_all_commands(&"host_exiting")
+	_action_state_provider = null
 	for skill_value: Variant in _registered_skills.duplicate():
 		if not is_instance_valid(skill_value):
 			continue

@@ -1,40 +1,33 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cfo5ywuu8jkn2"]
 
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
-[ext_resource type="Script" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_delivery"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/ThreatChangeSkillEffect.gd" id="3_threat"]
-[ext_resource type="PackedScene" path="res://SkillSystem/03-Extensions/Conditions/GuardianTauntNeededCondition.tscn" id="4_condition"]
-[ext_resource type="PackedScene" path="res://Effects/Skills/GuardianTaunt/GuardianTauntReleaseEffect.tscn" id="5_release"]
+[ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_delivery"]
+[ext_resource type="Script" uid="uid://b4lmm3po7ejrj" path="res://SkillSystem/03-Extensions/ThreatChangeSkillEffect.gd" id="3_threat"]
+[ext_resource type="PackedScene" uid="uid://dgt6rc287fkv8" path="res://SkillSystem/03-Extensions/Conditions/GuardianTauntNeededCondition.tscn" id="4_condition"]
+[ext_resource type="PackedScene" uid="uid://c2fxwlm72l0by" path="res://Effects/Skills/GuardianTaunt/GuardianTauntReleaseEffect.tscn" id="5_release"]
 
-[sub_resource type="Resource" id="Resource_instant_radius"]
+[sub_resource type="Resource" id="Resource_yx4jc"]
 resource_local_to_scene = true
 script = ExtResource("2_delivery")
 target_collection_mode = 1
-effect_radius = 5.0
-affected_relations = 4
 
-[node name="GuardianTauntSkill" instance=ExtResource("1_template")]
+[node name="GuardianTauntSkill" unique_id=1201052525 instance=ExtResource("1_template")]
 skill_id = &"guardian_taunt"
 display_name = "Guardian Taunt"
+skill_type = 3
 ai_priority = 80
-target_relations = 4
 target_selection_mode = 1
 cast_range = 0.8
 base_cast_time = 0.2
-can_move_while_casting = false
-can_turn_while_casting = true
 skill_cooldown = 15.0
-threat_multiplier = 1.0
-automatic_cast_enabled = true
 decision_delay_min = 0.0
 decision_delay_max = 0.0
 extra_hesitation_chance = 0.0
 release_effect_scene = ExtResource("5_release")
 release_effect_anchor = 3
-delivery = SubResource("Resource_instant_radius")
+delivery = SubResource("Resource_yx4jc")
 
-[node name="ThreatEffect" type="Node" parent="." index="2"]
+[node name="ThreatEffect" type="Node" parent="." index="2" unique_id=1466073863]
 script = ExtResource("3_threat")
-threat_amount = 200.0
 
-[node name="GuardianTauntNeededCondition" parent="." instance=ExtResource("4_condition")]
+[node name="GuardianTauntNeededCondition" parent="." index="3" unique_id=2122616291 instance=ExtResource("4_condition")]

@@ -39,6 +39,8 @@ signal external_action_released()
 signal external_action_finished()
 ## 外部动作被显式取消。
 signal external_action_cancelled()
+## 外部动作通知携带本次request_id（普通为0）；event为release/finish/cancel，复位不改变通知身份。
+signal external_action_lifecycle(request_id: int, event: StringName)
 
 enum AttackState {
 	IDLE,
@@ -73,6 +75,9 @@ var _current_attack_animation: StringName = &""
 var _current_target: UnitBase
 var _locked_attack_direction: Vector3 = Vector3.FORWARD
 var _current_external_action_animation: StringName = &""
+var _external_request_id: int = 0
+var _external_release_reported: bool = false
+var _external_action_deadline: float = 0.0
 var _external_melee_payload: Dictionary = {}
 
 var _hit_stop_active: bool = false
@@ -168,7 +173,9 @@ func request_attack(target: UnitBase) -> bool:
 ## 调用者只传入已经计算完成的有效施法时间；本控制器不得反向访问 Skill、
 ## SkillHost 或 Unit 字段重新读取该数据。动画优先取当前武器的 basic_cast_1，
 ## 没有时再取角色的 basic_cast_1，并要求恰好一个 release_action 方法标记。
-func request_external_action(effective_cast_time: float, target: UnitBase = null, action_payload: Dictionary = {}) -> bool:
+## request_id默认0兼容普通动作，连携传正身份；payload为既有只读动作配置，不反读技能。
+func request_external_action(effective_cast_time: float, target: UnitBase = null, action_payload: Dictionary = {}, request_id: int = 0) -> bool:
+	if request_id < 0: return false
 	if (
 		_state != AttackState.IDLE
 		or not _resolve_visual_endpoints()
@@ -200,6 +207,9 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 	)
 
 	_current_external_action_animation = animation_name
+	_external_request_id = request_id
+	_external_release_reported = false
+	_external_action_deadline = _animation_player.get_animation(animation_name).length / playback_speed + 1.0
 	_external_melee_payload = action_payload.duplicate()
 	_current_target = target
 	_current_attack_index = 1
@@ -229,6 +239,8 @@ func _resolve_cast_animation(effective_cast_time: float, requested_animation: St
 		if not _animation_player.has_animation(animation_name):
 			continue
 		var animation := _animation_player.get_animation(animation_name)
+		if animation.loop_mode != Animation.LOOP_NONE or not is_finite(animation.length) or animation.length <= 0.0:
+			continue
 		var release_times := _find_method_marker_times(
 			animation,
 			&"release_action"
@@ -261,11 +273,17 @@ func _reject_external_action(reason: String) -> bool:
 func cancel_external_action() -> void:
 	if _state != AttackState.EXTERNAL_ACTION:
 		return
+	# 先关检测再清载荷，防止残留近战查询被按普通伤害结算。
+	_close_attack_hit_window()
 	set_hit_stop_active(false)
 	_current_external_action_animation = &""
 	_external_melee_payload.clear()
 	_state = AttackState.IDLE
+	var cancelled_id := _external_request_id
+	_external_request_id = 0
+	_external_action_deadline = 0.0
 	_play_reset_animation()
+	external_action_lifecycle.emit(cancelled_id, &"cancel")
 	external_action_cancelled.emit()
 
 
@@ -315,6 +333,22 @@ func can_attack() -> bool:
 		and not _owner_body.is_dead()
 		and is_instance_valid(_animation_player)
 	)
+
+
+## 实际动作占用，包括普通攻击与外部技能，不把公共冷却当动作。
+func is_action_in_progress() -> bool:
+	return _state != AttackState.IDLE
+
+
+## 当前外部动作身份；普通/空闲为0，仅用于匹配取消通知。
+func get_external_request_id() -> int:
+	return _external_request_id if _state == AttackState.EXTERNAL_ACTION else 0
+
+
+func _process(delta: float) -> void:
+	if _state != AttackState.EXTERNAL_ACTION or _hit_stop_active: return
+	_external_action_deadline -= maxf(delta, 0.0)
+	if _external_action_deadline <= 0.0: cancel_external_action()
 
 
 func is_attacking() -> bool:
@@ -640,7 +674,10 @@ func _on_animation_finished(animation_name: StringName) -> void:
 
 
 func _on_external_action_release_requested() -> void:
-	if _state == AttackState.EXTERNAL_ACTION:
+	if _state == AttackState.EXTERNAL_ACTION and not _external_release_reported:
+		_external_release_reported = true
+		var released_id := _external_request_id
+		external_action_lifecycle.emit(released_id, &"release")
 		external_action_released.emit()
 
 
@@ -654,7 +691,11 @@ func _finish_external_action() -> void:
 	_current_external_action_animation = &""
 	_external_melee_payload.clear()
 	_state = AttackState.IDLE
+	var finished_id := _external_request_id
+	_external_request_id = 0
+	_external_action_deadline = 0.0
 	_play_reset_animation()
+	external_action_lifecycle.emit(finished_id, &"finish")
 	external_action_finished.emit()
 
 

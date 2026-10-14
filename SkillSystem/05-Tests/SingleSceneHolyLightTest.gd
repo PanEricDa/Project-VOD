@@ -230,18 +230,20 @@ func _run() -> void:
 	var missing_health := FriendlyWithoutHealth.new()
 	_world.add_child(missing_health)
 	failing_skill.configure_owner(caster, null, _world)
+	var terminal_failures: Array[int] = [0]
+	failing_skill.delivery_failed.connect(func(_context, _reason): terminal_failures[0] += 1)
 	_expect(
-		not _request_and_release(
+		_request_and_release(
 			failing_skill,
 			caster,
 			missing_health
 		),
-		"missing health API fails delivery"
+		"valid delivery accepts before missing health API reports final effect failure"
 	)
 	_expect(
-		is_zero_approx(failing_skill.get_cooldown_remaining())
-		and failing_skill.is_ready(),
-		"failed delivery does not start cooldown"
+		terminal_failures[0] == 1 and failing_skill.get_cooldown_remaining() > 0.0
+		and not failing_skill.is_ready(),
+		"accepted effect failure reports once and keeps successful-release cooldown"
 	)
 	_finish()
 

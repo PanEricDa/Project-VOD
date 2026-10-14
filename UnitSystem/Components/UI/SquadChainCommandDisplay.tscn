@@ -1,0 +1,192 @@
+[gd_scene format=3 uid="uid://w13q6dviajxb"]
+
+[ext_resource type="Script" uid="uid://wvyxvue3njoj" path="res://UnitSystem/Components/UI/SquadChainCommandDisplay.gd" id="1_i78jb"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f3hlx"]
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0.03, 0.045, 0.07, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="SquadChainCommandDisplay" type="CanvasLayer" unique_id=1905817382]
+layer = 15
+script = ExtResource("1_i78jb")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=2135114462]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -390.0
+offset_top = -215.0
+offset_right = 390.0
+offset_bottom = -55.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_f3hlx")
+
+[node name="VBox" type="VBoxContainer" parent="Panel" unique_id=1139878419]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Panel/VBox" unique_id=656253865]
+layout_mode = 2
+text = "阶段二指令验证 · 1—4 请求伙伴技能（非正式连携窗口）"
+
+[node name="Cards" type="HBoxContainer" parent="Panel/VBox" unique_id=618411605]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="Card1" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=1096733507]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card1" unique_id=1745075001]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Actor" type="Label" parent="Panel/VBox/Cards/Card1/VBox" unique_id=499001000]
+layout_mode = 2
+text = "1 · 未配置"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Panel/VBox/Cards/Card1/VBox" unique_id=227465319]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Panel/VBox/Cards/Card1/VBox" unique_id=116654812]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="State" type="Label" parent="Panel/VBox/Cards/Card1/VBox" unique_id=1742596940]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Panel/VBox/Cards/Card1/VBox" unique_id=1760290849]
+visible = false
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Card2" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=1973670819]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card2" unique_id=946854506]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Actor" type="Label" parent="Panel/VBox/Cards/Card2/VBox" unique_id=1796236423]
+layout_mode = 2
+text = "2 · 未配置"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Panel/VBox/Cards/Card2/VBox" unique_id=578425973]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Panel/VBox/Cards/Card2/VBox" unique_id=1821405409]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="State" type="Label" parent="Panel/VBox/Cards/Card2/VBox" unique_id=685087718]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Panel/VBox/Cards/Card2/VBox" unique_id=889268539]
+visible = false
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Card3" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=375687618]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card3" unique_id=1117036173]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Actor" type="Label" parent="Panel/VBox/Cards/Card3/VBox" unique_id=479957104]
+layout_mode = 2
+text = "3 · 未配置"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Panel/VBox/Cards/Card3/VBox" unique_id=1502352303]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Panel/VBox/Cards/Card3/VBox" unique_id=1933148114]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="State" type="Label" parent="Panel/VBox/Cards/Card3/VBox" unique_id=1124448753]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Panel/VBox/Cards/Card3/VBox" unique_id=137645481]
+visible = false
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Card4" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=2048797342]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card4" unique_id=1949068991]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Actor" type="Label" parent="Panel/VBox/Cards/Card4/VBox" unique_id=1327822477]
+layout_mode = 2
+text = "4 · 未配置"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Panel/VBox/Cards/Card4/VBox" unique_id=1208426325]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Cost" type="Label" parent="Panel/VBox/Cards/Card4/VBox" unique_id=39038460]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="State" type="Label" parent="Panel/VBox/Cards/Card4/VBox" unique_id=151350216]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Panel/VBox/Cards/Card4/VBox" unique_id=1302185246]
+visible = false
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5

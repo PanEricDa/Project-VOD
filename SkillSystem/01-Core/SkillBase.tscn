@@ -1,12 +1,14 @@
 [gd_scene format=3 uid="uid://b3qp6uulk431f"]
 
-[ext_resource type="Script" path="res://SkillSystem/01-Core/SkillBase.gd" id="1_skill"]
-[ext_resource type="Script" path="res://SkillSystem/02-Delivery/SkillDeliveryRunner.gd" id="2_runner"]
+[ext_resource type="Script" uid="uid://cwkdgc6f87i0d" path="res://SkillSystem/01-Core/SkillBase.gd" id="1_skill"]
+[ext_resource type="Script" uid="uid://ba5033wq5cbto" path="res://SkillSystem/02-Delivery/SkillDeliveryRunner.gd" id="2_runner"]
+[ext_resource type="Script" uid="uid://cd2wib31ryicx" path="res://SkillSystem/01-Core/SkillReleasePresentationPlayer.gd" id="3_3cpy8"]
 
-[node name="SkillBase" type="Node"]
+[node name="SkillBase" type="Node" unique_id=253215794]
 script = ExtResource("1_skill")
 
-[node name="DeliveryRunner" type="Node" parent="."]
+[node name="DeliveryRunner" type="Node" parent="." unique_id=1432479711]
 script = ExtResource("2_runner")
 
-[node name="RuntimeEffects" type="Node" parent="."]
+[node name="RuntimeEffects" type="Node" parent="." unique_id=1864206680]
+script = ExtResource("3_3cpy8")

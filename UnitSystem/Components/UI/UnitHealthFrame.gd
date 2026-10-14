@@ -5,7 +5,7 @@ extends PanelContainer
 ## 本组件只通过 UnitBase 的公开 getter 与信号读取生命状态，负责名称回退显示、
 ## 当前/最大生命文本、红色损血残影、按比例渐变的生命进度条、“倒下”死亡标记，
 ## 以及玩家、紧凑伙伴和顶部目标三种展示切换；
-## 它不修改单位数据、不参与战斗结算，也不依赖任何 AI 或玩家专属组件。
+## 普通技能提示只订阅通用SkillHost/SkillBase的实际开始信号；不修改单位数据或战斗结算，不依赖职业AI。
 ## 场景内样式全部使用 StyleBoxFlat 子资源，不引用外部 Theme 或资源文件。
 
 enum PresentationMode {
@@ -49,6 +49,11 @@ var damage_hold_duration: float = 0.12
 @export_range(0.0, 3.0, 0.01, "or_greater")
 var damage_decay_duration: float = 0.35
 
+@export_category("Skill Notice")
+## 普通技能名称完全进入后停留的时间，单位为秒；默认1.0，0表示立即向右离场；只影响紧凑伙伴框提示，进出动画速度内部固定。
+@export_range(0.0, 10.0, 0.05, "or_greater")
+var skill_notice_hold_duration: float = 1.0
+
 @export_category("Health Colors")
 ## 生命比例为 100% 时的实时生命条颜色；默认绿色，只影响当前信息框的生命填充。
 @export var healthy_health_color: Color = Color(0.18, 0.82, 0.28, 1.0)
@@ -69,9 +74,31 @@ var warning_health_ratio: float = 0.5
 @onready var _health_value: Label = %HealthValue
 @onready var _extension_slot: MarginContainer = %ExtensionSlot
 @onready var _core_info: VBoxContainer = %CoreInfo
+@onready var _header: HBoxContainer = $FrameContent/CoreInfo/Header
+@onready var _skill_notice_clip: Control = %SkillNoticeClip
+@onready var _skill_notice: Panel = %SkillNotice
+@onready var _skill_name: Label = %SkillName
+# 动画和尺寸是统一内部表现，不让每个技能/角色维护重复参数。
+const SKILL_NOTICE_ENTER_SECONDS: float = 0.14
+const SKILL_NOTICE_EXIT_SECONDS: float = 0.18
+const SKILL_NOTICE_HEIGHT: float = 26.0
+const SKILL_NOTICE_TEXT_MARGIN: float = 12.0
+const SKILL_NOTICE_MINIMUM_WIDTH: float = 112.0
+var _skill_notice_style: StyleBoxFlat
+# 统一视觉语言，颜色不作为每技能配置，新增类型时仅扩展此表；未知类型安全回退白色。
+const SKILL_NOTICE_COLORS = {
+	SkillBase.SkillType.DAMAGE: Color(1.0, 0.58, 0.52, 0.94),
+	SkillBase.SkillType.HEALING: Color(0.53, 0.91, 0.62, 0.94),
+	SkillBase.SkillType.BUFF: Color(0.55, 0.77, 1.0, 0.94),
+	SkillBase.SkillType.DEBUFF: Color(0.84, 0.65, 1.0, 0.94),
+}
+var _skill_notice_tween: Tween
+var _notice_host: SkillHostComponent
+var _notice_skills: Array[SkillBase] = []
 
 ## 当前绑定的单位；null 或已失效表示信息框处于未绑定隐藏态。
 var _bound_unit: UnitBase
+
 ## 当前展示模式；只影响字号、间距与扩展槽，不影响绑定数据。
 var _presentation_mode: PresentationMode = PresentationMode.PLAYER
 ## 当前红色损血残影的唯一 Tween；连续受伤会终止旧实例并从保留值重新计时。
@@ -82,9 +109,99 @@ var _health_fill_style: StyleBoxFlat
 var _damage_fill_style: StyleBoxFlat
 
 
+# 只读接入通用技能宿主；注册/卸载动态技能同样更新监听，不反向修改SkillSystem。
+func _connect_skill_notices() -> void:
+	_notice_host = _bound_unit.get_node_or_null(^"SkillHost") as SkillHostComponent
+	if _notice_host == null: return
+	_notice_host.skill_registered.connect(_on_notice_skill_registered)
+	_notice_host.skill_unregistered.connect(_on_notice_skill_unregistered)
+	for skill in _notice_host.get_registered_skills(): _on_notice_skill_registered(skill)
+
+func _on_notice_skill_registered(skill: SkillBase) -> void:
+	if not is_instance_valid(skill) or _notice_skills.has(skill): return
+	_notice_skills.append(skill)
+	skill.cast_started.connect(_on_ordinary_cast_started.bind(skill))
+
+func _on_notice_skill_unregistered(skill: SkillBase) -> void:
+	if is_instance_valid(skill):
+		var callback := _on_ordinary_cast_started.bind(skill)
+		if skill.cast_started.is_connected(callback): skill.cast_started.disconnect(callback)
+	_notice_skills.erase(skill)
+
+func _disconnect_skill_notices() -> void:
+	if is_instance_valid(_notice_host):
+		if _notice_host.skill_registered.is_connected(_on_notice_skill_registered): _notice_host.skill_registered.disconnect(_on_notice_skill_registered)
+		if _notice_host.skill_unregistered.is_connected(_on_notice_skill_unregistered): _notice_host.skill_unregistered.disconnect(_on_notice_skill_unregistered)
+	for skill in _notice_skills.duplicate(): _on_notice_skill_unregistered(skill)
+	_notice_skills.clear()
+	_notice_host = null
+
+# 只显示绑定伙伴的常规槽技能和真实角色动作开始；连携、终结、普攻及内部触发均不提示。
+func _on_ordinary_cast_started(context: SkillContext, skill: SkillBase) -> void:
+	if _presentation_mode != PresentationMode.COMPACT_ALLY or context == null or not is_instance_valid(_bound_unit) or _bound_unit.is_dead() or context.caster != _bound_unit or not is_instance_valid(_notice_host): return
+	if context.purpose != SkillContext.Purpose.REGULAR or context.execution_mode != SkillContext.ExecutionMode.CHARACTER_ACTION: return
+	if not _notice_host.get_equipped_regular_skills().has(skill): return
+	_show_skill_notice(skill.display_name if not skill.display_name.is_empty() else String(skill.skill_id), skill.skill_type)
+
+# 以框体配置宽度分配名称预算，避免长名称先撑宽父Container后再无法缩回。
+# 伙伴名称必要时省略，始终为技能提示预留可读宽度；死亡时折叠提示区，把空间归还名称/状态。
+func _update_name_budget() -> void:
+	var is_ally := _presentation_mode == PresentationMode.COMPACT_ALLY
+	_skill_notice_clip.visible = is_ally and not _state_label.visible
+	if not is_ally:
+		_name_label.custom_minimum_size.x = 0.0
+		_skill_notice_clip.custom_minimum_size.x = 0.0
+		return
+	var width := custom_minimum_size.x if custom_minimum_size.x > 0.0 else size.x
+	var separation := float(_header.get_theme_constant(&"separation"))
+	var reserved := minf(SKILL_NOTICE_MINIMUM_WIDTH, maxf(width * 0.55, 0.0)) if _skill_notice_clip.visible else 0.0
+	_skill_notice_clip.custom_minimum_size.x = reserved
+	var state_width := _state_label.get_combined_minimum_size().x if _state_label.visible else 0.0
+	var budget := maxf(width - reserved - state_width - separation, 0.0)
+	var font := _name_label.get_theme_font(&"font")
+	var natural := font.get_string_size(_name_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, _name_label.get_theme_font_size(&"font_size")).x
+	_name_label.custom_minimum_size.x = minf(natural, budget)
+
+# text 为当前技能显示名称；type 为技能配置的主要用途，仅查颜色，不推断或修改技能效果。
+func _show_skill_notice(text: String, type: int) -> void:
+	_hide_skill_notice()
+	var available_width := _skill_notice_clip.size.x
+	if available_width <= 1.0: return
+	_skill_name.text = text
+	_skill_notice_style.bg_color = SKILL_NOTICE_COLORS.get(type, Color(1, 1, 1, 0.94))
+	var font := _skill_name.get_theme_font(&"font")
+	var font_size := _skill_name.get_theme_font_size(&"font_size")
+	var width := minf(available_width, font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + SKILL_NOTICE_TEXT_MARGIN * 2.0)
+	_skill_notice.size = Vector2(width, SKILL_NOTICE_HEIGHT)
+	_skill_notice.position = Vector2(-width, maxf((_skill_notice_clip.size.y - SKILL_NOTICE_HEIGHT) * 0.5, 0.0))
+	_skill_notice.modulate = Color(1, 1, 1, 0)
+	_skill_notice.visible = true
+	_skill_notice_tween = create_tween()
+	_skill_notice_tween.tween_property(_skill_notice, ^"position:x", 0.0, SKILL_NOTICE_ENTER_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_skill_notice_tween.parallel().tween_property(_skill_notice, ^"modulate:a", 1.0, SKILL_NOTICE_ENTER_SECONDS)
+	var hold := maxf(skill_notice_hold_duration, 0.0) if is_finite(skill_notice_hold_duration) else 1.0
+	_skill_notice_tween.tween_interval(hold)
+	_skill_notice_tween.tween_property(_skill_notice, ^"position:x", available_width + 4.0, SKILL_NOTICE_EXIT_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_skill_notice_tween.parallel().tween_property(_skill_notice, ^"modulate:a", 0.0, SKILL_NOTICE_EXIT_SECONDS)
+	_skill_notice_tween.tween_callback(_finish_skill_notice)
+
+func _finish_skill_notice() -> void:
+	_skill_notice.visible = false
+	_skill_notice_tween = null
+
+func _hide_skill_notice() -> void:
+	if is_instance_valid(_skill_notice_tween): _skill_notice_tween.kill()
+	_skill_notice_tween = null
+	if is_instance_valid(_skill_notice): _skill_notice.visible = false
+
+
 func _ready() -> void:
+	_header.resized.connect(_update_name_budget)
 	_sanitize_visual_configuration()
 	_make_fill_styles_local()
+	# 场景子资源默认共享：每个框体单独复制，避免治疗提示改变其他伙伴的颜色。
+	_skill_notice_style = _skill_notice.get_theme_stylebox(&"panel").duplicate() as StyleBoxFlat
+	_skill_notice.add_theme_stylebox_override(&"panel", _skill_notice_style)
 	_apply_presentation_mode()
 
 
@@ -98,12 +215,15 @@ func bind_unit(unit: UnitBase) -> void:
 		return
 	_bound_unit = unit
 	_connect_unit_signals()
+	_connect_skill_notices()
 	visible = true
 	refresh_immediately()
 
 
 ## 断开当前单位的全部信号并隐藏信息框；不会修改单位本身。
 func unbind_unit() -> void:
+	_disconnect_skill_notices()
+	_hide_skill_notice()
 	_disconnect_unit_signals()
 	_kill_damage_tween()
 	_bound_unit = null
@@ -296,6 +416,7 @@ func _kill_damage_tween() -> void:
 
 ## 钳制可配置时间与颜色中点，确保运行时不会产生负时长或颜色插值除零。
 func _sanitize_visual_configuration() -> void:
+	skill_notice_hold_duration = maxf(skill_notice_hold_duration, 0.0) if is_finite(skill_notice_hold_duration) else 1.0
 	damage_hold_duration = maxf(damage_hold_duration, 0.0)
 	damage_decay_duration = maxf(damage_decay_duration, 0.0)
 	warning_health_ratio = clampf(warning_health_ratio, 0.01, 0.99)
@@ -318,12 +439,14 @@ func _make_fill_styles_local() -> void:
 ## 切换倒下视觉状态：显示“倒下”并将整框（含全部子内容）调暗，复活时恢复。
 ## 使用 modulate 而不是 self_modulate，确保变暗传播到生命条、数值与扩展槽内容。
 func _set_dead_state(dead: bool) -> void:
+	if dead: _hide_skill_notice()
 	_state_label.visible = dead
 	if dead:
 		_state_label.text = DEAD_STATE_TEXT
 		modulate = DEAD_FRAME_MODULATE
 	else:
 		modulate = ALIVE_FRAME_MODULATE
+	_update_name_budget()
 
 
 ## 按展示模式应用字号、间距与扩展槽可见性；扩展槽仅在玩家模式且已有内容时显示。
@@ -359,6 +482,12 @@ func _apply_presentation_mode() -> void:
 		if is_target_mode
 		else HORIZONTAL_ALIGNMENT_LEFT
 	)
+	var is_ally_mode := _presentation_mode == PresentationMode.COMPACT_ALLY
+	_name_label.size_flags_horizontal = Control.SIZE_FILL if is_ally_mode else Control.SIZE_EXPAND_FILL
+	_name_label.clip_text = is_ally_mode
+	_name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if is_ally_mode else TextServer.OVERRUN_NO_TRIMMING
+	_update_name_budget()
+	if not is_ally_mode: _hide_skill_notice()
 	_extension_slot.visible = (
 		is_player_mode and _extension_slot.get_child_count() > 0
 	)
@@ -366,5 +495,7 @@ func _apply_presentation_mode() -> void:
 
 ## 组件自身离开场景树时断开单位信号，防止场景卸载后残留回调。
 func _exit_tree() -> void:
+	_hide_skill_notice()
+	_disconnect_skill_notices()
 	_kill_damage_tween()
 	_disconnect_unit_signals()

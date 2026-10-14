@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dw4b01374xsbg"]
+
+[ext_resource type="PackedScene" uid="uid://b57b7knoialwy" path="res://Scenes/TestCombatRoom.tscn" id="1_room"]
+[ext_resource type="Script" uid="uid://cijkrcf5q1p2q" path="res://Scenes/Previews/SquadChainCommandPreview.gd" id="2_preview"]
+[ext_resource type="PackedScene" uid="uid://bicf8lfkrvq47" path="res://UnitSystem/Components/Combat/Squad/SquadChainCommandController.tscn" id="3_commands"]
+[ext_resource type="PackedScene" uid="uid://w13q6dviajxb" path="res://UnitSystem/Components/UI/SquadChainCommandDisplay.tscn" id="4_display"]
+
+[node name="SquadChainCommandPreview" unique_id=2009019219 instance=ExtResource("1_room")]
+script = ExtResource("2_preview")
+
+[node name="SquadFocusComponent" parent="." index="1" unique_id=1471205558]
+initial_focus = 100.0
+
+[node name="SquadChainCommandController" parent="." index="17" unique_id=1051278712 node_paths=PackedStringArray("companions", "focus_source") instance=ExtResource("3_commands")]
+companions = [NodePath("../Guardian"), NodePath("../Priest"), NodePath("../Caster"), NodePath("../Archer")]
+focus_source = NodePath("../SquadFocusComponent")
+
+[node name="SquadChainCommandDisplay" parent="." index="18" unique_id=160289064 node_paths=PackedStringArray("command_source") instance=ExtResource("4_display")]
+command_source = NodePath("../SquadChainCommandController")
+
+[editable path="EnemyContainer/Pack_C/GoblinWarrior"]

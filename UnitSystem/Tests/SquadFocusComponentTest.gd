@@ -57,7 +57,42 @@ func _run() -> void:
 	focus.unbind_scope()
 	_expect(focus.get_reserved_focus() == 0.0 and focus.get_current_focus() == 50.0, "unbind resets session")
 	world.free()
+	_verify_reentrant_binding()
 	_finish()
+func _verify_reentrant_binding() -> void:
+	var old_world = Node3D.new()
+	var new_world = Node3D.new()
+	root.add_child(old_world)
+	root.add_child(new_world)
+	var old_source = UnitBase.new()
+	old_source.team_id = 1
+	old_world.add_child(old_source)
+	var new_source = UnitBase.new()
+	new_source.team_id = 1
+	new_world.add_child(new_source)
+	var target = UnitBase.new()
+	target.team_id = 2
+	new_world.add_child(target)
+	var focus = SquadFocusComponent.new()
+	focus.auto_bind_parent = false
+	focus.initial_focus = 50.0
+	root.add_child(focus)
+	var old_party: Array[UnitBase] = [old_source]
+	var new_party: Array[UnitBase] = [new_source]
+	focus.bind_scope(old_world, old_party)
+	var attempts: Array[bool] = []
+	focus.scope_changed.connect(func(scope):
+		if scope == null and attempts.is_empty(): attempts.append(focus.bind_scope(new_world, new_party)))
+	focus.unbind_scope()
+	_expect(attempts == [false] and focus.get_bound_scope() == null, "reentrant bind during unbind fails closed instead of claiming success then erasing new session")
+	_expect(focus.bind_scope(new_world, new_party) and focus.is_party_member(new_source), "new binding succeeds after old cleanup finishes")
+	CombatValueResolver.apply_damage(new_source, target, 10.0, 0.0, 1.0, 1.0, 0.0, CombatDamageContext.create(new_source, new_world))
+	_expect(focus.get_current_focus() == 51.0, "new binding keeps damage listener")
+	focus.unbind_scope()
+	focus.free()
+	old_world.free()
+	new_world.free()
+
 func _expect(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)
 func _finish() -> void:

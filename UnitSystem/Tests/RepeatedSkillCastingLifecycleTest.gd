@@ -98,8 +98,11 @@ func _run() -> void:
 	holy_light.delivery_started.connect(
 		func(_context: SkillContext) -> void:
 			_priest_release_count += 1
-			# 条件化治疗不会再对满血目标空放；每次真实治疗后重新制造等量缺口，
-			# 才能持续压力测试动作槽和移动锁的长期归还。
+	)
+	holy_light.delivery_finished.connect(
+		func(_context: SkillContext, _result: SkillDeliveryResult) -> void:
+			# 接受通知现在先于同步治疗；需在真实效果结束后制造下一轮缺口，
+			# 不能先扣血再被本次治疗补满而让压力测试永久失去治疗目标。
 			friendly.apply_damage(25.0, enemy)
 	)
 

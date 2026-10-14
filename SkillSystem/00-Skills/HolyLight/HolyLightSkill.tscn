@@ -13,6 +13,7 @@ script = ExtResource("3_delivery")
 [node name="HolyLightSkill" unique_id=2107145381 instance=ExtResource("1_template")]
 skill_id = &"holy_light"
 display_name = "Holy Light"
+skill_type = 1
 ai_priority = 20
 target_relations = 3
 target_selection_mode = 3

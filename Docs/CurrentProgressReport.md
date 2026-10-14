@@ -196,6 +196,34 @@ Godot 4.7 独立 headless 编辑器扫描和主场景 `--quit-after 120` 均以�
 - `death_cleanup_mode` 改为 `death_mode`，选项为 `KEEP_FOR_REVIVE`、`REMOVE_AFTER_DELAY`、`REMOVE_IMMEDIATELY`。
 - `destroy_delay` 改为 `remove_after_seconds`，语义为从死亡开始计算的最短保留时间；死亡动画未结束时会自动等待动画完成。
 - `visual_path` 改为内部固定路径 `Visual`，不再让设计者重复输入。
+## 2026-10-13 普通技能名称提示
+
+- 在 `UnitSystem/Components/UI/UnitHealthFrame.tscn` 的 `FrameContent/CoreInfo/Header` 中加入 `SkillNoticeClip/SkillNotice/SkillName`。圆弧胶囊背景、深色技能文字，紧跟伙伴名称右侧；不改变生命条的配置宽度。背景现在按技能类型统一着色，不再全部使用白色。
+- 复用通用 `SkillHostComponent` 的注册/卸载通知及 `SkillBase.cast_started`；只显示当前绑定单位常规槽的 `REGULAR + CHARACTER_ACTION` 技能。排队、普攻、连携、终结与内部触发不显示，不修改技能释放流程。
+- 提示快速由左向右进入，停留后继续右移淡出；新提示直接替换旧提示。解绑、死亡、退出和离开伙伴展示模式时清理动画及监听；动画跟随游戏速度/暂停，不新增独立计时机制。
+- 配置入口：打开 `UnitHealthFrame.tscn`，选根节点，Inspector → `Skill Notice` → `skill_notice_hold_duration`。默认1秒，仅控制完全进入后的停留；0为不等待直接离场。进出时长、位置、字号和圆角均内部统一，不新增速度配置。
+- 长伙伴名称采用省略并为技能提示保留可读空间，长技能名也省略，不把名称或提示挤进生命条。玩家和顶部目标展示保持原布局。
+- 新增回归：`UnitSystem/Tests/UnitHealthFrameSkillNoticeTest.gd`，覆盖移动/停留/离场、替换旧动画、来源过滤、解绑、死亡、展示模式和长名称。正式场景中实际施放Firebolt的画面已检查；最终127/127活跃SceneTree测试退出0、PASS、无ERROR或超时，RangedAttackPipeline独立契约返回[]，git diff --check通过。
+- 本次未修改 `Scenes/TestScene.tscn`、`Scenes/TestCombatRoom.tscn` 的单位或配置；阶段三、四继续暂停。原有同一框体手工拆卸后复挂的绑定恢复问题未扩展修复，正常HUD绑定/重建流程已验证。
+
+### 技能类型与背景颜色
+
+- 所有继承 `SkillBase` 的技能共用一个 `skill_type` 字段。配置入口：打开具体技能 `.tscn`，选择根节点 → Inspector → `Identity` → `Skill Type`，下拉选择“伤害技能 / 治疗技能 / 强化技能 / 弱化技能”；默认伤害。类型仅表达主要用途，不推断 Effects，不改变伤害、治疗、状态、仇恨、冷却或 AI 施放策略。混合技能按主要用途选择。
+- UI 内部统一颜色：伤害为浅红、治疗为浅绿、强化为浅蓝、弱化为浅紫；深色文字及圆弧、动画、停留时间配置保持原有规则。未知类型回退白色。每个框体复制自己的 StyleBox，禁止修改共享场景资源导致伙伴间串色；不新增颜色资源、配置组件或每技能颜色字段。
+- 现有14个技能场景（含连携测试技能和内部触发技能）均已验证分类：HolyLight、GreaterHeal、Combo_GreaterHeal 为治疗；GuardianTaunt 为弱化/敌方干扰；盾击及其余攻击、碎片技能为伤害。内部触发和连携技能仍不显示普通技能提示，不扩展显示范围。
+- 新增 `UnitSystem/Tests/SkillTypeNoticeTest.gd`，覆盖可配置下拉字段、全部技能分类、四种颜色的区分与文字可读性、同一框体换色和两个绑定框体的样式隔离。测试先验证缺少字段而失败，再完成实现后通过。最终128/128活跃SceneTree测试退出0、PASS、无ERROR或超时；RangedAttackPipeline独立契约返回[]。
+- 通过Godot MCP运行正式测试关卡，用现有SkillBase开始信号检查HUD读者边界，画面同时显示Firebolt/Explosive Arrow浅红、Greater Heal浅绿、Guardian Taunt浅紫。检查期间的停留与暂停调整仅在运行实例中生效，未保存到关卡或技能配置；检查结束已停止运行。
+
+## 2026-10-14 成功释放表现接口
+
+- SkillBase根节点Presentation → Release保留视觉场景/四锚点，新增release_audio_stream: AudioStream和release_camera_effect: CameraEffectProfile两个默认空资产槽；通用播放器挂在已有RuntimeEffects，不加技能节点，不要求逐技能连线。
+- 成功表现移至真实delivery_started接受边界：先准备本次位置/资产快照，完成既有Host/Focus通知再播放；启动失败不播放，接受后未命中/效果失败不撤回，每次施放一次而非每个投射物/目标一次。
+- 视觉/声音独立于技能动作/实例回收；音频支持一次性3D播放、重叠、循环保护与内部超时。镜头只提供强类型资源和请求信号，不执行移动或修改相机跟随/缩放/震动。
+- 新增4个.gd、1个独立Preview.tscn、0正式.tres/.res。预览路径Scenes/Previews/SkillReleasePresentationPreview.tscn，根Preview Assets选择资产，用UI按钮播放；测试音/镜头按钮为内存非正式内容，不修改正式配置。
+- 现有14个技能原视觉、锚点、施法时间/冷却一致，新通道默认空；正式关卡/project/相机/命中桥相对实施开始哈希未变。独立审查的Top Level定位缺陷已RED→GREEN修复，修复后129/129活跃回归通过、RangedAttackPipeline[]、git diff --check通过、PreviewUID有效。
+- 实际运行现有嘲讽视觉及预览UI已检查，声音启动/结束/回收自动验证完成，实际听感待用户试听。两项Minor覆盖建议（延迟autoplay/自然视觉完成，以及更完整的接受重入组合）已记录，不虚称全部覆盖。
+- 详见[实施验收](Superpowers/Plans/2026-10-14-skill-release-presentation-validation.md)。本次未提交/上传Git，连携阶段三、四继续暂停。
+
 ## 2026-09-06 玩家 Dash 逐层恢复与 HUD 监控
 
 - `PlayerBase` Dash 从“耗尽后整组冷却、整组回满”改为“任意一层消耗后立即开始当前层冷却、每个周期恢复一层”；恢复期间再次消耗不重置当前层进度；大 `delta` 连续结算多周期并保留余量；零冷却立即回满；死亡冻结计时、复活续走。

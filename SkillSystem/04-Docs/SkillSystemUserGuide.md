@@ -189,8 +189,23 @@ HolyLight 已挂载此组件，默认 100%，表示受伤才自动治疗；默�
 敌人已经锁定 Guardian、没有锁定目标、锁定目标已死亡或敌人在范围外时均不通过。
 
 Guardian 嘲讽继续复用盾牌武器的通用 `basic_cast_1` 动作，并在动作的
-`release_action` 标记处生成 `GuardianTauntReleaseEffect.tscn`。特效锚定施法者脚下，
+`release_action` 标记触发释放检查，交付接受后才生成 `GuardianTauntReleaseEffect.tscn`。特效锚定施法者脚下，
 以0.5秒橙红冲击环、中心爆发和一次性粒子表达瞬时5米范围；视觉消失不代表仇恨被移除。
+
+### 成功释放表现（2026-10-14）
+
+在具体技能根节点 Inspector → Presentation → Release 直接选择资产：
+
+| 配置 | 用途 |
+|---|---|
+| Release Effect Scene | 一次性 Node3D 视觉 .tscn；复用原有字段，粒子组合先保存成场景 |
+| Release Effect Anchor | 动作发射点、已解析目标、目标位置或施法者脚底；音效/镜头请求共用其位置快照 |
+| Release Audio Stream | 新增，一次性 AudioStream 音频，默认空；底层自动创建3D播放器并回收 |
+| Release Camera Effect | 新增，CameraEffectProfile强类型资源，默认空；本期只发请求，不移动镜头 |
+
+模板已有RuntimeEffects挂通用播放器，策划不添加节点、连线或新Effect。施法/蓄力和取消视觉保持各自入口；成功Release只在交付接受时一次播放，不按每个目标/投射物重复。技能实例结束不截断已释放声音/视觉。空通道跳过，不影响技能结算。
+
+独立预览为 `res://Scenes/Previews/SkillReleasePresentationPreview.tscn`。在工具根选择资产，运行并按播放按钮；测试音/镜头请求按钮仅使用内存非正式内容。镜头资源还没有运动预设，声音实际听感需自行试听。
 
 - 不再为每个技能维护独立 Definition `.tres` 和 Delivery `.tscn`。
 - `DeliveryConfig` 应保存在技能场景内部，不要另存为第二份人工配置资产。

@@ -69,6 +69,18 @@ func release_request(request_id: int) -> void:
 	_records.erase(request_id)
 	_collect_closed()
 
+## 只读预估下一请求的预留上界；包含已有同轮同伙伴同技能潜在前序，不新增任何记录。
+## round/caster正身份、非空skill及有限非负费用有效；关闭/非法返回-1，未知开放轮从0成功计。
+func preview_reservation_quote(round_id: int, caster_id: int, skill_id: StringName, base_cost: float, repeat_cost: float) -> float:
+	if round_id <= _closed_watermark or round_id <= 0 or caster_id <= 0 or skill_id.is_empty() or not is_finite(base_cost) or not is_finite(repeat_cost) or base_cost < 0.0 or repeat_cost < 0.0: return -1.0
+	var key := "%d:%s" % [caster_id, skill_id]
+	var count: int = int(_successes.get(round_id, {}).get(key, 0))
+	for record in _records.values():
+		if record.state == 0 and record.round == round_id and record.caster == caster_id and record.skill == skill_id: count += 1
+	var value := base_cost + count * repeat_cost
+	return value if is_finite(value) else -1.0
+
+
 func _key(r: Dictionary) -> String:
 	return "%d:%s" % [r.caster, r.skill]
 

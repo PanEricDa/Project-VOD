@@ -4,13 +4,37 @@
 [ext_resource type="Resource" uid="uid://c7xo5naj6san6" path="res://UnitSystem/AI/Ally/Formation/Positions/Defender.tres" id="2_rysu0"]
 [ext_resource type="Resource" uid="uid://dlppmmwgyx6it" path="res://Item/Weapon/MagicGlobe/MagicGlobeData.tres" id="3_ceg2y"]
 [ext_resource type="PackedScene" uid="uid://dofx4arumbdgl" path="res://SkillSystem/00-Skills/Firebolt/FireboltSkill.tscn" id="4_1dym3"]
-[ext_resource type="PackedScene" uid="uid://bpo5nn20cmy75" path="res://SkillSystem/00-Skills/Pyroblast/PyroblastSkill.tscn" id="4_pyroblast"]
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="4_ceg2y"]
+[ext_resource type="PackedScene" uid="uid://bpo5nn20cmy75" path="res://SkillSystem/00-Skills/Pyroblast/PyroblastSkill.tscn" id="4_pyroblast"]
 [ext_resource type="PackedScene" uid="uid://iy31womyjbj1" path="res://UnitSystem/Visuals/Ally/CasterVisual.tscn" id="4_rysu0"]
 [ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="5_xggor"]
 [ext_resource type="Script" uid="uid://d02epfqku0fc0" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="6_74tff"]
+[ext_resource type="PackedScene" uid="uid://bf6jnj6t1rq0b" path="res://Item/Projectiles/PyroblastProjectile.tscn" id="8_guhj8"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="9_ma7om"]
+[ext_resource type="Script" uid="uid://dbomxnas7fyr" path="res://SkillSystem/02-Delivery/MarkedHostileTargetExpansion.gd" id="10_cyht2"]
+[ext_resource type="PackedScene" uid="uid://tplswvbivsil" path="res://SkillSystem/00-Skills/Combo_Firebolt/ComboFireboltSkill.tscn" id="11_adgec"]
 
-[sub_resource type="Resource" id="Resource_xggor"]
+[sub_resource type="Resource" id="Resource_rp3km"]
+resource_local_to_scene = true
+script = ExtResource("6_74tff")
+projectile_scene = ExtResource("5_xggor")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+impact_radius = 1.2
+
+[sub_resource type="Resource" id="Resource_1t1as"]
+resource_local_to_scene = true
+script = ExtResource("10_cyht2")
+status_id = &"burning"
+
+[sub_resource type="Resource" id="Resource_t5gfi"]
+resource_local_to_scene = true
+script = ExtResource("9_ma7om")
+projectile_scene = ExtResource("8_guhj8")
+target_expansion = SubResource("Resource_1t1as")
+
+[sub_resource type="Resource" id="Resource_ktjdg"]
 resource_local_to_scene = true
 script = ExtResource("6_74tff")
 projectile_scene = ExtResource("5_xggor")
@@ -20,17 +44,12 @@ maximum_lifetime = 3.0
 impact_radius = 1.2
 
 [node name="Caster" unique_id=1491736132 instance=ExtResource("1_ceg2y")]
-maximum_health = 90.0
-attack_power = 16.0
-defense = 2.0
 formation_position = ExtResource("2_rysu0")
-targeting_radius = 6.5
 combat_action_policy = 2
 automatic_skill_cast_enabled = true
 shared_action_cooldown_duration = 1.0
 starting_weapon = ExtResource("3_ceg2y")
 movement_speed = 3.8
-hit_movement_lock_duration = 0.1
 movement_acceleration = 16.0
 slowing_distance = 0.1
 dash_speed = 5.0
@@ -38,14 +57,25 @@ dash_max_distance = 2.0
 dash_cooldown = 3.0
 dash_acceleration = 35.1
 rotation_speed = 5.0
+targeting_radius = 6.5
+combat_targeting_radius = 0.0
+maximum_health = 90.0
+attack_power = 16.0
+defense = 2.0
+hit_movement_lock_duration = 0.1
 
-[node name="SkillHost" parent="." index="0" node_paths=PackedStringArray("regular_skills")]
+[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "combo_skill")]
 regular_skills = [NodePath("SkillSocket/FireboltSkill"), NodePath("SkillSocket/PyroblastSkill")]
+combo_skill = NodePath("SkillSocket/ComboFireboltSkill")
 
 [node name="FireboltSkill" parent="SkillHost/SkillSocket" index="0" unique_id=165098916 instance=ExtResource("4_1dym3")]
-delivery = SubResource("Resource_xggor")
+delivery = SubResource("Resource_rp3km")
 
-[node name="PyroblastSkill" parent="SkillHost/SkillSocket" index="1" instance=ExtResource("4_pyroblast")]
+[node name="PyroblastSkill" parent="SkillHost/SkillSocket" index="1" unique_id=1836847695 instance=ExtResource("4_pyroblast")]
+delivery = SubResource("Resource_t5gfi")
+
+[node name="ComboFireboltSkill" parent="SkillHost/SkillSocket" index="2" unique_id=279338316 instance=ExtResource("11_adgec")]
+delivery = SubResource("Resource_ktjdg")
 
 [node name="CombatSystem" parent="." index="6" unique_id=1762750344 instance=ExtResource("4_ceg2y")]
 debug_hitbox_enabled = true

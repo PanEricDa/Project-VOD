@@ -128,6 +128,7 @@ func _verify_scene_contract(scene: PackedScene) -> void:
 	_expect(not skill is Node3D, "SkillBase root is a non-spatial Node")
 	_expect(skill.has_node(^"DeliveryRunner"), "SkillBase owns DeliveryRunner")
 	_expect(skill.has_node(^"RuntimeEffects"), "SkillBase owns RuntimeEffects")
+	_expect(skill.get_node(^"RuntimeEffects") is SkillReleasePresentationPlayer, "existing RuntimeEffects provides generic release presentation")
 	_expect(
 		not _has_property(skill, &"skill_definition"),
 		"SkillBase has no Definition slot"
@@ -152,7 +153,7 @@ func _verify_scene_contract(scene: PackedScene) -> void:
 		&"decision_delay_min", &"decision_delay_max",
 		&"extra_hesitation_chance", &"extra_hesitation_min",
 		&"extra_hesitation_max", &"cast_effect_scene",
-		&"release_effect_scene", &"cancel_effect_scene", &"delivery",
+		&"release_effect_scene", &"release_audio_stream", &"release_camera_effect", &"cancel_effect_scene", &"delivery",
 	]:
 		_expect(
 			_has_property(skill, property_name),

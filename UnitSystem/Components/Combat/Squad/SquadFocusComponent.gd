@@ -16,6 +16,8 @@ extends Node
 
 ## 资源实际改变后通知只读 UI；current 包括未提交预留，available=current-reserved。
 signal focus_changed(current: float, reserved: float, available: float)
+## 绑定世界改变；解绑在reset前通知null，所有者可先归还旧预留，重复绑定不通知。
+signal scope_changed(scope_root: Node)
 
 var _capacity: float = 100.0
 var _current: float = 0.0
@@ -30,6 +32,8 @@ var _event_floor: int = 0
 var _last_values: Array = []
 var _party_team: int = 0
 var _automatic: bool = false
+# 解绑同步通知期间不接受重入绑定；旧监听与事务先完整清理。
+var _unbinding: bool = false
 
 func _ready() -> void:
 	reset_focus()
@@ -40,7 +44,9 @@ func _exit_tree() -> void:
 
 ## 绑定一处有效世界和明确队伍；party 内单位须为 scope 后代且同一非中立队伍，重复项去重。
 ## 重复绑定相同世界/名单不重置资源；新世界先解绑旧监听和预留，失败关闭。
+## 解绑同步回调中重入绑定返回false，须在外层解绑完成后再调用；不报告尚未成立的新会话。
 func bind_scope(scope_root: Node, party: Array[UnitBase]) -> bool:
+	if _unbinding: return false
 	var ids: Dictionary = {}
 	var team: int = 0
 	if not is_instance_valid(scope_root) or not scope_root.is_inside_tree():
@@ -69,15 +75,22 @@ func bind_scope(scope_root: Node, party: Array[UnitBase]) -> bool:
 	_scan_units(_scope)
 	get_tree().node_added.connect(_on_node_added)
 	_scope.tree_exiting.connect(_on_scope_exiting)
+	scope_changed.emit(_scope)
 	return true
 
 ## 断开当前世界监听、清空本会话承诺；不携带旧专注或事件到下一场景。
 func unbind_scope() -> void:
+	if _unbinding: return
+	_unbinding = true
+	var old_scope: Node = _scope
+	var was_bound: bool = is_instance_valid(old_scope)
+	_scope = null
 	_generation += 1
+	if was_bound: scope_changed.emit(null)
 	if is_inside_tree() and get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)
-	if is_instance_valid(_scope) and _scope.tree_exiting.is_connected(_on_scope_exiting):
-		_scope.tree_exiting.disconnect(_on_scope_exiting)
+	if is_instance_valid(old_scope) and old_scope.tree_exiting.is_connected(_on_scope_exiting):
+		old_scope.tree_exiting.disconnect(_on_scope_exiting)
 	for record in _observed.values():
 		var unit = record.ref.get_ref()
 		if is_instance_valid(unit):
@@ -89,6 +102,15 @@ func unbind_scope() -> void:
 	_scope = null
 	_automatic = false
 	reset_focus()
+	_unbinding = false
+
+## 当前仍有效且在树中的绑定世界；空表示已解绑，不能由调用方修改绑定状态。
+func get_bound_scope() -> Node:
+	return _scope if is_instance_valid(_scope) and _scope.is_inside_tree() else null
+
+## 检查当前单位是否属于绑定队伍及世界；不把存活/施法许可混入成员身份。
+func is_party_member(unit: UnitBase) -> bool:
+	return is_instance_valid(unit) and unit.is_inside_tree() and get_bound_scope() != null and _scope.is_ancestor_of(unit) and _party.get(unit.get_instance_id(), 0) == unit.team_id and unit.team_id != 0
 
 ## 返回当前会话实际容量；Inspector 容量变更须 reset 后生效，供只读 UI 使用。
 func get_maximum_focus() -> float: return _capacity
@@ -115,11 +137,16 @@ func reserve(request_id: int, amount: float) -> bool:
 	_notify()
 	return true
 
-## 成功释放时提交最终费用；不得超过预留，释放未使用余量。重复终态提交返回 false。
-func commit(request_id: int, final_amount: float) -> bool:
+## 查询本request是否仍有可提交承诺；纯读，金额有限非负且不超过本请求预留，不借其他请求余额。
+func can_commit(request_id: int, final_amount: float) -> bool:
 	if not is_finite(final_amount) or final_amount < 0.0 or not _transactions.has(request_id): return false
 	var t = _transactions[request_id]
-	if t.state != 0 or final_amount > t.amount: return false
+	return t.state == 0 and final_amount <= t.amount
+
+## 提交本request最终费用，不超过其预留；重复提交拒绝，成功不提供提交后退款。
+func commit(request_id: int, final_amount: float) -> bool:
+	if not can_commit(request_id, final_amount): return false
+	var t = _transactions[request_id]
 	t.state = 1
 	_current -= final_amount
 	_notify()
