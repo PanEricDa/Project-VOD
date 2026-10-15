@@ -36,6 +36,11 @@ var _score: float = 0.0
 var _last_result: Dictionary = {}
 var _root_teams: Dictionary = {}
 var _detaching: bool = false
+var _clock_usec: int = 0
+var _clock_fraction: float = 0.0
+var _clock_frame: int = 0
+var _deadline_usec: int = 0
+var _observed: Dictionary = {}
 
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
@@ -48,11 +53,14 @@ func _process(_delta: float) -> void:
 
 ## 无副作用报价查询；0表示没有可加入的新批次，不创建/结算轮次或修改账本。
 func peek_current_round() -> int:
-	return _round_id if _usable() else 0
+	return _round_id if _usable() and not _expired() else 0
 
 ## 原指令真实受理路径调用；已有轮沿用，否则捕获合法配置并分配全局单调身份，不可用返回0。
 func acquire_round() -> int:
 	if not _usable(): return 0
+	var generation := _generation
+	_close_expired()
+	if generation != _generation or not _usable(): return 0
 	if _round_id != 0: return _round_id
 	if not _configuration_valid():
 		push_warning("连携评价间隔/H0/D0必须有限且为正；拒绝建立新轮，不取消旧请求。")
@@ -71,7 +79,7 @@ func get_round_status() -> Dictionary:
 		"hit_count":_hits,"total_damage":_damage,"score":_score,
 		"progress_ratio":clampf(_score/100.0,0.0,1.0),
 		"interval_seconds":_interval if _round_id > 0 else 0.0,
-		"remaining_seconds":0.0,"finisher_ready":_phase == Phase.ACTIVE and _score >= 100.0,
+		"remaining_seconds":maxf(float(_deadline_usec-_clock_usec)/1000000.0,0.0) if _phase == Phase.ACTIVE else 0.0,"finisher_ready":_phase == Phase.ACTIVE and _score >= 100.0,
 		"last_result":_last_result.duplicate(true)}
 
 func _configuration_valid() -> bool:
@@ -101,6 +109,9 @@ func _on_scope_changed(scope: Node) -> void:
 	_clear_scope()
 	if not is_instance_valid(scope) or not scope.is_inside_tree() or not scope.is_ancestor_of(self): return
 	_scope_ref = weakref(scope)
+	scope.tree_exiting.connect(_on_scope_exiting)
+	get_tree().node_added.connect(_on_node_added)
+	_scan_units(scope)
 	_publish()
 
 func _on_accepted(request: SkillCommandRequest) -> void:
@@ -128,10 +139,20 @@ func _reset_round() -> void:
 	_damage = 0.0
 	_score = 0.0
 	_interval = 0.0
+	_deadline_usec = 0
 
 func _clear_scope() -> void:
 	_generation += 1
+	var old_scope := _scope()
+	if old_scope != null and old_scope.tree_exiting.is_connected(_on_scope_exiting):
+		old_scope.tree_exiting.disconnect(_on_scope_exiting)
+	if is_inside_tree() and get_tree().node_added.is_connected(_on_node_added):
+		get_tree().node_added.disconnect(_on_node_added)
+	for id in _observed.keys(): _on_unit_exiting(id)
 	_scope_ref = null
+	_clock_usec = 0
+	_clock_fraction = 0.0
+	_clock_frame = 0
 	var old := _round_id
 	_reset_round()
 	_root_teams.clear()
@@ -155,6 +176,90 @@ func _detach() -> void:
 	_source_ref = null
 	_detaching = false
 
+
+# 唯一正常战斗时基；暂停时Godot不调度本节点。帧身份只防重复，不用于换算时间。
+func _physics_process(delta: float) -> void:
+	if Engine.is_editor_hint() or not _usable() or not is_finite(delta) or delta < 0.0: return
+	var microseconds := delta*1000000.0+_clock_fraction
+	var whole := floori(microseconds+0.0000001)
+	_clock_fraction = maxf(microseconds-float(whole),0.0)
+	_clock_usec += whole
+	_clock_frame += 1
+	_finish_frame.call_deferred(_clock_frame,_generation)
+	if _phase == Phase.ACTIVE: _publish()
+
+# 只处理本会话本帧；落后/重复帧无效，严格超过deadline才闭窗。
+func _finish_frame(frame_id: int, generation: int) -> void:
+	if generation != _generation or frame_id != _clock_frame or not _usable(): return
+	_close_expired()
+
+func _expired() -> bool:
+	return _phase == Phase.ACTIVE and _clock_usec > _deadline_usec
+
+func _close_expired() -> void:
+	if not _expired(): return
+	var scope := _scope()
+	if scope == null: return
+	var result := {"round_id":_round_id,"scene_scope_id":scope.get_instance_id(),
+		"hit_count":_hits,"total_damage":_damage,"score":_score,
+		"qualified":_score >= 100.0,"close_reason":&"damage_gap"}
+	var generation := _generation
+	_reset_round()
+	_last_result = result.duplicate(true)
+	var source := _source()
+	if source != null: source.close_round(result.round_id)
+	if generation != _generation or not _usable(): return
+	round_finished.emit(result.duplicate(true))
+	if generation != _generation or not _usable(): return
+	_publish()
+
+# 接收时同步查原请求；不能延迟到帧末，瞬发交付届时可能已自然清理。
+func _on_damage_resolved(event: CombatDamageEvent, generation: int) -> void:
+	if generation != _generation or not _usable() or event == null: return
+	_close_expired()
+	if generation != _generation or not _usable(): return
+	if event.round_id <= _closed_round_id or event.round_id != _round_id or _round_id == 0: return
+	if event.origin != CombatDamageContext.Origin.CHAIN or not is_finite(event.actual_damage) or event.actual_damage <= 0.0: return
+	if event.scene_scope_id != _scope().get_instance_id() or not _observed.has(event.target_instance_id): return
+	if not _root_teams.has(event.request_id) or event.source_team_id == 0 or event.source_team_id != _root_teams[event.request_id]: return
+	if event.target_team_id == 0 or event.target_team_id == event.source_team_id: return
+	if not _source().is_released_request(event.request_id,event.round_id,event.source_instance_id,event.scene_scope_id): return
+	_hits += 1
+	_damage += event.actual_damage
+	_phase = Phase.ACTIVE
+	_deadline_usec = _clock_usec+roundi(_interval*1000000.0)
+	_publish()
+
+func _scan_units(node: Node) -> void:
+	if node is UnitBase: _observe(node)
+	for child in node.get_children(): _scan_units(child)
+
+func _observe(unit: UnitBase) -> void:
+	var id := unit.get_instance_id()
+	if _observed.has(id): return
+	var damage_callback := _on_damage_resolved.bind(_generation)
+	var exit_callback := _on_unit_exiting.bind(id)
+	_observed[id] = {"ref":weakref(unit),"damage":damage_callback,"exit":exit_callback}
+	unit.damage_resolved.connect(damage_callback)
+	unit.tree_exiting.connect(exit_callback)
+
+func _on_node_added(node: Node) -> void:
+	var scope := _scope()
+	if node is UnitBase and scope != null and scope.is_ancestor_of(node): _observe(node)
+
+func _on_unit_exiting(id: int) -> void:
+	if not _observed.has(id): return
+	var record: Dictionary = _observed[id]
+	var unit = record.ref.get_ref()
+	if is_instance_valid(unit):
+		if unit.damage_resolved.is_connected(record.damage): unit.damage_resolved.disconnect(record.damage)
+		if unit.tree_exiting.is_connected(record.exit): unit.tree_exiting.disconnect(record.exit)
+	_observed.erase(id)
+
+func _on_scope_exiting() -> void:
+	_clear_scope()
+	_publish()
+
 func _publish() -> void:
 	if not _detaching: round_state_changed.emit(get_round_status())
 
@@ -167,7 +272,7 @@ func _scope() -> Node:
 	return node if is_instance_valid(node) and node.is_inside_tree() and not node.is_queued_for_deletion() else null
 
 func _usable() -> bool:
-	return not _detaching and _source() != null and _scope() != null and _source().get_bound_scope() == _scope()
+	return is_inside_tree() and not is_queued_for_deletion() and not _detaching and _source() != null and _scope() != null and _source().get_bound_scope() == _scope()
 
 func _get_configuration_warnings() -> PackedStringArray:
 	var warnings := PackedStringArray()
