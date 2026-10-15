@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dyah7h2ck4vyw"]
+
+[ext_resource type="Script" uid="uid://2j0qsgvd4d0h" path="res://UnitSystem/Components/Combat/Squad/SquadChainRoundController.gd" id="1_6c8k8"]
+
+[node name="SquadChainRoundController" type="Node" unique_id=41611880]
+script = ExtResource("1_6c8k8")

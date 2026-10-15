@@ -85,6 +85,20 @@ func set_round_source(peek_current: Callable, acquire_for_request: Callable) -> 
 	_acquire_round = acquire_for_request
 	_notify_slots()
 
+## 仅当两个回调均与当前提供者一致时撤销；过期所有者不得清除新提供者，不取消原请求。
+func clear_round_source(peek_current: Callable, acquire_for_request: Callable) -> void:
+	if _peek_round != peek_current or _acquire_round != acquire_for_request: return
+	_peek_round = Callable()
+	_acquire_round = Callable()
+	_notify_slots()
+
+## 四项数字身份必须匹配仍存活且已经成功释放、未失败的请求；不返回内部记录或依赖角色节点存活。
+func is_released_request(request_id: int, round_id: int, caster_instance_id: int, scene_scope_id: int) -> bool:
+	if not _records.has(request_id): return false
+	var record: Dictionary = _records[request_id]
+	var request: SkillCommandRequest = record.request
+	return record.released and not record.failed and request.round_id == round_id and request.caster_instance_id == caster_instance_id and request.scene_scope_id == scene_scope_id
+
 ## 轮次所有者关闭单调费用批次；已经受理的旧动作和交付继续，不取消Host缓存。
 func close_round(round_id: int) -> void:
 	_ledger.close_round(round_id)
