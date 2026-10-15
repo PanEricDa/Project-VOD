@@ -19,6 +19,7 @@ func _run() -> void:
 	display.free()
 	await _test_evaluation_and_summary()
 	await _test_wrong_source_and_read_only()
+	await _test_preview_assembly()
 	_finish()
 
 func _test_evaluation_and_summary() -> void:
@@ -86,6 +87,31 @@ func _test_wrong_source_and_read_only() -> void:
 	_expect(not display.get_node("Panel/VBox/Evaluation").visible, "removing optional source restores old layout")
 	f.world.free()
 	other.world.free()
+	await process_frame
+
+func _test_preview_assembly() -> void:
+	var path := "res://Scenes/Previews/SquadChainRoundPreview.tscn"
+	_expect(ResourceLoader.exists(path), "dedicated formal round preview must exist")
+	if not ResourceLoader.exists(path): return
+	var packed := load(path) as PackedScene
+	_expect(packed.get_state().get_base_scene_state() != null, "preview is inherited not flattened")
+	var preview := packed.instantiate()
+	root.add_child(preview)
+	current_scene = preview
+	await physics_frame
+	await physics_frame
+	var evaluator := preview.get_node_or_null("SquadChainRoundController") as SquadChainRoundController
+	_expect(preview.get_script() == null and evaluator != null, "preview root removes developer round script and adds formal evaluator")
+	if evaluator != null:
+		var commander: SquadChainCommandController = preview.get_node("SquadChainCommandController")
+		var display := preview.get_node("SquadChainCommandDisplay") as SquadChainCommandDisplay
+		_expect(evaluator.command_source == commander and display.round_source == evaluator and display.command_source == commander, "single explicit Inspector assembly")
+		_expect(evaluator.peek_current_round() == 0 and evaluator.get_round_status().bound, "formal preview starts idle without development batch")
+		_expect(not preview.get_node("SquadFocusDebugDisplay").visible, "preview disables duplicate focus debug via its own enabled switch")
+		_expect(ResourceLoader.get_resource_uid(path) != ResourceUID.INVALID_ID, "preview has engine-registered UID")
+	preview.get_node("EncounterController").call("begin_scene_unload")
+	preview.free()
+	current_scene = null
 	await process_frame
 
 func _wait(seconds: float) -> void:

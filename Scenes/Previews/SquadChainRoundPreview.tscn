@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://b7vrej053u66s"]
+
+[ext_resource type="PackedScene" uid="uid://cgnr2c4bnji4t" path="res://Scenes/Previews/ChainSkillPresentationPreview.tscn" id="1_parent"]
+[ext_resource type="PackedScene" uid="uid://dyah7h2ck4vyw" path="res://UnitSystem/Components/Combat/Squad/SquadChainRoundController.tscn" id="2_round"]
+
+[node name="SquadChainRoundPreview" instance=ExtResource("1_parent")]
+script = null
+
+[node name="SquadFocusDebugDisplay" parent="." index="0"]
+visible = false
+debug_enabled = false
+
+[node name="SquadChainCommandDisplay" parent="." index="18" node_paths=PackedStringArray("round_source")]
+round_source = NodePath("../SquadChainRoundController")
+
+[node name="Title" parent="SquadChainCommandDisplay/Panel/VBox" index="0"]
+text = "连携伤害窗口验证  ·  1—4调用伙伴"
+
+[node name="SquadChainRoundController" parent="." index="20" node_paths=PackedStringArray("command_source") instance=ExtResource("2_round")]
+command_source = NodePath("../SquadChainCommandController")
