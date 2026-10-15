@@ -1,6 +1,6 @@
 # 阶段三连携评价实施与验收记录
 
-日期：2026-10-16。运行基线1942f0a；本阶段代码提交截至ffb9f86。状态：功能与首轮完整回归已完成，正式Focus审计及独立审查进行中；阶段四未实施。
+日期：2026-10-16。运行基线1942f0a；本阶段代码提交截至ffb9f86。状态：功能、完整回归、正式Focus审计与独立审查均已完成；两项非阻断改进延后，详见下文。阶段四未实施。
 
 ## 实际交付
 
@@ -20,7 +20,7 @@
 
 三项新测试：UnitSystem/Tests/SquadChainRoundWindowTest.gd、SquadChainRoundIntegrationTest.gd、SquadChainRoundDisplayTest.gd。原重点事务/目标/表现/时钟测试同步回归通过。
 
-重新从项目全域枚举（排除Archive/addons，包含GameFlow）137个SceneTree测试，逐文件Godot MCP运行：首轮137/137退出0、有PASS、无SCRIPT ERROR/ERROR/超时。原始结果位于本计划临时目录full-suite.json。另RangedAttackPipelineTest.collect_failures()返回[]；两个新场景UID有效。新增非法参数用例随后独立W再次通过。
+重新从项目全域枚举（排除Archive/addons，包含GameFlow）137个SceneTree测试，逐文件Godot MCP运行：首轮137/137退出0、有PASS、无SCRIPT ERROR/ERROR/超时。原始结果归档在 .superpowers/archives/2026-10-16-burst-combo-stage-3-evaluation-plan/full-suite.json；最终复验为同目录final-suite.json，正式审计formal-audit.json、独立审查final-review.md与ledger一并保留。另RangedAttackPipelineTest.collect_failures()返回[]；两个新场景UID有效。新增非法参数用例随后独立W再次通过。
 
 ## 实际运行与布局
 
@@ -39,3 +39,18 @@
 5. 实跑探针最初同帧重用InputEvent被引擎警告，已改独立press/release事件重测；临时GDScript类型推断错误修正后重跑，不算生产故障。
 
 用户仍需试玩整体可读性与舒适度；自动测试不能替代主观体验。正式关卡接入和终结系统留待后续授权。
+
+## 最终审计与独立审查
+
+正式Focus审计默认3轮各20秒、10次世界重载、2200笔事务PASS。三轮最大账目误差均0，世界归属错配0；清理后节点回基线52、orphan0、旧Focus监听0。
+
+独立审查Sagan（gpt-6-astra/high）只读检查完整3f77e9b..599c854差异，并独立重跑W/I/U均PASS。无Critical/Important，结论可合入。以下Minor已核对为非阻断，本轮不扩大修复：
+
+1. 错误重复装配第二个评价组件时，每帧会重试并告警；有效单组件装配不受影响。后续可按源/所有者身份去重告警。
+2. 尚无close_round→slot_status_changed早期同步回调，以及UI更换Focus源后旧监听断开的专门用例；已有round_finished重入、世界解绑、提供者替换与通用重载检查通过。属于测试覆盖补强，不据此声称发现运行故障。
+
+实施范围取舍：保持当前目录和分支（需继续注意并发人工编辑）；Windows技能助手以等价MCP记录替代（仅影响流程记录）；原生继承保存的冗余配置清理（若继承有误由加载与实跑测试发现）；阶段四/正式房间未接入（后续另授权）；主观舒适度由用户试玩确认（可能需要继续调表现）。
+
+Git仅本地记录，未推送、未合并、未创建PR。最终版本号见Git最新本地提交。
+
+最终收尾复验：重新独立运行全部137项，137/137退出0、有PASS，无SCRIPT ERROR/ERROR/超时。没有因审查意见再修改运行逻辑；两项Minor明确延后。临时执行目录已清理为可恢复归档，其他计划目录未触碰。
