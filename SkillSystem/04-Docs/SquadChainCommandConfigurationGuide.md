@@ -83,3 +83,28 @@ InputMap使用`squad_chain_1`—`squad_chain_4`物理数字键，可在项目设
 - 光线0—0.08秒向躯干外缘收拢；脚下约1米半径圆环在0.06—0.18秒向内收拢；0.25秒前淡出、0.28秒回收。汇聚效果已移至Cast入口，在本次实际施法进度50%时播放并遵循战斗时钟，取消/失败立即清理，成功释放时一次性效果按原时长自然回收（不截断短施法），蓄力型资产结束；共享释放时停仍为0.10秒，Release通道仍支持原独立时钟。
 - 单独查看：运行 `Effects/Skills/Shared/ReleaseAccentFlashPreview.tscn`，点击“播放所选资产”。联动试玩：运行 `Scenes/Previews/ChainSkillPresentationPreview.tscn`，进入战斗后使用1—4。
 - 其他技能可在根节点 `Presentation / Cast` 下选择同一 `Cast Effect Scene`，`Cast Effect Anchor` 选 `Caster Feet`，`Cast Effect Start Ratio` 设 `0.5`（0表示开始即播放，默认0以兼容普通技能）；`Release Effect Scene` 另管成功释放视觉，若希望只在所选施法进度出现则不要重复配置；不需要新组件。当前只装配在上述四个连携的预览覆盖中，正式房间和普通技能保持原状。
+
+## 2026-10-16：正式连携轮次与伤害评价（阶段三）
+
+试玩入口：res://Scenes/Previews/SquadChainRoundPreview.tscn，F6运行，沿用1—4与原锁定操作。此预览继承ChainSkillPresentationPreview，根script=null，替代该预览的_development_round；旧预览不变。正式关卡尚未接入。
+
+装配：在关卡根实例化UnitSystem/Components/Combat/Squad/SquadChainRoundController.tscn；command_source选择该关卡原SquadChainCommandController。原SquadChainCommandDisplay保留command_source，并将round_source指向此评价节点。不重复填写队伍、Focus或暂停源，不给各技能新增参数。TestScene单位实例仍由用户手动添加，Codex不代放。
+
+评价节点只有4项参数：
+
+| Inspector | 默认 | 用途 |
+| --- | --- | --- |
+| Assembly / Command Source | 空 | 原伙伴指令源；世界/队伍/请求从此取得 |
+| Evaluation / Damage Interval Seconds | 2.0秒 | 两笔有效伤害之间的最大正常战斗间隔，不是整轮总时限 |
+| Evaluation / Hit Score Scale | 20次 | 连击换算尺度H0 |
+| Evaluation / Damage Score Scale | 500生命点 | 实际伤害换算尺度D0 |
+
+三个数值仅是开发基线，不是最终难度平衡；本轮建立时捕获，编辑只影响下一轮。非法参数明确诊断并拒绝建立新轮，不能静默除零或改变已受理技能。
+
+首笔连携正伤害先计入再开窗；每笔后续有效伤害续窗；普通伤害/施法/治疗/特效不续窗。S=100×(H/H0+D/D0)，后台不封顶，显示进度最高100%。H按真实命中去重、D按实际生命损失累计。达分先显示就绪，伤害间隔结束才通知资格；阶段三不会暂停或打开终结菜单。
+
+闭窗不取消或等待旧投射物/碎片/缓存；旧请求仍按原轮执行及支付，迟到伤害不串新轮，也不恢复专注。新轮重复费归零，但不会清空伙伴原缓存槽。单独移除评价只拒绝新请求，不重置专注或取消已释放技能。
+
+UI新增区使用原Focus公开值，显示当前/预留/可用、连击、终结进度与业务间隔；结果内部显示1秒。颜色/布局在原SquadChainCommandDisplay.tscn的Evaluation区域编辑；时钟/评分不由UI维护。round_source为空恢复原四卡，绑错指令源/世界则隐藏新增区并告警。
+
+后续同类队伍直接复用此节点和原UI；不创建每技能评分资源。阶段四从finisher_qualified(result)消费一次资格事实，不能从UI或last_result当作库存读取。
