@@ -41,6 +41,8 @@ var _clock_fraction: float = 0.0
 var _clock_frame: int = 0
 var _deadline_usec: int = 0
 var _observed: Dictionary = {}
+var _events: Dictionary = {}
+var _hit_keys: Dictionary = {}
 
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
@@ -140,6 +142,8 @@ func _reset_round() -> void:
 	_score = 0.0
 	_interval = 0.0
 	_deadline_usec = 0
+	_events.clear()
+	_hit_keys.clear()
 
 func _clear_scope() -> void:
 	_generation += 1
@@ -211,7 +215,8 @@ func _close_expired() -> void:
 	if generation != _generation or not _usable(): return
 	round_finished.emit(result.duplicate(true))
 	if generation != _generation or not _usable(): return
-	_publish()
+	if result.qualified: finisher_qualified.emit(result.duplicate(true))
+	if generation == _generation and _usable(): _publish()
 
 # 接收时同步查原请求；不能延迟到帧末，瞬发交付届时可能已自然清理。
 func _on_damage_resolved(event: CombatDamageEvent, generation: int) -> void:
@@ -224,8 +229,14 @@ func _on_damage_resolved(event: CombatDamageEvent, generation: int) -> void:
 	if not _root_teams.has(event.request_id) or event.source_team_id == 0 or event.source_team_id != _root_teams[event.request_id]: return
 	if event.target_team_id == 0 or event.target_team_id == event.source_team_id: return
 	if not _source().is_released_request(event.request_id,event.round_id,event.source_instance_id,event.scene_scope_id): return
-	_hits += 1
+	if _events.has(event.event_id): return
+	_events[event.event_id] = true
+	var hit_key := "%d:%d:%d" % [event.request_id,event.hit_id,event.target_instance_id]
+	if not _hit_keys.has(hit_key):
+		_hit_keys[hit_key] = true
+		_hits += 1
 	_damage += event.actual_damage
+	_score = 100.0*(float(_hits)/float(_hit_scale)+_damage/_damage_scale)
 	_phase = Phase.ACTIVE
 	_deadline_usec = _clock_usec+roundi(_interval*1000000.0)
 	_publish()

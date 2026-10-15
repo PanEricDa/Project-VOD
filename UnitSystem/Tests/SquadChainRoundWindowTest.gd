@@ -42,6 +42,10 @@ func _run() -> void:
 	await _test_first_damage_and_deadlines()
 	await _test_strict_expiry_before_sweep()
 	await _test_delta_fraction_and_pause()
+	await _test_event_and_hit_dedup()
+	await _test_score_three_paths_and_snapshot()
+	await _test_aoe_and_invalid_events()
+	await _test_close_once_and_reentry()
 	_finish()
 
 func _test_pending_is_lazy_and_shared() -> void:
@@ -224,6 +228,115 @@ func _test_delta_fraction_and_pause() -> void:
 	_expect(not paused, "accent ends without evaluator pause ownership")
 	f.world.free()
 	await process_frame
+
+
+func _test_event_and_hit_dedup() -> void:
+	var f := make_fixture(root)
+	await physics_frame
+	var request := start_released(f)
+	var events: Array = []
+	f.enemy.damage_resolved.connect(func(event): events.append(event))
+	var hit := CombatDamageContext.allocate_id()
+	deal(f,request,10,hit)
+	deal(f,request,15,hit)
+	_expect(f.round.get_round_status().hit_count == 1, "same hit split into two damage effects counts once")
+	_expect(is_equal_approx(f.round.get_round_status().total_damage,25), "split hit sums real damage")
+	_expect(is_equal_approx(f.round.get_round_status().score,10), "one hit plus25 damage equals10 score")
+	advance(f,1.0)
+	f.enemy.damage_resolved.emit(events[0])
+	_expect(f.round.get_round_status().hit_count == 1 and is_equal_approx(f.round.get_round_status().total_damage,25), "duplicate event adds neither H nor D")
+	_expect(is_equal_approx(f.round.get_round_status().remaining_seconds,1.0), "duplicate event cannot refresh interval")
+	f.world.free()
+	await process_frame
+
+func _test_score_three_paths_and_snapshot() -> void:
+	for row in [[20,1.0,104.0],[1,500.0,105.0],[10,25.0,100.0],[1,25.0,10.0]]:
+		var f := make_fixture(root)
+		await physics_frame
+		var request := start_released(f)
+		var finished: Array = []
+		var qualified: Array = []
+		f.round.round_finished.connect(func(result): finished.append(result))
+		f.round.finisher_qualified.connect(func(result): qualified.append(result))
+		for i in range(row[0]): deal(f,request,row[1])
+		_expect(is_equal_approx(f.round.get_round_status().score,row[2]), "hand-derived score path "+str(row))
+		_expect(qualified.is_empty(), "ready round never qualifies before gap ends")
+		f.round.damage_interval_seconds = 0.5
+		f.round.hit_score_scale = 1
+		f.round.damage_score_scale = 1
+		_expect(is_equal_approx(f.round.get_round_status().interval_seconds,2), "current round retains captured interval")
+		advance(f,2.000001)
+		advance(f,1)
+		_expect(finished.size() == 1 and qualified.size() == (1 if row[2] >= 100 else 0), "one closure and only qualifying score event")
+		if not finished.is_empty():
+			_expect(is_equal_approx(finished[0].score,row[2]), "config changes cannot retroactively score current round")
+			var copy: Dictionary = f.round.get_round_status()
+			copy.last_result.score = -1
+			_expect(is_equal_approx(f.round.get_round_status().last_result.score,row[2]), "snapshot returns deep value copy")
+		var next: int = f.round.acquire_round()
+		_expect(next > request.round_id and is_equal_approx(f.round.get_round_status().interval_seconds,0.5), "next round captures edited scale and gap")
+		f.world.free()
+		await process_frame
+	var f := make_fixture(root)
+	await physics_frame
+	var request := start_released(f)
+	f.enemy.maximum_health = 5
+	f.enemy.set("_current_health",5.0)
+	deal(f,request,500)
+	_expect(is_equal_approx(f.round.get_round_status().total_damage,5), "overkill counts only remaining5 health")
+	f.world.free()
+	await process_frame
+
+func _test_aoe_and_invalid_events() -> void:
+	var f := make_fixture(root)
+	await physics_frame
+	var request := start_released(f)
+	var context := CombatDamageContext.create(f.actor,f.world,CombatDamageContext.Origin.CHAIN,request.request_id,request.round_id).for_hit(CombatDamageContext.allocate_id())
+	var targets: Array[UnitBase] = [f.enemy]
+	for i in range(4):
+		var enemy := UnitBase.new()
+		enemy.team_id = 2
+		f.world.add_child(enemy)
+		targets.append(enemy)
+	for target in targets: target.apply_damage(10,f.actor,1,context)
+	_expect(f.round.get_round_status().hit_count == 5, "same AoE hit on five enemies counts five")
+	advance(f,1)
+	var valid_event := CombatDamageEvent.create(context,f.enemy,100,90)
+	for field in ["origin","round_id","request_id","source_instance_id","scene_scope_id","source_team_id","target_team_id","actual_damage"]:
+		var invalid := CombatDamageEvent.new()
+		invalid.set("_data",valid_event.get("_data").duplicate())
+		var data: Dictionary = invalid.get("_data")
+		data.event_id = CombatDamageContext.allocate_id()
+		data[field] = NAN if field == "actual_damage" else 0
+		f.enemy.damage_resolved.emit(invalid)
+	_expect(f.round.get_round_status().hit_count == 5 and is_equal_approx(f.round.get_round_status().total_damage,50), "adversarial invalid metadata never scores")
+	_expect(is_equal_approx(f.round.get_round_status().remaining_seconds,1), "invalid event never refreshes")
+	f.world.free()
+	await process_frame
+
+func _test_close_once_and_reentry() -> void:
+	for mode in ["next","unbind","remove"]:
+		var f := make_fixture(root)
+		await physics_frame
+		var request := start_released(f)
+		deal(f,request,500)
+		var finished: Array = []
+		var qualified: Array = []
+		var next_rounds: Array = []
+		f.round.finisher_qualified.connect(func(result): qualified.append(result))
+		f.round.round_finished.connect(func(result):
+			finished.append(result)
+			if mode == "next": next_rounds.append(f.round.acquire_round())
+			elif mode == "unbind": f.focus.unbind_scope()
+			else: f.round.queue_free())
+		advance(f,2.000001,false)
+		f.round.call("_finish_frame",f.round.get("_clock_frame"),f.round.get("_generation"))
+		_expect(finished.size() == 1, "closure signals exactly once under reentrant "+mode)
+		_expect(qualified.size() == (1 if mode == "next" else 0), "scope/removal invalidation suppresses stale qualification")
+		if mode == "next":
+			_expect(next_rounds[0] > request.round_id and f.round.peek_current_round() == next_rounds[0], "closing old round must not clear reentrant new round")
+		f.world.free()
+		await process_frame
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition: failures.append(message)
