@@ -7,6 +7,8 @@ func _run() -> void:
 	await _test_late_projectile_and_old_pending_price()
 	await _test_real_rapid_and_fragments()
 	await _test_synchronous_and_posthumous()
+	await _test_100_round_requests_10_scope_reloads()
+	await _test_dynamic_units_and_remove_evaluator()
 	_finish()
 
 func _test_late_projectile_and_old_pending_price() -> void:
@@ -143,6 +145,63 @@ func _test_synchronous_and_posthumous() -> void:
 		_expect(request.has_released(), "root remains released identity")
 		f.world.free()
 		await process_frame
+
+
+func _test_100_round_requests_10_scope_reloads() -> void:
+	var roots := 0
+	var closed := 0
+	for world_index in range(10):
+		var f := W.make_fixture(root)
+		f.focus.maximum_focus = 1000
+		f.focus.initial_focus = 1000
+		f.focus.reset_focus()
+		f.combo.delivery = InstantTargetDeliveryConfig.new()
+		await physics_frame
+		for i in range(10):
+			_expect(f.commander.submit_slot(0), "stress real request admitted")
+			f.host.advance_pending_command(f.enemy,0)
+			f.animation.release_action()
+			f.animation.finish_action()
+			roots += 1
+			if i % 2 == 1:
+				W.advance(f,2.000001)
+				closed += 1
+				_expect(f.round.get_round_status().phase == 0, "stress natural close returns idle")
+				_expect(is_equal_approx(f.commander.get_slot_status(0).estimated_cost,20), "stress next round resets base quote")
+		_expect(f.commander.get("_records").is_empty(), "stress commander records cleaned")
+		_expect(f.commander.get("_ledger").get("_records").is_empty(), "stress ledger request records cleaned")
+		_expect(f.round.get("_events").is_empty() and f.round.get("_hit_keys").is_empty() and f.round.get("_root_teams").is_empty(), "stress no whole-session hit/request history")
+		_expect(f.focus.get_reserved_focus() == 0 and not f.host.has_pending_command() and not f.host.has_command_action_lock(), "stress resource/host returned to idle")
+		_expect(f.round.get("_observed").size() == 3, "stress listener count stays at three actual units")
+		var round_ref: WeakRef = weakref(f.round)
+		f.world.free()
+		await process_frame
+		_expect(round_ref.get_ref() == null, "world release frees evaluator without strong reference cycle")
+	_expect(roots == 100 and closed == 50, "stress executes literal100 roots and50 gap closures")
+	print("Round stress: roots=%d rounds=%d worlds=10" % [roots,closed])
+
+func _test_dynamic_units_and_remove_evaluator() -> void:
+	var f := W.make_fixture(root)
+	await physics_frame
+	var enemy := load("res://UnitSystem/Base/00_UnitBase.tscn").instantiate() as UnitBase
+	enemy.team_id = 2
+	f.world.add_child(enemy)
+	_expect(f.round.get("_observed").size() == 4, "dynamic enemy subscribed")
+	enemy.free()
+	_expect(f.round.get("_observed").size() == 3, "dynamic exit disconnects observer")
+	_expect(f.commander.submit_slot(0), "remove-evaluator probe admitted")
+	f.host.advance_pending_command(f.enemy,0)
+	f.animation.release_action()
+	f.animation.finish_action()
+	var before: float = f.focus.get_current_focus()
+	f.round.free()
+	_expect(not f.commander.submit_slot(0), "removed evaluator fails closed for new input")
+	for i in range(80): await physics_frame
+	_expect(f.commander.get("_records").is_empty(), "original projectile completes after evaluator removed")
+	_expect(is_equal_approx(f.focus.get_current_focus(),before), "removing evaluator neither resets focus nor refunds released root")
+	_expect(f.enemy.damage_resolved.get_connections().size() == 1, "only original focus listener remains")
+	f.world.free()
+	await process_frame
 
 func _expect(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)

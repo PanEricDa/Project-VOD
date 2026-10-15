@@ -46,6 +46,7 @@ func _run() -> void:
 	await _test_score_three_paths_and_snapshot()
 	await _test_aoe_and_invalid_events()
 	await _test_close_once_and_reentry()
+	await _test_invalid_configuration_fails_closed()
 	_finish()
 
 func _test_pending_is_lazy_and_shared() -> void:
@@ -335,6 +336,17 @@ func _test_close_once_and_reentry() -> void:
 		_expect(qualified.size() == (1 if mode == "next" else 0), "scope/removal invalidation suppresses stale qualification")
 		if mode == "next":
 			_expect(next_rounds[0] > request.round_id and f.round.peek_current_round() == next_rounds[0], "closing old round must not clear reentrant new round")
+		f.world.free()
+		await process_frame
+
+
+func _test_invalid_configuration_fails_closed() -> void:
+	for entry in [["damage_interval_seconds",0.0],["damage_interval_seconds",NAN],["damage_interval_seconds",INF],["hit_score_scale",0],["damage_score_scale",-1.0],["damage_score_scale",INF]]:
+		var f := make_fixture(root)
+		await physics_frame
+		f.round.set(entry[0],entry[1])
+		_expect(f.round.acquire_round() == 0 and f.round.peek_current_round() == 0, "invalid configuration refuses new round "+str(entry[0]))
+		_expect(f.focus.get_reserved_focus() == 0 and f.focus.get_current_focus() == 100, "invalid evaluator never pays or resets focus")
 		f.world.free()
 		await process_frame
 

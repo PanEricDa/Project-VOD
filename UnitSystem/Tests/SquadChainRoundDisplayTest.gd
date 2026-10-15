@@ -62,6 +62,9 @@ func _test_evaluation_and_summary() -> void:
 	await _wait(1.10)
 	_expect(not area.get_node("Result").visible, "summary expires after internal one second without new business state remaining="+str(display.get("_summary_remaining")))
 	_verify_controls(display)
+	var rect: Rect2 = display.get_node("Panel").get_global_rect()
+	var viewport: Rect2 = display.get_viewport().get_visible_rect()
+	_expect(is_equal_approx(rect.end.y,viewport.size.y-55.0), "evaluation panel preserves bottom55 margin and grows upward")
 	f.world.free()
 	await process_frame
 

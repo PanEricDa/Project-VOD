@@ -17,6 +17,7 @@ var _evaluation_signature: Array = []
 var _round_snapshot: Dictionary = {}
 var _summary_result: Dictionary = {}
 var _summary_remaining: float = 0.0
+var _panel_bottom_offset: float = -55.0
 var _request_slots: Dictionary = {}
 var _success: Array[Dictionary] = [{},{},{},{}]
 var _failure: Array[Dictionary] = [{},{},{},{}]
@@ -34,6 +35,8 @@ const REASONS = {
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var panel := get_node_or_null("Panel") as Control
+	if panel != null: _panel_bottom_offset = panel.offset_bottom
 	_last_usec = Time.get_ticks_usec()
 	_refresh_binding()
 
@@ -256,7 +259,9 @@ func _update_evaluation() -> void:
 		result_label.visible = (active and _round_snapshot.get("finisher_ready",false)) or summary
 		result_label.text = "终结就绪" if active else ("已取得终结资格" if shown.get("qualified",false) else "连携结束")
 	var panel := get_node_or_null("Panel") as Control
-	if panel != null: panel.size.y = maxf(160.0,panel.get_combined_minimum_size().y)
+	if panel != null:
+		panel.offset_top = _panel_bottom_offset-maxf(160.0,panel.get_combined_minimum_size().y)
+		panel.offset_bottom = _panel_bottom_offset
 
 func _detach_evaluation() -> void:
 	var evaluator = _bound_round.get_ref() if _bound_round != null else null
