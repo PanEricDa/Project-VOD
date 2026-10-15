@@ -47,9 +47,9 @@
 
 ## 成功释放表现资产
 
-技能根节点 `Presentation → Release` 配置视觉场景、原有锚点，以及新增 `Release Audio Stream` / `Release Camera Effect` 两个可空资产字段。底层复用模板已有 `RuntimeEffects`，无需策划追加节点或效果组件。交付接受后每次施放播放一次，原有 `Cast` 蓄力和 `Cancel` 视觉不改变。
+技能根节点 `Presentation → Release` 配置视觉场景、原有锚点、`Release Audio Stream` / `Release Accent Profile`；镜头在 `Presentation → Camera → Camera Effect Profile`。底层复用模板已有 `RuntimeEffects`，无需策划追加节点或效果组件。交付接受后每次施放播放一次，原有 `Cast` 蓄力和 `Cancel` 视觉不改变。
 
-声音自动创建一次性3D播放器；镜头字段仅提供强类型资源与请求信号，本期不执行移动。具体配置与独立预览见 `SkillSystemUserGuide.md` 的“成功释放表现”节。
+声音自动创建一次性3D播放器；SkillBase/Host只报告带身份的表现事实，关卡ChainSkillPresentationController协调原镜头和GamePauseCoordinator，不形成新技能执行管线。具体配置与独立预览见 `SkillSystemUserGuide.md` 的“成功释放表现”节。
 
 ## 资源索引维护
 

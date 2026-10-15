@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://2w3hno0nmrld"]
+
+[ext_resource type="Script" uid="uid://2x38gp42fwbt" path="res://UnitSystem/Components/Combat/Squad/ChainSkillPresentationController.gd" id="1_hw106"]
+[ext_resource type="Script" uid="uid://ckk214hlkj5f1" path="res://GameFlow/Pause/GamePauseCoordinator.gd" id="2_gh88k"]
+
+[node name="ChainSkillPresentationController" type="Node" unique_id=1084723942 node_paths=PackedStringArray("pause_source")]
+script = ExtResource("1_hw106")
+pause_source = NodePath("PauseCoordinator")
+
+[node name="PauseCoordinator" type="Node" parent="." unique_id=1579269118]
+script = ExtResource("2_gh88k")

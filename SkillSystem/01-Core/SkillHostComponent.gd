@@ -1,6 +1,12 @@
 @tool
 class_name SkillHostComponent
 extends Node
+## Host已完成动作身份迁移后通知；request为本次根，presentation是可空只读事实。
+signal command_action_started(request: SkillCommandRequest, presentation: SkillPresentationContext)
+## 已注册技能的纯表现实例准备事实；禁止用于更改动作/费用。
+signal release_instance_prepared(presentation: SkillPresentationContext, instance: Node)
+## 已注册技能的成功释放表现启动事实，按快照归属转发。
+signal release_presentation_started(presentation: SkillPresentationContext)
 
 ## 单位级技能插槽和动作请求中介。
 ##
@@ -506,6 +512,8 @@ func confirm_active_action_started(cast_transform: Transform3D, expected_request
 		_active_command = request
 		_pending_command = null
 		command_state_changed.emit()
+		if _active_command == request and not request.has_failed() and is_instance_valid(_active_skill):
+			command_action_started.emit(request, _active_skill.get_current_presentation_context())
 	return true
 
 
@@ -737,6 +745,8 @@ func _find_skill(skill_id: StringName) -> SkillBase:
 
 
 func _connect_skill(skill: SkillBase) -> void:
+	skill.release_instance_prepared.connect(_on_skill_release_instance_prepared)
+	skill.release_presentation_started.connect(_on_skill_release_presentation_started)
 	skill.action_requested.connect(_on_skill_action_requested)
 	skill.cast_range_required.connect(_on_skill_cast_range_required)
 	skill.delivery_started.connect(_on_skill_delivery_started)
@@ -746,6 +756,8 @@ func _connect_skill(skill: SkillBase) -> void:
 
 func _disconnect_skill(skill: SkillBase) -> void:
 	var connections: Array[Array] = [
+		[skill.release_instance_prepared, Callable(self, &"_on_skill_release_instance_prepared")],
+		[skill.release_presentation_started, Callable(self, &"_on_skill_release_presentation_started")],
 		[skill.action_requested, Callable(self, &"_on_skill_action_requested")],
 		[skill.cast_range_required, Callable(self, &"_on_skill_cast_range_required")],
 		[skill.delivery_started, Callable(self, &"_on_skill_delivery_started")],
@@ -884,3 +896,15 @@ func _exit_tree() -> void:
 	_registered_skills.clear()
 	_active_skill = null
 	_target_candidate_provider = null
+
+func _presentation_registered(presentation: SkillPresentationContext) -> bool:
+	if presentation == null or presentation.get_world() == null: return false
+	for skill in _registered_skills:
+		if is_instance_valid(skill) and skill.get_instance_id() == presentation.skill_instance_id: return true
+	return false
+
+func _on_skill_release_instance_prepared(presentation: SkillPresentationContext, instance: Node) -> void:
+	if _presentation_registered(presentation): release_instance_prepared.emit(presentation, instance)
+
+func _on_skill_release_presentation_started(presentation: SkillPresentationContext) -> void:
+	if _presentation_registered(presentation): release_presentation_started.emit(presentation)

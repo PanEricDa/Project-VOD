@@ -226,7 +226,7 @@ func _schedule_failure() -> void:
 	if delay <= 0.0:
 		call_deferred(&"_commit_failure")
 		return
-	_failure_timer = get_tree().create_timer(delay)
+	_failure_timer = get_tree().create_timer(delay, false)
 	_failure_timer.timeout.connect(_commit_failure)
 
 

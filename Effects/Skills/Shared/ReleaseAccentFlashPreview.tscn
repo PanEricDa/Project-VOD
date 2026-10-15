@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://vkmg1c8wv4cn"]
+
+[ext_resource type="PackedScene" uid="uid://s3irn0abmu33" path="res://Scenes/Previews/SkillReleasePresentationPreview.tscn" id="1_426wy"]
+[ext_resource type="PackedScene" uid="uid://deiipxw5gh26p" path="res://Effects/Skills/Shared/ReleaseAccentFlash.tscn" id="2_ukbpo"]
+
+[node name="SkillReleasePresentationPreview" unique_id=1883666227 instance=ExtResource("1_426wy")]
+visual_scene = ExtResource("2_ukbpo")
+anchor = 3

@@ -60,4 +60,26 @@ InputMap使用`squad_chain_1`—`squad_chain_4`物理数字键，可在项目设
 
 阶段三再接基于实际伤害间隔的开窗/续窗/关窗和评分；阶段四再做限时终结选择与暂停演出。现在的卡片不会显示不存在的连击倒数、评分或终结资格。
 
+## 连携施放表现（2026-10-15）
+
+新独立预览：`Scenes/Previews/ChainSkillPresentationPreview.tscn`，继承上述阶段二预览，沿用原阵容/脚本/1—4。原四技能增加共享镜头与强调预设，源释放美术不替换；新预览仅覆盖共用释放效果：微蓝银白的周身光线＋脚下圆环向内汇聚，四个连携均在本次实际施法进度50%时播放，以施法者脚下（Caster Feet）为锚点，不修改源技能的治疗/盾击视觉。
+
+正式接入时，另放 `UnitSystem/Components/Combat/Squad/ChainSkillPresentationController.tscn`，Inspector选择原指令源与CameraRig，Pause Source已预填。不要重复装配暂停协调器，也不再配置一份玩家/世界。当前正式房间未自动接入。
+
+受理黄、实际开始绿并移动镜头、成功释放播放资产并强调0.10秒，期间镜头与战场动作定住，释放视觉/音频继续、绿色从成功释放起0.3秒后清除；失败/拒绝短暂红色。颜色编辑原UI场景Theme，两项时长在UI根Inspector。已有绿色时，下一条缓存只确认文字，不抢当前镜头或边框。显式暂停挂起表现，强调暂停允许受理/预留1—4但不执行AI。
+
+镜头使用玩家锚定的距离加权偏移：伙伴距玩家0—10米时，偏移平滑增强；最终位移倍率当前为2.0，相同距离下为上一版的两倍；目标上限为玩家深度处视野宽度24%，且不超过双方距离90%。基础进入0.30秒、回归0.55秒，叠加最多0.20秒距离缓动后，仅进入阶段整体除以1.5（实际约0.20—0.333秒），返回仍约0.55—0.75秒，连续施法从当前偏移接续，不先回中再折返。普通期间继续跟随玩家；成功释放时在当前构图定住0.10秒，不补冲、不延迟技能，强调结束后再继续回归或衔接。不增加垂直偏移，不改变朝向、FOV或缩放档位。
+
+配置仍在 Effects/Camera/Presets/ChainSkillFocus.tres，仅有原来的进入/返回两个时长；幅度、距离曲线与额外缓动时间内部封装；停留时长在Effects/Combat/Presets/ChainReleaseAccent.tres配置。技能根Camera Effect Profile留空可关闭镜头，不关闭边框、释放特效或强调暂停。
+
+镜头/强调资源可独立留空；缺失不能改变费用或技能结果。既有等待、动作锁、重复费用与目标规则不变。完整验收见 `Docs/Superpowers/Plans/2026-10-14-chain-skill-presentation-validation.md`，不代表评分/终结已实现。
+
 测试入口：`UnitSystem/Tests/SquadChainInputDisplayTest.gd`及阶段二新增7个执行/事务/生命周期测试。验收数据见`Docs/Superpowers/Plans/2026-10-13-burst-combo-stage-2-validation.md`。
+
+### 共用释放汇聚效果（2026-10-15）
+
+- 资产：`Effects/Skills/Shared/ReleaseAccentFlash.tscn`；保留旧路径/UID，仅替换内容，无新增脚本或外部资源；通用Cast入口新增锚点与开始进度配置。
+- 编辑入口：场景内 `VisualRoot/BodyRays` 的8条周身短光线、`VisualRoot/GroundRing` 的脚下环；材质为微蓝银白、无阴影，不创建灯光。动画在 `AnimationPlayer/pulse`，回收在 `CleanupTimer`。
+- 光线0—0.08秒向躯干外缘收拢；脚下约1米半径圆环在0.06—0.18秒向内收拢；0.25秒前淡出、0.28秒回收。汇聚效果已移至Cast入口，在本次实际施法进度50%时播放并遵循战斗时钟，取消/失败立即清理，成功释放时一次性效果按原时长自然回收（不截断短施法），蓄力型资产结束；共享释放时停仍为0.10秒，Release通道仍支持原独立时钟。
+- 单独查看：运行 `Effects/Skills/Shared/ReleaseAccentFlashPreview.tscn`，点击“播放所选资产”。联动试玩：运行 `Scenes/Previews/ChainSkillPresentationPreview.tscn`，进入战斗后使用1—4。
+- 其他技能可在根节点 `Presentation / Cast` 下选择同一 `Cast Effect Scene`，`Cast Effect Anchor` 选 `Caster Feet`，`Cast Effect Start Ratio` 设 `0.5`（0表示开始即播放，默认0以兼容普通技能）；`Release Effect Scene` 另管成功释放视觉，若希望只在所选施法进度出现则不要重复配置；不需要新组件。当前只装配在上述四个连携的预览覆盖中，正式房间和普通技能保持原状。

@@ -76,6 +76,7 @@ func _run() -> void:
 	preview.free()
 	current_scene = null
 	await process_frame
+	await _test_card_state_transitions()
 	_finish()
 
 func _verify_controls(node: Node) -> void:
@@ -88,3 +89,47 @@ func _finish() -> void:
 	for message in failures: push_error(message)
 	if failures.is_empty(): print("SquadChainInputDisplayTest: PASS")
 	quit(0 if failures.is_empty() else 1)
+
+func _test_card_state_transitions() -> void:
+	var f = load("res://UnitSystem/Tests/ChainSkillPresentationControllerTest.gd").make_fixture(root)
+	var display = load(DISPLAY_SCENE).instantiate()
+	display.command_source = f.source
+	f.world.add_child(display)
+	await physics_frame
+	await physics_frame
+	var border = display.get_node_or_null("Panel/VBox/Cards/Card1/StateBorder")
+	_expect(border != null,"each card has independently styled StateBorder")
+	if border == null:
+		f.world.free()
+		return
+	_expect(f.source.submit_slot(0),"UI probe admitted")
+	_expect(border.visible and border.theme_type_variation == &"ChainWaiting","accepted immediate yellow")
+	f.actor.get_behavior_state_machine().physics_tick(0.01)
+	_expect(border.visible and border.theme_type_variation == &"ChainCasting","actual start immediate green")
+	_expect(f.source.submit_slot(0),"one pending request while active")
+	_expect(border.theme_type_variation == &"ChainCasting","pending confirmation never steals casting green")
+	_expect(display.get_node_or_null("Panel/VBox/Cards/Card1/VBox/CachedConfirmation") != null and display.get_node("Panel/VBox/Cards/Card1/VBox/CachedConfirmation").visible,"cached request has separate native yellow confirmation text")
+	_expect(not f.source.submit_slot(0),"third request rejected")
+	_expect(border.theme_type_variation == &"ChainFailed","rejection immediate red")
+	await _presentation_wait(0.33)
+	_expect(border.theme_type_variation == &"ChainCasting","red expiry restores still casting fact")
+	f.animation.release_action()
+	await _presentation_wait(0.33)
+	_expect(border.visible and border.theme_type_variation == &"ChainWaiting","old success timer cannot clear different pending request")
+	f.animation.finish_action()
+	f.actor.get_behavior_state_machine().physics_tick(0.01)
+	_expect(border.theme_type_variation == &"ChainCasting","new request survives old deadline")
+	f.animation.release_action()
+	var token: int = f.pause.acquire_pause(f.world,&"UI_menu")
+	await _presentation_wait(0.4)
+	_expect(border.visible and border.theme_type_variation == &"ChainCasting","explicit pause suspends success hold")
+	f.pause.release_pause(token)
+	await _presentation_wait(0.33)
+	_expect(not border.visible,"success clears after 0.3 presentation seconds independent of action tail")
+	_expect(display.get_node("Panel/VBox/Cards/Card1").modulate == Color.WHITE,"availability grey never dims state border")
+	f.world.free()
+	await process_frame
+
+func _presentation_wait(seconds: float) -> void:
+	var deadline := Time.get_ticks_usec()+int(seconds*1000000)
+	while Time.get_ticks_usec() < deadline: await process_frame

@@ -3,12 +3,14 @@
 [ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_hql5s"]
 [ext_resource type="PackedScene" path="res://Effects/Skills/Fireball/FireballCastChargeEffect.tscn" id="2_vb20p"]
 [ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="3_4weeq"]
+[ext_resource type="Resource" uid="uid://40dsmfojclgh" path="res://Effects/Camera/Presets/ChainSkillFocus.tres" id="3_bsjlo"]
+[ext_resource type="Resource" uid="uid://0jmq715hfjxr" path="res://Effects/Combat/Presets/ChainReleaseAccent.tres" id="4_1c863"]
 [ext_resource type="Script" uid="uid://d02epfqku0fc0" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="4_bsjlo"]
 [ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="5_1c863"]
 [ext_resource type="Script" uid="uid://cstrjdbel01mt" path="res://SkillSystem/03-Extensions/ApplyNamedStatusSkillEffect.gd" id="6_yh8vm"]
 [ext_resource type="Script" uid="uid://yucsdny8htx4" path="res://SkillSystem/03-Extensions/ComboFocusCost.gd" id="7_6wvch"]
 
-[sub_resource type="Resource" id="Resource_b3q65"]
+[sub_resource type="Resource" id="Resource_hql5s"]
 resource_local_to_scene = true
 script = ExtResource("4_bsjlo")
 projectile_scene = ExtResource("3_4weeq")
@@ -31,7 +33,9 @@ extra_hesitation_chance = 0.0
 extra_hesitation_min = 0.0
 extra_hesitation_max = 0.0
 cast_effect_scene = ExtResource("2_vb20p")
-delivery = SubResource("Resource_b3q65")
+camera_effect_profile = ExtResource("3_bsjlo")
+release_accent_profile = ExtResource("4_1c863")
+delivery = SubResource("Resource_hql5s")
 
 [node name="DamageEffect" type="Node" parent="." index="2" unique_id=2138507386]
 script = ExtResource("5_1c863")

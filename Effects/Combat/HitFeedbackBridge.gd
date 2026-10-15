@@ -50,6 +50,7 @@ func _ready() -> void:
 
 ## 独立更新停顿计时和摄像机震动，不改变场景树或全局 time_scale。
 func _process(delta: float) -> void:
+	if get_tree().paused: return
 	feedback_cooldown_remaining = max(feedback_cooldown_remaining - delta, 0.0)
 	_update_hit_stop(delta)
 	_update_camera_shake(delta)
@@ -161,13 +162,19 @@ func _update_camera_shake(delta: float) -> void:
 	var interpolation_weight: float = min(delta * effect_profile.shake_frequency * 4.0, 1.0)
 	shake_current_offset = shake_current_offset.lerp(desired_offset, interpolation_weight)
 	last_applied_camera_offset = shake_current_offset
-	active_camera.position += last_applied_camera_offset
+	var rig := active_camera.get_parent()
+	if rig != null and rig.has_method(&"set_feedback_offset"):
+		rig.call(&"set_feedback_offset",self,last_applied_camera_offset)
+	else: active_camera.position += last_applied_camera_offset
 
 
 ## 从摄像机局部位置中移除本效果上一帧施加的偏移，防止累计漂移。
 func _remove_last_camera_offset() -> void:
 	if is_instance_valid(active_camera) and last_applied_camera_offset != Vector3.ZERO:
-		active_camera.position -= last_applied_camera_offset
+		var rig := active_camera.get_parent()
+		if rig != null and rig.has_method(&"clear_feedback_offset"):
+			rig.call(&"clear_feedback_offset",self)
+		else: active_camera.position -= last_applied_camera_offset
 	last_applied_camera_offset = Vector3.ZERO
 
 

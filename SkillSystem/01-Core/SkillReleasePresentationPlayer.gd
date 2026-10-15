@@ -3,6 +3,10 @@ extends Node
 ## 技能成功释放的一次性表现播放器；挂在基础技能已有 RuntimeEffects，配置只在技能根节点。
 ## 请求镜头侧解释只读 profile；source/target 可为空或随后失效，world_transform 是本次有限世界快照。
 signal camera_effect_requested(profile: CameraEffectProfile, source: Node3D, target: Node3D, world_transform: Transform3D)
+## instance尚未进树，订阅者只登记纯表现时钟；presentation可空以兼容旧工具。
+signal release_instance_prepared(presentation: SkillPresentationContext, instance: Node)
+## 本次成功释放的各通道已启动；不表示命中，空美术但有表现身份仍通知。
+signal release_presentation_started(presentation: SkillPresentationContext)
 const SAFETY_SECONDS: float = 30.0
 
 ## 只读准备本次资产、世界位置和附着意图，返回独立临时字典；不创建节点或播放。
@@ -10,10 +14,10 @@ const SAFETY_SECONDS: float = 30.0
 ## action_transform 是本次有限世界发射变换；三个资产均可空，全部为空或世界无效时返回空。
 func prepare_release(context: SkillContext, action_transform: Transform3D,
 		visual_scene: PackedScene, anchor: int, audio_stream: AudioStream,
-		camera_profile: CameraEffectProfile) -> Dictionary:
+		camera_profile: CameraEffectProfile, presentation_context: SkillPresentationContext = null) -> Dictionary:
 	if context == null or not action_transform.is_finite() or not _live(context.delivery_parent):
 		return {}
-	if visual_scene == null and audio_stream == null and camera_profile == null:
+	if visual_scene == null and audio_stream == null and camera_profile == null and presentation_context == null:
 		return {}
 	var source := context.caster if _live(context.caster) else null
 	var target := context.resolved_target if _live(context.resolved_target) else null
@@ -39,7 +43,8 @@ func prepare_release(context: SkillContext, action_transform: Transform3D,
 		SkillBase.PresentationAnchor.TARGET_POSITION:
 			if context.target_position.is_finite():
 				pose = Transform3D(Basis.IDENTITY, context.target_position)
-	return {"visual_scene": visual_scene, "audio_stream": audio_stream, "camera_profile": camera_profile,
+	return {"presentation": presentation_context.for_release(context, pose) if presentation_context != null else null,
+		"visual_scene": visual_scene, "audio_stream": audio_stream, "camera_profile": camera_profile,
 		"world_transform": pose, "world_parent_ref": weakref(context.delivery_parent),
 		"attach_parent_ref": weakref(parent) if parent != null else null,
 		"source_ref": weakref(source) if source != null else null,
@@ -63,6 +68,10 @@ func play_release(snapshot: Dictionary) -> void:
 	if profile != null:
 		camera_effect_requested.emit(profile, _from_ref(snapshot.get("source_ref")) as Node3D,
 			_from_ref(snapshot.get("target_ref")) as Node3D, pose)
+
+	if is_instance_valid(self) and _from_ref(snapshot.get("world_parent_ref")) != null:
+		var presentation := snapshot.get("presentation") as SkillPresentationContext
+		if presentation != null: release_presentation_started.emit(presentation)
 
 func _play_visual(snapshot: Dictionary) -> void:
 	var scene := snapshot.get("visual_scene") as PackedScene
@@ -89,6 +98,11 @@ func _play_visual(snapshot: Dictionary) -> void:
 	if visual is CPUParticles3D and visual.one_shot:
 		visual.finished.connect(visual.queue_free)
 	_arm_watchdog(visual, SAFETY_SECONDS)
+	release_instance_prepared.emit(snapshot.get("presentation") as SkillPresentationContext, visual)
+	if not is_instance_valid(visual): return
+	if not _live(parent) or _from_ref(snapshot.get("world_parent_ref")) == null:
+		visual.free()
+		return
 	parent.add_child(visual)
 	if not _live(visual):
 		return
@@ -121,8 +135,13 @@ func _play_audio(snapshot: Dictionary) -> void:
 	voice.transform = (parent as Node3D).global_transform.affine_inverse() * Transform3D(Basis.IDENTITY, pose.origin) if parent is Node3D else Transform3D(Basis.IDENTITY, pose.origin)
 	voice.finished.connect(voice.queue_free)
 	_arm_watchdog(voice, _get_audio_watchdog_seconds(stream))
+	release_instance_prepared.emit(snapshot.get("presentation") as SkillPresentationContext, voice)
+	if not is_instance_valid(voice): return
+	if not _live(parent) or _from_ref(snapshot.get("world_parent_ref")) == null:
+		voice.free()
+		return
 	parent.add_child(voice)
-	voice.play()
+	if _live(voice): voice.play()
 
 func _is_looping_audio(stream: AudioStream) -> bool:
 	return _contains_loop(stream, {})

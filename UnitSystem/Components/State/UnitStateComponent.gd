@@ -172,7 +172,7 @@ func _start_death_watchdog() -> void:
 	if not is_instance_valid(_owner_unit) or not _owner_unit.is_inside_tree():
 		return
 	_cancel_death_watchdog()
-	_death_watchdog_timer = get_tree().create_timer(DEATH_WATCHDOG_SECONDS)
+	_death_watchdog_timer = get_tree().create_timer(DEATH_WATCHDOG_SECONDS, false)
 	_death_watchdog_timer.timeout.connect(_on_death_watchdog_timeout)
 
 
@@ -213,7 +213,7 @@ func _schedule_dissolve_start() -> void:
 	if delay <= 0.0:
 		_begin_dissolve_presentation()
 		return
-	_destroy_timer = get_tree().create_timer(delay)
+	_destroy_timer = get_tree().create_timer(delay, false)
 	_destroy_timer.timeout.connect(_on_destroy_timer_timeout)
 
 

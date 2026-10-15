@@ -201,11 +201,22 @@ Guardian 嘲讽继续复用盾牌武器的通用 `basic_cast_1` 动作，并在�
 | Release Effect Scene | 一次性 Node3D 视觉 .tscn；复用原有字段，粒子组合先保存成场景 |
 | Release Effect Anchor | 动作发射点、已解析目标、目标位置或施法者脚底；音效/镜头请求共用其位置快照 |
 | Release Audio Stream | 新增，一次性 AudioStream 音频，默认空；底层自动创建3D播放器并回收 |
-| Release Camera Effect | 新增，CameraEffectProfile强类型资源，默认空；本期只发请求，不移动镜头 |
+| Camera Effect Profile | 位于Presentation → Camera；可空的CameraEffectProfile，关卡表现组件在实际施法时消费 |
+| Release Accent Profile | 可空的ReleaseAccentProfile；关卡表现组件负责成功释放强调，0关闭 |
 
 模板已有RuntimeEffects挂通用播放器，策划不添加节点、连线或新Effect。施法/蓄力和取消视觉保持各自入口；成功Release只在交付接受时一次播放，不按每个目标/投射物重复。技能实例结束不截断已释放声音/视觉。空通道跳过，不影响技能结算。
 
-独立预览为 `res://Scenes/Previews/SkillReleasePresentationPreview.tscn`。在工具根选择资产，运行并按播放按钮；测试音/镜头请求按钮仅使用内存非正式内容。镜头资源还没有运动预设，声音实际听感需自行试听。
+独立释放工具为 `res://Scenes/Previews/SkillReleasePresentationPreview.tscn`。在工具根选择资产，运行并按播放按钮；工具镜头按钮仍只验证请求。实际镜头/停顿在 `res://Scenes/Previews/ChainSkillPresentationPreview.tscn` 验证；中性闪光独立预览为 `res://Effects/Skills/Shared/ReleaseAccentFlashPreview.tscn`。声音实际听感需自行试听。
+
+### 连携施放表现配置（2026-10-15）
+
+四个Combo根已选择 `Effects/Camera/Presets/ChainSkillFocus.tres` 与 `Effects/Combat/Presets/ChainReleaseAccent.tres`。前者只配置进入/返回秒数（0.12/0.20），后者只配置成功释放停顿（0.15，范围0—0.3）。旧 `release_camera_effect` 保留加载/脚本赋值兼容，Inspector只显示规范镜头槽。
+
+关卡添加 `UnitSystem/Components/Combat/Squad/ChainSkillPresentationController.tscn`，选原指令源与CameraRig；第三个Pause Source已预填可见子节点。正式房间本轮没有自动接入。缺失资源只跳过表现，不取消技能/退款。四伙伴并行，镜头当前焦点优先，已经释放的候选不补播。
+
+纯释放场景不要带战斗/碰撞节点；子节点使用INHERIT，动画、粒子、绑定Tween和自回收须遵从节点暂停。只有本次释放视觉/声音获独立时钟，角色、技能、普通投射物继续暂停。显式暂停必须通过同一个GamePauseCoordinator持有token，不能另写全局paused再期待它推断所有权。
+
+原卡片根只新增成功/失败保留时长（各0.3秒）；三色在场景内Theme的ChainWaiting/ChainCasting/ChainFailed编辑。受理黄、实际开始绿、释放后0.3秒清、释放前失败红；强调中可缓存1—4，显式暂停不受理。阶段三、四不在本功能内。
 
 - 不再为每个技能维护独立 Definition `.tres` 和 Delivery `.tscn`。
 - `DeliveryConfig` 应保存在技能场景内部，不要另存为第二份人工配置资产。

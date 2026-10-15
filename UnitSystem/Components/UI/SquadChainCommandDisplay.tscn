@@ -2,6 +2,52 @@
 
 [ext_resource type="Script" uid="uid://wvyxvue3njoj" path="res://UnitSystem/Components/UI/SquadChainCommandDisplay.gd" id="1_i78jb"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i78jb"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.25, 0.95, 0.48, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j6nkc"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.25, 0.25, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8ysup"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.82, 0.22, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="Theme" id="Theme_xk0lp"]
+ChainCasting/base_type = &"Panel"
+ChainCasting/styles/panel = SubResource("StyleBoxFlat_i78jb")
+ChainFailed/base_type = &"Panel"
+ChainFailed/styles/panel = SubResource("StyleBoxFlat_j6nkc")
+ChainPendingConfirmation/base_type = &"Label"
+ChainPendingConfirmation/colors/font_color = Color(1, 0.82, 0.22, 1)
+ChainWaiting/base_type = &"Panel"
+ChainWaiting/styles/panel = SubResource("StyleBoxFlat_8ysup")
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f3hlx"]
 content_margin_left = 12.0
 content_margin_top = 10.0
@@ -28,6 +74,7 @@ offset_top = -215.0
 offset_right = 390.0
 offset_bottom = -55.0
 mouse_filter = 2
+theme = SubResource("Theme_xk0lp")
 theme_override_styles/panel = SubResource("StyleBoxFlat_f3hlx")
 
 [node name="VBox" type="VBoxContainer" parent="Panel" unique_id=1139878419]
@@ -80,6 +127,18 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="CachedConfirmation" type="Label" parent="Panel/VBox/Cards/Card1/VBox" unique_id=1671409205]
+visible = false
+layout_mode = 2
+theme_type_variation = &"ChainPendingConfirmation"
+text = "已缓存"
+horizontal_alignment = 1
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card1" unique_id=589543810]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
 [node name="Card2" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=1973670819]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -116,6 +175,18 @@ layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
+
+[node name="CachedConfirmation" type="Label" parent="Panel/VBox/Cards/Card2/VBox" unique_id=1550457301]
+visible = false
+layout_mode = 2
+theme_type_variation = &"ChainPendingConfirmation"
+text = "已缓存"
+horizontal_alignment = 1
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card2" unique_id=1176786013]
+visible = false
+layout_mode = 2
+mouse_filter = 2
 
 [node name="Card3" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=375687618]
 layout_mode = 2
@@ -154,6 +225,18 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="CachedConfirmation" type="Label" parent="Panel/VBox/Cards/Card3/VBox" unique_id=1401316129]
+visible = false
+layout_mode = 2
+theme_type_variation = &"ChainPendingConfirmation"
+text = "已缓存"
+horizontal_alignment = 1
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card3" unique_id=1203803575]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
 [node name="Card4" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=2048797342]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -190,3 +273,15 @@ layout_mode = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
+
+[node name="CachedConfirmation" type="Label" parent="Panel/VBox/Cards/Card4/VBox" unique_id=346865740]
+visible = false
+layout_mode = 2
+theme_type_variation = &"ChainPendingConfirmation"
+text = "已缓存"
+horizontal_alignment = 1
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card4" unique_id=2107814388]
+visible = false
+layout_mode = 2
+mouse_filter = 2

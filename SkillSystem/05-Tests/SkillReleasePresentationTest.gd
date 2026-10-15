@@ -302,7 +302,7 @@ func _test_root_configuration_and_inheritance() -> void:
 	_expect(skill.get_node("RuntimeEffects").get_script() == player_script, "base RuntimeEffects owns generic player")
 	_expect(skill.has_signal("camera_effect_requested"), "root camera request output exists")
 	for p in skill.get_property_list():
-		if p.name == "release_camera_effect":
+		if p.name == "camera_effect_profile":
 			_expect(p.hint_string == "CameraEffectProfile", "camera asset picker strongly typed")
 	skill.get_node("RuntimeEffects").set_script(null)
 	_expect(Array(skill._get_configuration_warnings()).any(func(w): return "SkillReleasePresentationPlayer" in w), "missing player shows Inspector warning")

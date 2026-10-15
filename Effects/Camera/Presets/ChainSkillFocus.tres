@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="SkillFocusCameraProfile" format=3 uid="uid://40dsmfojclgh"]
+
+[ext_resource type="Script" uid="uid://b65vg2nvc5o5v" path="res://Effects/Camera/SkillFocusCameraProfile.gd" id="1_3c6cb"]
+
+[resource]
+script = ExtResource("1_3c6cb")

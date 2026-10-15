@@ -2,12 +2,14 @@
 
 [ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_4ch0l"]
 [ext_resource type="PackedScene" uid="uid://2bmdc06xpmka" path="res://Effects/Skills/GreaterHeal/GreaterHealEffect.tscn" id="2_44axd"]
+[ext_resource type="Resource" uid="uid://40dsmfojclgh" path="res://Effects/Camera/Presets/ChainSkillFocus.tres" id="2_hxrak"]
 [ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="3_hxrak"]
 [ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_7rrrf"]
+[ext_resource type="Resource" uid="uid://0jmq715hfjxr" path="res://Effects/Combat/Presets/ChainReleaseAccent.tres" id="4_r1yt8"]
 [ext_resource type="PackedScene" uid="uid://dhe4ytordest2" path="res://SkillSystem/03-Extensions/Conditions/TargetHealthCondition.tscn" id="5_r1yt8"]
 [ext_resource type="Script" uid="uid://yucsdny8htx4" path="res://SkillSystem/03-Extensions/ComboFocusCost.gd" id="6_4dgcv"]
 
-[sub_resource type="Resource" id="Resource_4ch0l"]
+[sub_resource type="Resource" id="Resource_4dgcv"]
 resource_local_to_scene = true
 script = ExtResource("3_hxrak")
 
@@ -29,9 +31,11 @@ decision_delay_max = 0.0
 extra_hesitation_chance = 0.0
 extra_hesitation_min = 0.0
 extra_hesitation_max = 0.0
+camera_effect_profile = ExtResource("2_hxrak")
 release_effect_scene = ExtResource("2_44axd")
 release_effect_anchor = 1
-delivery = SubResource("Resource_4ch0l")
+release_accent_profile = ExtResource("4_r1yt8")
+delivery = SubResource("Resource_4dgcv")
 
 [node name="HealEffect" type="Node" parent="." index="2" unique_id=1918684989]
 script = ExtResource("4_7rrrf")

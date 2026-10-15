@@ -1,3 +1,4 @@
+class_name CameraFollowController
 extends Node3D
 
 ## 用于自动识别玩家单位的阵营标识。
@@ -138,6 +139,7 @@ func _ready() -> void:
 ## Godot 每个渲染帧回调，负责子相机分档缩放、目标重解析、速度预留和帧率无关的平滑跟随。
 ## 参数 delta 是当前渲染帧经过的秒数。
 func _process(delta: float) -> void:
+	if _presentation_clock_blocked(): return
 	_update_zoom(delta)
 	if not _has_valid_target():
 		_clear_target()
@@ -159,9 +161,13 @@ func _process(delta: float) -> void:
 	var desired_position: Vector3 = interpolated_target_position + camera_offset + current_look_ahead
 	if lock_vertical_follow:
 		desired_position.y = locked_target_height + camera_offset.y
+	# 临时表现只叠加在正常跟随上，先取回未含偏移的玩家镜头位置。
+	global_position -= _focus_applied_offset
+	_focus_applied_offset = Vector3.ZERO
 	if global_position.distance_to(desired_position) >= snap_distance:
 		global_position = desired_position
 		reset_physics_interpolation()
+		if _focus_profile != null: _update_presentation_focus(delta, desired_position)
 		return
 
 	var follow_weight: float = 1.0 - exp(-follow_smoothness * delta)
@@ -170,11 +176,13 @@ func _process(delta: float) -> void:
 	if remaining_offset.length() > maximum_follow_distance:
 		smoothed_position = desired_position - remaining_offset.normalized() * maximum_follow_distance
 	global_position = smoothed_position
+	if _focus_profile != null: _update_presentation_focus(delta, desired_position)
 
 
 ## 接收未被 UI 消费的 InputMap 动作；只处理当前活动相机的首次按下事件。
 ## event 可以来自滚轮、键盘或手柄，具体绑定只由项目 Input Map 决定。
 func _unhandled_input(event: InputEvent) -> void:
+	if get_tree().paused: return
 	if not is_instance_valid(_zoom_camera) or _zoom_levels.is_empty() or not _zoom_camera.is_current():
 		return
 	var direction: int = 0
@@ -190,8 +198,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _initialize_zoom() -> void:
 	_zoom_camera = get_node_or_null(^"Camera3D") as Camera3D
-	if _zoom_camera == null or zoom_distances.is_empty():
-		return
+	if _zoom_camera == null: return
+	# 基础构图独立于缩放开关；命中反馈始终从策划原始位置合成。
+	_base_camera_position = _zoom_camera.position
+	if zoom_distances.is_empty(): return
 	var previous: float = -1.0
 	for distance: float in zoom_distances:
 		if not is_finite(distance) or distance < 0.0 or distance < previous:
@@ -217,7 +227,13 @@ func _update_zoom(delta: float) -> void:
 
 
 func _apply_zoom_position() -> void:
-	_zoom_camera.position = _base_camera_position + _zoom_camera.basis.z.normalized() * _zoom_distance
+	var feedback := Vector3.ZERO
+	for id in _feedback_offsets.keys():
+		var record: Dictionary = _feedback_offsets[id]
+		var offset_owner = record.owner.get_ref()
+		if not is_instance_valid(offset_owner) or not offset_owner.is_inside_tree(): _feedback_offsets.erase(id)
+		else: feedback += record.offset
+	_zoom_camera.position = _base_camera_position + _zoom_camera.basis.z.normalized() * _zoom_distance + feedback
 
 
 ## 根据 CharacterBody3D 的水平速度计算移动方向预留偏移。
@@ -237,6 +253,7 @@ func _calculate_desired_look_ahead() -> Vector3:
 ## 立即将相机对齐到当前玩家的构图位置。
 ## 可在传送、重生或区域切换后调用；无有效目标时安全返回，不改变相机位置。
 func snap_to_target() -> void:
+	if _focus_profile != null: return
 	if not _has_valid_target():
 		return
 	current_look_ahead = Vector3.ZERO
@@ -392,3 +409,164 @@ func get_resolved_target() -> UnitBase:
 	if not _has_valid_target():
 		return null
 	return target
+
+var _focus_id: int = 0
+var _focus_source: WeakRef
+var _focus_profile: CameraEffectProfile
+var _focus_phase: int = CameraEffectProfile.Phase.ENTER
+var _focus_origin: Transform3D
+var _focus_elapsed: float = 0.0
+# 每阶段起始时计算一次适配时长；负值表示尚未计算，运行中不因目标运动反复伸缩。
+var _focus_duration: float = -1.0
+# 上一帧只属于表现的偏移，与玩家正常跟随独立累积；不序列化。
+var _focus_applied_offset: Vector3 = Vector3.ZERO
+var _focus_anchor_position: Vector3 = Vector3.ZERO
+var _pause_ref: WeakRef
+var _original_process_mode: Node.ProcessMode = Node.PROCESS_MODE_INHERIT
+var _feedback_offsets: Dictionary = {}
+
+## id为正且source同正常世界存活；只叠加临时Rig构图，不更换玩家target或停止正常跟随，非法策略返回false。
+func begin_presentation_focus(presentation_id: int, source: Node3D, profile: CameraEffectProfile) -> bool:
+	if presentation_id <= 0 or profile == null or not is_instance_valid(source) or not source.is_inside_tree() or source.is_queued_for_deletion(): return false
+	if source is UnitBase and source.is_dead(): return false
+	var world := _normal_world()
+	if world == null or not world.is_ancestor_of(source): return false
+	for phase in [CameraEffectProfile.Phase.ENTER,CameraEffectProfile.Phase.RETURN]:
+		var duration := profile.get_phase_duration(phase)
+		if not is_finite(duration) or duration < 0.0: return false
+	var destination := _source_pose(source)
+	if not profile.sample_rig_transform(global_transform,destination,0.0,0).is_finite(): return false
+	_focus_id = presentation_id
+	_focus_source = weakref(source)
+	_focus_profile = profile.duplicate() as CameraEffectProfile
+	_focus_origin = global_transform
+	_focus_anchor_position = global_position - _focus_applied_offset
+	_focus_elapsed = 0
+	_focus_duration = -1.0
+	_focus_phase = CameraEffectProfile.Phase.ENTER
+	_update_presentation_focus(0.0,_normal_position())
+	return true
+
+## 仅匹配id可结束当前镜头；淡出临时偏移，正常玩家跟随继续推进，不等待动作尾或命中。
+func end_presentation_focus(presentation_id: int) -> void:
+	if _focus_profile == null or _focus_id != presentation_id or _focus_phase == CameraEffectProfile.Phase.RETURN: return
+	_focus_id = 0
+	_focus_source = null
+	_focus_phase = CameraEffectProfile.Phase.RETURN
+	_focus_origin = global_transform
+	_focus_anchor_position = global_position - _focus_applied_offset
+	_focus_elapsed = 0
+	_focus_duration = -1.0
+	_update_presentation_focus(0.0,_normal_position())
+
+## 解绑时撤销临时占用；不操作技能/暂停，不重绑正常target。
+func clear_presentation_focus() -> void:
+	global_position -= _focus_applied_offset
+	_focus_applied_offset = Vector3.ZERO
+	_focus_id = 0
+	_focus_source = null
+	_focus_profile = null
+	_focus_elapsed = 0
+	_focus_duration = -1.0
+
+## 装配层注入同世界暂停源；null恢复原process_mode；显式暂停与释放强调均冻结镜头，但不冻结纯释放资产。
+func set_presentation_pause_source(source: GamePauseCoordinator) -> void:
+	if _pause_ref != null:
+		process_mode = _original_process_mode
+		_pause_ref = null
+	if source == null: return
+	var world := source.get_bound_scope()
+	if world == null or not world.is_ancestor_of(self): return
+	_original_process_mode = process_mode
+	_pause_ref = weakref(source)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+## owner为偏移来源，offset有限相机局部米数；统一合成，避免缩放与震动争写。
+@warning_ignore("shadowed_variable_base_class")
+func set_feedback_offset(owner: Node, offset: Vector3) -> void:
+	if not is_instance_valid(owner) or not offset.is_finite(): return
+	_feedback_offsets[owner.get_instance_id()] = {"owner":weakref(owner),"offset":offset}
+	if is_instance_valid(_zoom_camera): _apply_zoom_position()
+
+## 仅撤销此owner偏移，幂等；其他反馈及缩放不受影响。
+@warning_ignore("shadowed_variable_base_class")
+func clear_feedback_offset(owner: Node) -> void:
+	if is_instance_valid(owner): _feedback_offsets.erase(owner.get_instance_id())
+	if is_instance_valid(_zoom_camera): _apply_zoom_position()
+
+func _normal_world() -> Node:
+	var pause = _pause_ref.get_ref() if _pause_ref != null else null
+	if is_instance_valid(pause): return pause.get_bound_scope()
+	return target.get_parent() if _has_valid_target() else null
+
+func _normal_position() -> Vector3:
+	if not _has_valid_target(): return global_position
+	var result := target.global_position + camera_offset + current_look_ahead
+	if lock_vertical_follow: result.y = locked_target_height + camera_offset.y
+	return result
+
+func _source_pose(source: Node3D) -> Transform3D:
+	var desired := source.global_position + camera_offset
+	if lock_vertical_follow: desired.y = locked_target_height + camera_offset.y
+	return Transform3D(global_basis,desired)
+
+# 使用现有镜头投影和缩放求参考宽度；无子相机的测试/轻装配使用保守12米。
+func _focus_view_width() -> float:
+	if not is_instance_valid(_zoom_camera) or not _has_valid_target(): return 12.0
+	var normal_camera_pose := _zoom_camera.global_transform
+	normal_camera_pose.origin -= _focus_applied_offset
+	var depth := -(normal_camera_pose.affine_inverse() * target.global_position).z
+	if depth <= _zoom_camera.near: return 12.0
+	var size := _zoom_camera.get_viewport().get_visible_rect().size
+	var left := _zoom_camera.project_position(Vector2(0.0, size.y * 0.5), depth)
+	var right := _zoom_camera.project_position(Vector2(size.x, size.y * 0.5), depth)
+	var width := left.distance_to(right)
+	return width if is_finite(width) and width > 0.0 else 12.0
+
+func _presentation_clock_blocked() -> bool:
+	var pause = _pause_ref.get_ref() if _pause_ref != null else null
+	if _pause_ref != null and not is_instance_valid(pause):
+		_pause_ref = null
+		process_mode = _original_process_mode
+		return get_tree().paused
+	if not is_instance_valid(pause): return get_tree().paused
+	# 纯释放资产仍由协调器独立推进；只有镜头在释放强调中保持当前画面。
+	return not pause.is_presentation_allowed() or pause.has_release_accent()
+
+func _update_presentation_focus(delta: float, normal_position: Vector3) -> bool:
+	if _focus_profile == null: return false
+	if _presentation_clock_blocked(): return true
+	if not _has_valid_target():
+		clear_presentation_focus()
+		return false
+	var baseline := global_position - _focus_applied_offset
+	_focus_origin.origin += baseline - _focus_anchor_position
+	_focus_anchor_position = baseline
+	var destination := Transform3D(global_basis, baseline)
+	if _focus_phase == CameraEffectProfile.Phase.ENTER:
+		var source = _focus_source.get_ref() if _focus_source != null else null
+		if not is_instance_valid(source) or not source.is_inside_tree() or source.is_queued_for_deletion() or (source is UnitBase and source.is_dead()):
+			end_presentation_focus(_focus_id)
+			return true
+		var source_offset: Vector3 = source.global_position - (normal_position - camera_offset - current_look_ahead)
+		var offset := _focus_profile.get_focus_offset(source_offset, _focus_view_width())
+		if not offset.is_finite():
+			clear_presentation_focus()
+			return false
+		destination.origin += offset
+	if _focus_duration < 0.0:
+		_focus_duration = _focus_profile.get_transition_duration(_focus_origin, destination, _focus_phase)
+	var duration := _focus_duration
+	if not is_finite(duration) or duration < 0:
+		clear_presentation_focus()
+		return false
+	_focus_elapsed += maxf(delta,0.0)
+	var progress := 1.0 if duration == 0 else clampf(_focus_elapsed/duration,0,1)
+	var pose := _focus_profile.sample_rig_transform(_focus_origin,destination,progress,_focus_phase)
+	if not pose.is_finite():
+		clear_presentation_focus()
+		return false
+	global_transform = pose
+	_focus_applied_offset = pose.origin - baseline
+	if progress >= 1.0 and _focus_phase == CameraEffectProfile.Phase.RETURN: clear_presentation_focus()
+	return true

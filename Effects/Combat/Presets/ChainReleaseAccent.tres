@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="ReleaseAccentProfile" format=3 uid="uid://0jmq715hfjxr"]
+
+[ext_resource type="Script" uid="uid://bpo2xbb1vovm3" path="res://Effects/Combat/ReleaseAccentProfile.gd" id="1_pvi82"]
+
+[resource]
+script = ExtResource("1_pvi82")
+pause_duration_seconds = 0.1

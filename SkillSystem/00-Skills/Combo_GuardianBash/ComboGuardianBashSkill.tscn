@@ -1,13 +1,15 @@
 [gd_scene format=3 uid="uid://cgeig6u8vwmpy"]
 
 [ext_resource type="PackedScene" uid="uid://dkrndbbmiiq1d" path="res://SkillSystem/00-Templates/MeleeSkillTemplate.tscn" id="1_6fiuy"]
+[ext_resource type="Resource" uid="uid://40dsmfojclgh" path="res://Effects/Camera/Presets/ChainSkillFocus.tres" id="2_88xny"]
 [ext_resource type="PackedScene" path="res://Effects/Skills/GuardianShield/GuardianShieldSkillEffect.tscn" id="2_c8vgo"]
 [ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="3_88xny"]
 [ext_resource type="Script" uid="uid://mukvvanqkcl" path="res://SkillSystem/03-Extensions/StatModifierSkillEffect.gd" id="4_fs8jn"]
+[ext_resource type="Resource" uid="uid://0jmq715hfjxr" path="res://Effects/Combat/Presets/ChainReleaseAccent.tres" id="4_yp2rt"]
 [ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="5_yp2rt"]
 [ext_resource type="Script" uid="uid://yucsdny8htx4" path="res://SkillSystem/03-Extensions/ComboFocusCost.gd" id="6_ukaos"]
 
-[sub_resource type="Resource" id="Resource_7ym6c"]
+[sub_resource type="Resource" id="Resource_ukaos"]
 resource_local_to_scene = true
 script = ExtResource("3_88xny")
 
@@ -26,9 +28,11 @@ decision_delay_max = 0.0
 extra_hesitation_chance = 0.0
 extra_hesitation_min = 0.0
 extra_hesitation_max = 0.0
+camera_effect_profile = ExtResource("2_88xny")
 release_effect_scene = ExtResource("2_c8vgo")
 release_effect_anchor = 3
-delivery = SubResource("Resource_7ym6c")
+release_accent_profile = ExtResource("4_yp2rt")
+delivery = SubResource("Resource_ukaos")
 
 [node name="MeleeAction" parent="." index="2"]
 hitbox_size = Vector3(2, 0.7, 2)

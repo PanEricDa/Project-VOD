@@ -23,6 +23,7 @@ func _initialize() -> void:
 func _run() -> void:
 	_verify_unique_player_local_is_initialized()
 	_verify_default_failure_delay()
+	await _verify_failure_delay_pauses()
 	await _create_fixture()
 	await _verify_player_revival_cancels_last_stand()
 	await _verify_last_stand_room_clear_is_completed()
@@ -34,6 +35,19 @@ func _run() -> void:
 	await _verify_all_friendly_death_fails()
 	_finish()
 
+
+func _verify_failure_delay_pauses() -> void:
+	await _create_fixture()
+	_controller.defeat_resolution_delay = 0.06
+	_controller.call("_schedule_failure")
+	var timer: SceneTreeTimer = _controller.get("_failure_timer")
+	paused = true
+	var before := timer.time_left
+	var deadline := Time.get_ticks_usec() + 150000
+	while Time.get_ticks_usec() < deadline: await process_frame
+	_expect(is_equal_approx(timer.time_left,before), "room failure delay freezes with battle")
+	paused = false
+	_dispose_fixture()
 
 func _verify_unique_player_local_is_initialized() -> void:
 	var source: String = FileAccess.get_file_as_string(CONTROLLER_SCRIPT_PATH)

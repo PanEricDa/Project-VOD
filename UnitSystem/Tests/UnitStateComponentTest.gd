@@ -17,6 +17,7 @@ func _run() -> void:
 	await _test_hit_movement_lock_lifecycle()
 	await _test_keep_root_lifecycle()
 	await _test_destroy_cancel()
+	await _test_death_delay_pauses()
 	_finish()
 
 
@@ -83,6 +84,20 @@ func _test_destroy_cancel() -> void:
 	await _wait_frames(MAX_FRAMES)
 	_expect(unit.is_inside_tree(), "cancelled timer cannot destroy revived unit")
 
+
+func _test_death_delay_pauses() -> void:
+	var unit := _create_unit("PausedDeath")
+	var state = unit.get_node("UnitState")
+	state.death_mode = UnitStateComponent.DeathMode.REMOVE_AFTER_DELAY
+	state.remove_after_seconds = 0.06
+	unit.apply_damage(unit.maximum_health)
+	paused = true
+	var deadline := Time.get_ticks_usec() + 150000
+	while Time.get_ticks_usec() < deadline: await process_frame
+	_expect(is_instance_valid(unit) and not state.get("_dissolving"), "death removal delay freezes with battle")
+	paused = false
+	state.cancel_pending_destroy()
+	unit.revive(1.0)
 
 func _create_unit(node_name: String) -> UnitBase:
 	var scene := load(UNIT_SCENE_PATH) as PackedScene

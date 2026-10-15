@@ -1,3 +1,4 @@
+
 @tool
 class_name SquadChainCommandController
 extends Node
@@ -23,6 +24,17 @@ signal request_activity_changed(round_id: int, live_requests: int)
 ## 某固定槽只读反馈变化，slot_index不压缩；UI不得计算/修改账目。
 signal slot_status_changed(slot_index: int)
 
+## 本槽实际开始施法，presentation只读，不能据此再次扣费。
+signal command_started(slot_index: int, presentation: SkillPresentationContext)
+## 释放前失败，slot_index固定0—3，request_id原身份；不会对已释放的打空发失败。
+signal command_failed(slot_index: int, request_id: int, reason: StringName)
+## 本槽根释放的纯表现实例准备；instance尚未进树。
+signal command_release_instance_prepared(slot_index: int, presentation: SkillPresentationContext, instance: Node)
+## 本槽根释放各通道已启动；供表现协调，不表示伤害结束。
+signal command_release_presentation_started(slot_index: int, presentation: SkillPresentationContext)
+## 世界解绑先通知null，绑定完成后通知新世界，消费者不得改变指令归属。
+signal scope_changed(scope_root: Node)
+
 var _ledger := ComboCostLedger.new()
 var _records: Dictionary = {}
 var _generation: int = 0
@@ -37,9 +49,12 @@ var _configuration_signature: Array = []
 var _status_signatures: Array = [{}, {}, {}, {}]
 var _last_acquired_round: int = 0
 var _clearing: bool = false
+var _presentation_pause_ref: WeakRef
+var _original_process_mode: Node.ProcessMode = Node.PROCESS_MODE_INHERIT
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint() or event.is_echo(): return
+	if get_tree().paused and not _accent_input_allowed(): return
 	for slot in range(4):
 		if event.is_action_pressed(StringName("squad_chain_%d" % (slot + 1))):
 			if submit_slot(slot): get_viewport().set_input_as_handled()
@@ -202,7 +217,7 @@ func get_slot_status(slot_index: int) -> Dictionary:
 
 func _input_reason() -> StringName:
 	if _clearing or not is_instance_valid(_scope) or not is_instance_valid(focus_source) or focus_source.get_bound_scope() != _scope: return &"focus_unbound"
-	if not is_inside_tree() or get_tree().paused or not _input_enabled: return &"input_disabled"
+	if not is_inside_tree() or (get_tree().paused and not _accent_input_allowed()) or not _input_enabled: return &"input_disabled"
 	if not is_instance_valid(_player) or _player.is_dead() or not _player.is_player_input_enabled(): return &"player_unavailable"
 	return &""
 
@@ -241,13 +256,17 @@ func _fail_record(id: int, reason: StringName) -> void:
 	if not _records.has(id): return
 	var record: Dictionary = _records[id]
 	if record.released or record.failed: return
+	var failed_slot: int = record.slot
+	var failed_generation := _generation
 	record.failed = true
 	_ledger.mark_failed(id)
 	var focus = _get_attached_focus()
 	if focus != null: focus.refund(id)
 	record.request.mark_failed(reason)
 	if _records.has(id): _notify_activity(record.request.round_id)
-	slot_status_changed.emit(record.slot)
+	if failed_generation == _generation and not _clearing:
+		command_failed.emit(failed_slot, id, reason)
+		slot_status_changed.emit(failed_slot)
 
 func _on_lifetime_finished(id: int, batch: int, generation: int) -> void:
 	if generation != _generation or not _records.has(id): return
@@ -299,13 +318,20 @@ func _on_scope_changed(scope_root: Node) -> void:
 			if not is_instance_valid(actor): continue
 			var host := actor.get_node_or_null(^"SkillHost") as SkillHostComponent
 			if host == null: continue
+			var started := _on_host_started.bind(slot, _generation)
+			var prepared := _on_host_prepared.bind(slot, _generation)
+			var presented := _on_host_presented.bind(slot, _generation)
+			host.command_action_started.connect(started)
+			host.release_instance_prepared.connect(prepared)
+			host.release_presentation_started.connect(presented)
 			var released := _on_host_released.bind(slot, _generation)
 			var failed := _on_host_failed.bind(slot, _generation)
 			var changed := _on_host_state_changed.bind(slot, _generation)
 			host.skill_released.connect(released)
 			host.command_failed.connect(failed)
 			host.command_state_changed.connect(changed)
-			_host_connections.append({"host": weakref(host), "released": released, "failed": failed, "changed": changed})
+			_host_connections.append({"host": weakref(host), "released": released, "failed": failed, "changed": changed, "started": started, "prepared": prepared, "presented": presented})
+	scope_changed.emit(_scope)
 	_notify_slots()
 
 func _collect_players(node: Node, players: Array[PlayerBase]) -> void:
@@ -318,6 +344,7 @@ func _clear_scope() -> void:
 	_generation += 1
 	_scope = null
 	_player = null
+	scope_changed.emit(null)
 	var focus = _get_attached_focus()
 	for id in _records.keys():
 		var record: Dictionary = _records[id]
@@ -336,6 +363,9 @@ func _clear_scope() -> void:
 	for connection in _host_connections:
 		var host = connection.host.get_ref()
 		if not is_instance_valid(host): continue
+		if host.command_action_started.is_connected(connection.started): host.command_action_started.disconnect(connection.started)
+		if host.release_instance_prepared.is_connected(connection.prepared): host.release_instance_prepared.disconnect(connection.prepared)
+		if host.release_presentation_started.is_connected(connection.presented): host.release_presentation_started.disconnect(connection.presented)
 		if host.skill_released.is_connected(connection.released): host.skill_released.disconnect(connection.released)
 		if host.command_failed.is_connected(connection.failed): host.command_failed.disconnect(connection.failed)
 		if host.command_state_changed.is_connected(connection.changed): host.command_state_changed.disconnect(connection.changed)
@@ -370,3 +400,46 @@ func _get_configuration_warnings() -> PackedStringArray:
 
 func _exit_tree() -> void:
 	if not Engine.is_editor_hint(): _detach_focus()
+
+## 返回原指令源当前绑定世界；空表示未装配，不创建或维持新世界。
+func get_bound_scope() -> Node: return _scope if is_instance_valid(_scope) else null
+
+func _valid_presentation(presentation: SkillPresentationContext, slot: int, generation: int) -> bool:
+	if generation != _generation or _clearing or presentation == null or not presentation.is_chain_root or presentation.get_world() != _scope: return false
+	var id := presentation.command_request_id
+	return _records.has(id) and not _records[id].failed and _records[id].slot == slot and _records[id].request.caster_instance_id == (presentation.get_source().get_instance_id() if presentation.get_source() != null else 0)
+
+func _on_host_started(request: SkillCommandRequest, presentation: SkillPresentationContext, slot: int, generation: int) -> void:
+	if _valid_presentation(presentation, slot, generation) and _records[presentation.command_request_id].request == request:
+		command_started.emit(slot, presentation)
+
+func _on_host_prepared(presentation: SkillPresentationContext, instance: Node, slot: int, generation: int) -> void:
+	if _valid_presentation(presentation, slot, generation):
+		command_release_instance_prepared.emit(slot, presentation, instance)
+
+func _on_host_presented(presentation: SkillPresentationContext, slot: int, generation: int) -> void:
+	if _valid_presentation(presentation, slot, generation):
+		command_release_presentation_started.emit(slot, presentation)
+## 同世界装配时注入纯强调输入门禁；null恢复原process_mode，不推进Host或AI。
+func set_presentation_pause_source(source: GamePauseCoordinator) -> void:
+	if _presentation_pause_ref != null:
+		process_mode = _original_process_mode
+		_presentation_pause_ref = null
+	if source == null or source.get_bound_scope() != get_bound_scope(): return
+	_original_process_mode = process_mode
+	_presentation_pause_ref = weakref(source)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
+## 显式/外部暂停时挂起UI保持；正常或仅强调时不挂起，未装表现遵从原树暂停。
+func is_feedback_suspended() -> bool:
+	var pause := _presentation_pause_source()
+	return not pause.is_presentation_allowed() if pause != null else (is_inside_tree() and get_tree().paused)
+
+func _presentation_pause_source() -> GamePauseCoordinator:
+	var pause = _presentation_pause_ref.get_ref() if _presentation_pause_ref != null else null
+	if not is_instance_valid(pause) or pause.get_bound_scope() != get_bound_scope(): return null
+	return pause
+
+func _accent_input_allowed() -> bool:
+	var pause := _presentation_pause_source()
+	return pause != null and pause.is_release_accent_only()

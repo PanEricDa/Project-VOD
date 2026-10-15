@@ -19,6 +19,10 @@ signal delivery_started(context: SkillContext)
 ## 成功释放时请求镜头表现；profile只读，source/target可空或随后失效，world_transform为有限世界快照。
 ## 本信号不代表命中、不等待订阅者、不直接改变相机。
 signal camera_effect_requested(profile: CameraEffectProfile, source: Node3D, target: Node3D, world_transform: Transform3D)
+## 纯释放实例进树前事实，instance只允许表现时钟登记，不得改变战斗。
+signal release_instance_prepared(presentation: SkillPresentationContext, instance: Node)
+## 成功释放表现启动，presentation保持同一施放身份，不代表命中。
+signal release_presentation_started(presentation: SkillPresentationContext)
 signal delivery_finished(context: SkillContext, result: SkillDeliveryResult)
 ## 某次交付最终失败，始终携带原context；不依赖装备技能当前状态，不表示可退款。
 signal delivery_failed(context: SkillContext, reason: StringName)
@@ -132,8 +136,18 @@ var extra_hesitation_max: float = 5.0
 
 @export_category("Presentation")
 @export_subgroup("Cast")
-## 可选的施法开始特效场景；动作确认开始时在角色动作发射点生成，不承担伤害或投射物逻辑。
+## 可选的施法开始特效场景；动作实际确认开始时在所选锚点生成一次，空则不播放。
+## 不承担伤害或成功释放通知；取消/失败立即清理，成功释放结束蓄力，普通一次性资产依自身动画/计时器自然回收。
 @export var cast_effect_scene: PackedScene
+## 施法特效锚点，默认动作发射点以兼容旧技能；脚下/目标锚点附着相应单位，目标位置锚点固定在世界。
+## 仅影响Cast视觉的位置与跟随，不改变施法目标、施法时间或Release通道。
+@export var cast_effect_anchor: PresentationAnchor = PresentationAnchor.ACTION_ORIGIN
+## 施法视觉开始的归一化进度，0为开始即播放（兼容旧内容），0.5为本次实际施法时间的一半，1为释放时刻。
+## 以战斗时钟和施法速度换算后的本次时长计时；暂停不推进，取消不补播；仅影响Cast视觉，不移动音效、镜头或释放时停。
+@export_range(0.0, 1.0, 0.05) var cast_effect_start_ratio: float = 0.0
+@export_subgroup("Camera")
+## 可选镜头策略；默认空，供关卡表现组件在实际施法时消费，不改变技能。
+@export var camera_effect_profile: CameraEffectProfile
 @export_subgroup("Release")
 ## 可选的成功释放视觉场景；交付接受时在所选锚点生成一次，不承担命中/数值结算；空则不播放。
 @export var release_effect_scene: PackedScene
@@ -143,8 +157,12 @@ var extra_hesitation_max: float = 5.0
 	PresentationAnchor.ACTION_ORIGIN
 ## 一次性成功释放音频；默认空不发声，交付接受时从锚点世界位置播放，不参与战斗结算。
 @export var release_audio_stream: AudioStream
-## 可选只读镜头表现资源；默认空不发请求，本期仅提供请求出口，不执行相机移动或暂停。
-@export var release_camera_effect: CameraEffectProfile
+## 可选释放强调资源；默认空不暂停，实际暂停由关卡装配组件负责。
+@export var release_accent_profile: ReleaseAccentProfile
+## 兼容旧场景/脚本名称，仅代理唯一镜头槽，不在Inspector重复显示或保存。
+var release_camera_effect: CameraEffectProfile:
+	get: return camera_effect_profile
+	set(value): camera_effect_profile = value
 @export_subgroup("Cancel")
 ## 可选的施法取消特效场景；技能在完成释放前被取消时于最近动作位置生成。
 @export var cancel_effect_scene: PackedScene
@@ -166,11 +184,15 @@ var _cooldown_remaining: float = 0.0
 ## AI 自动施放成功后、独立技能冷却开始前的剩余等待时间，单位为秒。
 ## 显式请求不进入此状态；该值仅由 SkillBase 维护，且不会占用 SkillHost 活动技能槽。
 var _post_release_hesitation_remaining: float = 0.0
+var _presentation_context: SkillPresentationContext
 var _last_action_transform: Transform3D = Transform3D.IDENTITY
 ## 只跟踪Cast/Cancel表现；成功Release实例由世界/附着对象及自身结束协议管理。
 var _runtime_effect_instances: Array[Node] = []
-## 当前施法期特效；仅支持 configure_cast 的组件使用受控生命周期。
+## 当前施法期特效；取消时清理，一次性资产成功释放后按自身协议回收。
 var _cast_effect_instance: Node3D
+## 当前动作尚未播放的Cast视觉延迟；不占用技能逻辑或参与费用，终止动作时清空。
+var _cast_effect_pending: bool = false
+var _cast_effect_delay_remaining: float = 0.0
 ## SkillBase 自己的随机来源；只用于成功释放后的等待采样，不影响外部 AI、目标或战斗随机逻辑。
 var _random := RandomNumberGenerator.new()
 
@@ -186,6 +208,8 @@ func _ready() -> void:
 	var player := get_node_or_null(^"RuntimeEffects") as SkillReleasePresentationPlayer
 	if is_instance_valid(player):
 		player.camera_effect_requested.connect(_on_camera_effect_requested)
+		player.release_instance_prepared.connect(_on_release_instance_prepared)
+		player.release_presentation_started.connect(_on_release_presentation_started)
 	else:
 		push_warning("Skill RuntimeEffects presentation player is missing; gameplay remains enabled.")
 	if is_instance_valid(_delivery_runner):
@@ -197,6 +221,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
+	_advance_cast_presentation(delta)
 	if _is_chain_root(_current_context):
 		# 原有计时照常推进，连携不启动/清空它们，也不以计时替代动作占用。
 		if _post_release_hesitation_remaining > 0.0:
@@ -299,7 +324,8 @@ func confirm_action_started(cast_transform: Transform3D) -> bool:
 		return false
 	_state = SkillState.CASTING
 	_last_action_transform = cast_transform
-	_spawn_cast_presentation(cast_transform)
+	_presentation_context = SkillPresentationContext.create(self, _current_context, cast_transform)
+	_schedule_cast_presentation(cast_transform)
 	cast_started.emit(_current_context)
 	return true
 
@@ -312,6 +338,8 @@ func release_action(launch_transform: Transform3D) -> bool:
 		or not launch_transform.is_finite()
 	):
 		return false
+	# 真实释放marker是施法进度终点；补齐低帧率下未获物理tick的短施法视觉，不另起成功事件。
+	_advance_cast_presentation(_cast_effect_delay_remaining)
 	return _commit_release(_current_context, launch_transform)
 
 
@@ -355,7 +383,7 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 			return false
 		committed_costs.append(cost)
 
-	_stop_cast_presentation()
+	_stop_cast_presentation(true)
 	release_started.emit(_current_context)
 	# 普通成本/释放前通知可能改变世界或承诺；交付接受前再次核对自己的真实预留。
 	if _is_chain_root(context) and not context.command_request.authorize_release():
@@ -384,6 +412,7 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 
 	var released_context: SkillContext = context
 	_current_context = null
+	_presentation_context = null
 	if _is_chain_root(released_context):
 		_state = _idle_timing_state()
 	elif released_context.request_source == SkillContext.RequestSource.AI_AUTOMATIC:
@@ -414,6 +443,7 @@ func cancel_skill(reason: StringName = &"cancelled") -> void:
 	_stop_cast_presentation()
 	_spawn_presentation(cancel_effect_scene, _last_action_transform)
 	_current_context = null
+	_presentation_context = null
 	_state = _idle_timing_state() if _is_chain_root(cancelled_context) else SkillState.READY
 	skill_cancelled.emit(cancelled_context, reason)
 
@@ -422,6 +452,7 @@ func reset_skill() -> void:
 	if is_instance_valid(_delivery_runner) and _delivery_runner.is_busy():
 		_delivery_runner.cancel(&"skill_reset")
 	_current_context = null
+	_presentation_context = null
 	_cooldown_remaining = 0.0
 	_post_release_hesitation_remaining = 0.0
 	_state = SkillState.READY
@@ -685,23 +716,68 @@ func _spawn_presentation(
 ## 新型蓄力组件可选实现 configure_cast(source, world_origin, duration)：
 ## source 为施法者，world_origin 为动作发射变换，duration 为本次实际施法秒数。
 ## 旧特效仍沿用自身自动播放，不要求实现此接口。
+func _schedule_cast_presentation(origin: Transform3D) -> void:
+	_stop_cast_presentation()
+	if cast_effect_scene == null: return
+	var ratio := clampf(cast_effect_start_ratio, 0.0, 1.0) if is_finite(cast_effect_start_ratio) else 0.0
+	_cast_effect_delay_remaining = maxf(get_effective_cast_time(), 0.0) * ratio
+	_cast_effect_pending = true
+	_last_action_transform = origin
+	_advance_cast_presentation(0.0)
+
+
+# 只使用战斗delta，不创建跨动作的异步定时回调；每次动作只跨越一次阈值。
+func _advance_cast_presentation(delta: float) -> void:
+	if not _cast_effect_pending or _state != SkillState.CASTING: return
+	_cast_effect_delay_remaining = maxf(_cast_effect_delay_remaining - maxf(delta, 0.0), 0.0)
+	if _cast_effect_delay_remaining > 0.000001: return
+	_cast_effect_pending = false
+	_spawn_cast_presentation(_last_action_transform)
+
+
 func _spawn_cast_presentation(origin: Transform3D) -> void:
 	_stop_cast_presentation()
-	var effect := _spawn_presentation(cast_effect_scene, origin)
-	if not is_instance_valid(effect) or not effect.has_method(&"configure_cast"):
-		return
+	if cast_effect_scene == null: return
+	var pose := origin
+	var attach: Node3D
+	var player := get_node_or_null(^"RuntimeEffects") as SkillReleasePresentationPlayer
+	if is_instance_valid(player):
+		# 复用既有锚点解析；只准备位置，不启动Release音效、成功事实或强调时停。
+		var snapshot := player.prepare_release(_current_context, origin, cast_effect_scene,
+			int(cast_effect_anchor), null, null)
+		pose = snapshot.get("world_transform", origin)
+		var attach_ref := snapshot.get("attach_parent_ref") as WeakRef
+		attach = attach_ref.get_ref() as Node3D if attach_ref != null else null
+	var effect := _spawn_presentation(cast_effect_scene, pose)
+	if not is_instance_valid(effect): return
 	_cast_effect_instance = effect
-	effect.call(&"configure_cast", _skill_owner, origin, get_effective_cast_time())
-	if effect.has_method(&"play"):
-		effect.call(&"play")
+	if is_instance_valid(attach) and attach.is_inside_tree() and not attach.is_queued_for_deletion():
+		effect.reparent(attach, true)
+	if effect.has_method(&"configure_cast"):
+		# 可伸缩蓄力资产仍接收原动作发射变换，不把脚下锚点误当成武器位置。
+		effect.call(&"configure_cast", _skill_owner, origin, get_effective_cast_time())
+		if effect.has_method(&"play"):
+			effect.call(&"play")
 
 
-func _stop_cast_presentation() -> void:
+# 成功释放只结束configure_cast蓄力；keep_one_shot为真时一次性资产继续自回收，避免短施法截断视觉。
+# 取消、失败、重置和下一次施法仍使用默认false，立即清理当前仍在施法阶段的资产。
+func _stop_cast_presentation(keep_one_shot: bool = false) -> void:
+	_cast_effect_pending = false
+	_cast_effect_delay_remaining = 0.0
 	if is_instance_valid(_cast_effect_instance):
-		if _cast_effect_instance.has_method(&"stop"):
-			_cast_effect_instance.call(&"stop")
+		# 只把存活对象传入强类型数组；先移除，再调用可能自行销毁的stop接口。
 		_runtime_effect_instances.erase(_cast_effect_instance)
-		_cast_effect_instance.queue_free()
+		var charge := _cast_effect_instance.has_method(&"configure_cast")
+		if not keep_one_shot or charge:
+			if _cast_effect_instance.has_method(&"stop"):
+				_cast_effect_instance.call(&"stop")
+			if is_instance_valid(_cast_effect_instance):
+				_cast_effect_instance.queue_free()
+	# 原生一次性资产可能早于技能自行回收；用索引清除失效项，不以失效对象调用erase。
+	for index: int in range(_runtime_effect_instances.size()-1, -1, -1):
+		if not is_instance_valid(_runtime_effect_instances[index]):
+			_runtime_effect_instances.remove_at(index)
 	_cast_effect_instance = null
 
 
@@ -748,6 +824,7 @@ func _fail_active(reason: StringName, delivery_failure: bool) -> void:
 	_stop_cast_presentation()
 	var failed_context: SkillContext = _current_context
 	_current_context = null
+	_presentation_context = null
 	## 必须先完成技能自身的终止状态迁移，再向 Host 发出失败信号。
 	##
 	## Host 会在信号回调中检查技能是否已经离开 QUEUED、ACTION_REQUESTED 或
@@ -768,8 +845,14 @@ func _on_runner_delivery_started(context: SkillContext) -> void:
 	var player := get_node_or_null(^"RuntimeEffects") as SkillReleasePresentationPlayer
 	var snapshot: Dictionary = {}
 	if is_instance_valid(player):
-		snapshot = player.prepare_release(context, _last_action_transform, release_effect_scene,
-			release_effect_anchor, release_audio_stream, release_camera_effect)
+		if _presentation_context == null:
+			_presentation_context = SkillPresentationContext.create(self, context, _last_action_transform)
+		var fact := _presentation_context
+		snapshot = player.prepare_release(context, _last_action_transform,
+			fact.visual_scene if fact != null else release_effect_scene,
+			fact.release_effect_anchor if fact != null else int(release_effect_anchor),
+			fact.audio_stream if fact != null else release_audio_stream,
+			fact.get_camera_profile() if fact != null else camera_effect_profile, fact)
 	# 原有Host/专注提交先完成；表现只使用此前准备的快照，不重新读_current_context。
 	delivery_started.emit(context)
 	if is_instance_valid(player) and player.is_inside_tree() and not player.is_queued_for_deletion():
@@ -850,3 +933,12 @@ func _exit_tree() -> void:
 	_inflight_command_contexts.clear()
 	_clear_runtime_effect_references()
 	_current_context = null
+	_presentation_context = null
+## 当前动作的只读快照；无活动动作时为空，禁止以此控制技能流程。
+func get_current_presentation_context() -> SkillPresentationContext: return _presentation_context
+
+func _on_release_instance_prepared(presentation: SkillPresentationContext, instance: Node) -> void:
+	release_instance_prepared.emit(presentation, instance)
+
+func _on_release_presentation_started(presentation: SkillPresentationContext) -> void:
+	release_presentation_started.emit(presentation)
