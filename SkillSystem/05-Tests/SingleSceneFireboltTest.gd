@@ -90,8 +90,8 @@ func _run() -> void:
 			"damage effect operation is DAMAGE"
 		)
 		_expect(
-			is_equal_approx(float(effects[0].get("base_amount")), 10.0),
-			"damage effect stores 10 base damage"
+			is_equal_approx(float(effects[0].get("base_amount")), 24.0),
+			"damage effect stores 24 base damage"
 		)
 		_expect(
 			is_equal_approx(float(effects[0].get("power_ratio")), 1.0),
@@ -192,8 +192,8 @@ func _run() -> void:
 		"Firebolt projectile completes within the physics-frame timeout"
 	)
 	_expect(
-		is_equal_approx(target.get_current_health(), 90.0),
-		"Firebolt deals 10 damage: (10 + 10 * 1) * 100 / (100 + 100)"
+		is_equal_approx(target.get_current_health(), 83.0),
+		"Firebolt deals 17 damage: (24 + 10 * 1) * 100 / (100 + 100)"
 	)
 	_expect(
 		target.get_status_effect_component().has_named_status(&"burning"),

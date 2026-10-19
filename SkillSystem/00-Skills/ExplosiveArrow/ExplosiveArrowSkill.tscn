@@ -24,7 +24,8 @@ delivery = SubResource("Resource_reuug")
 [node name="DamageEffect" type="Node" parent="." index="2" unique_id=1521611483]
 script = ExtResource("4_damage")
 operation = 0
-power_ratio = 0.6
+base_amount = 14.0
+power_ratio = 0.7
 
 [node name="TriggerFragments" type="Node" parent="." index="3" unique_id=396419253]
 script = ExtResource("5_trigger")

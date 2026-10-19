@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SkillCinematicProfile" format=3 uid="uid://dyti6nwv7ffc2"]
+
+[ext_resource type="Animation" uid="uid://ouoqebwvofa2" path="res://SkillSystem/00-Skills/Finisher_FlameBarrage/FlameBarrageAction.tres" id="1_tj1x4"]
+[ext_resource type="Script" uid="uid://dk7p5liefdnao" path="res://SkillSystem/01-Core/SkillCinematicProfile.gd" id="2_lchox"]
+
+[resource]
+script = ExtResource("2_lchox")
+action_animation = ExtResource("1_tj1x4")

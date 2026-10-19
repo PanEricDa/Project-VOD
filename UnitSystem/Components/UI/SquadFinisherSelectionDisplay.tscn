@@ -1,0 +1,240 @@
+[gd_scene format=3 uid="uid://1w1ftyj1dedn"]
+
+[ext_resource type="Script" uid="uid://cgth06culh36y" path="res://UnitSystem/Components/UI/SquadFinisherSelectionDisplay.gd" id="1_eshb7"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yegn0"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.035, 0.065, 0.105, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.52, 0.66, 0.9)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wy8ai"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.12, 0.24, 0.34, 0.98)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.82, 0.95, 1, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="Theme" id="Theme_fmlfx"]
+FinisherOption/base_type = &"PanelContainer"
+FinisherOption/styles/panel = SubResource("StyleBoxFlat_yegn0")
+FinisherSelected/base_type = &"PanelContainer"
+FinisherSelected/styles/panel = SubResource("StyleBoxFlat_wy8ai")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_85aur"]
+bg_color = Color(0.04, 0.075, 0.11, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slahg"]
+bg_color = Color(0.7, 0.86, 0.98, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="SquadFinisherSelectionDisplay" type="CanvasLayer" unique_id=1487045130]
+layer = 24
+script = ExtResource("1_eshb7")
+
+[node name="Root" type="Control" parent="." unique_id=750054390]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Cross" type="Control" parent="Root" unique_id=171374532]
+anchors_preset = 0
+anchor_left = 0.66
+anchor_top = 0.64
+anchor_right = 0.66
+anchor_bottom = 0.64
+mouse_filter = 2
+theme = SubResource("Theme_fmlfx")
+
+[node name="Title" type="Label" parent="Root/Cross" unique_id=738544004]
+layout_mode = 0
+offset_left = -190.0
+offset_top = -296.0
+offset_right = 190.0
+offset_bottom = -248.0
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 30
+text = "终结时机"
+horizontal_alignment = 1
+
+[node name="Slot1" type="PanelContainer" parent="Root/Cross" unique_id=1183959453]
+layout_mode = 0
+offset_left = -334.0
+offset_top = -66.0
+offset_right = -122.0
+offset_bottom = 76.0
+mouse_filter = 2
+theme_type_variation = &"FinisherOption"
+
+[node name="VBox" type="VBoxContainer" parent="Root/Cross/Slot1" unique_id=1503629994]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Key" type="Label" parent="Root/Cross/Slot1/VBox" unique_id=1177667833]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 34
+text = "1"
+horizontal_alignment = 1
+
+[node name="Actor" type="Label" parent="Root/Cross/Slot1/VBox" unique_id=461938300]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "伙伴1"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Root/Cross/Slot1/VBox" unique_id=546214940]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.73, 0.84, 1)
+theme_override_font_sizes/font_size = 16
+text = "终结技（接口测试）"
+horizontal_alignment = 1
+
+[node name="Slot2" type="PanelContainer" parent="Root/Cross" unique_id=314489592]
+layout_mode = 0
+offset_left = -106.0
+offset_top = -236.0
+offset_right = 106.0
+offset_bottom = -94.0
+mouse_filter = 2
+theme_type_variation = &"FinisherOption"
+
+[node name="VBox" type="VBoxContainer" parent="Root/Cross/Slot2" unique_id=604038416]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Key" type="Label" parent="Root/Cross/Slot2/VBox" unique_id=137164620]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 34
+text = "2"
+horizontal_alignment = 1
+
+[node name="Actor" type="Label" parent="Root/Cross/Slot2/VBox" unique_id=1844513235]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "伙伴2"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Root/Cross/Slot2/VBox" unique_id=532656976]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.73, 0.84, 1)
+theme_override_font_sizes/font_size = 16
+text = "终结技（接口测试）"
+horizontal_alignment = 1
+
+[node name="Slot3" type="PanelContainer" parent="Root/Cross" unique_id=554674188]
+layout_mode = 0
+offset_left = 122.0
+offset_top = -66.0
+offset_right = 334.0
+offset_bottom = 76.0
+mouse_filter = 2
+theme_type_variation = &"FinisherOption"
+
+[node name="VBox" type="VBoxContainer" parent="Root/Cross/Slot3" unique_id=573533029]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Key" type="Label" parent="Root/Cross/Slot3/VBox" unique_id=1013386714]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 34
+text = "3"
+horizontal_alignment = 1
+
+[node name="Actor" type="Label" parent="Root/Cross/Slot3/VBox" unique_id=54124049]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "伙伴3"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Root/Cross/Slot3/VBox" unique_id=419062657]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.73, 0.84, 1)
+theme_override_font_sizes/font_size = 16
+text = "终结技（接口测试）"
+horizontal_alignment = 1
+
+[node name="Slot4" type="PanelContainer" parent="Root/Cross" unique_id=564098684]
+layout_mode = 0
+offset_left = -106.0
+offset_top = 104.0
+offset_right = 106.0
+offset_bottom = 246.0
+mouse_filter = 2
+theme_type_variation = &"FinisherOption"
+
+[node name="VBox" type="VBoxContainer" parent="Root/Cross/Slot4" unique_id=1778809860]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="Key" type="Label" parent="Root/Cross/Slot4/VBox" unique_id=922303840]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 34
+text = "4"
+horizontal_alignment = 1
+
+[node name="Actor" type="Label" parent="Root/Cross/Slot4/VBox" unique_id=1076535205]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "伙伴4"
+horizontal_alignment = 1
+
+[node name="Skill" type="Label" parent="Root/Cross/Slot4/VBox" unique_id=879474551]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.61, 0.73, 0.84, 1)
+theme_override_font_sizes/font_size = 16
+text = "终结技（接口测试）"
+horizontal_alignment = 1
+
+[node name="Countdown" type="ProgressBar" parent="Root/Cross" unique_id=1662170733]
+layout_mode = 0
+offset_left = -190.0
+offset_top = 278.0
+offset_right = 190.0
+offset_bottom = 305.0
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_85aur")
+theme_override_styles/fill = SubResource("StyleBoxFlat_slahg")
+max_value = 1.0
+value = 1.0
+show_percentage = false

@@ -1,5 +1,7 @@
 class_name CameraFollowController
 extends Node3D
+## 本次request_id的close/area过渡已到位；每阶段仅一次，接收者必须核对身份后才解除自身暂停。
+signal cinematic_transition_finished(request_id: int, phase: StringName)
 
 ## 用于自动识别玩家单位的阵营标识。
 ## 该值与 UnitBase.faction_id 的 Player 枚举值保持一致，不作为 Inspector 配置，
@@ -139,6 +141,9 @@ func _ready() -> void:
 ## Godot 每个渲染帧回调，负责子相机分档缩放、目标重解析、速度预留和帧率无关的平滑跟随。
 ## 参数 delta 是当前渲染帧经过的秒数。
 func _process(delta: float) -> void:
+	if _cinematic_id > 0:
+		_update_cinematic(delta)
+		return
 	if _presentation_clock_blocked(): return
 	_update_zoom(delta)
 	if not _has_valid_target():
@@ -182,6 +187,7 @@ func _process(delta: float) -> void:
 ## 接收未被 UI 消费的 InputMap 动作；只处理当前活动相机的首次按下事件。
 ## event 可以来自滚轮、键盘或手柄，具体绑定只由项目 Input Map 决定。
 func _unhandled_input(event: InputEvent) -> void:
+	if _cinematic_id > 0: return
 	if get_tree().paused: return
 	if not is_instance_valid(_zoom_camera) or _zoom_levels.is_empty() or not _zoom_camera.is_current():
 		return
@@ -227,6 +233,7 @@ func _update_zoom(delta: float) -> void:
 
 
 func _apply_zoom_position() -> void:
+	if _cinematic_id > 0: return
 	var feedback := Vector3.ZERO
 	for id in _feedback_offsets.keys():
 		var record: Dictionary = _feedback_offsets[id]
@@ -410,6 +417,146 @@ func get_resolved_target() -> UnitBase:
 		return null
 	return target
 
+var _cinematic_id: int = 0
+var _cinematic_phase: StringName = &""
+var _cinematic_transition_done: bool = false
+var _cinematic_pause: WeakRef
+var _cinematic_pause_token: int = 0
+var _cinematic_original_process_mode: Node.ProcessMode = Node.PROCESS_MODE_INHERIT
+var _cinematic_profile: SkillCinematicCameraProfile
+var _cinematic_clock: SkillExecutionClock
+var _cinematic_saved_local: Transform3D
+var _cinematic_saved_projection: Dictionary = {}
+var _cinematic_from: Transform3D
+var _cinematic_destination: Transform3D
+var _cinematic_elapsed: float = 0.0
+var _cinematic_center: Vector3
+var _cinematic_radius: float = 0.0
+
+## 同世界正身份接管专属构图；source_pose为动作开始视觉朝向快照，clock负责真实活动秒数。
+## 开始时保留当前画面，按镜头资源时长推进至正面；等待/暂停由外部协调器持有，到位时通知。
+## 只由本控制器写活动Camera3D；不改正常target、玩家缩放档位、世界速度或单位动作。
+func begin_cinematic(request_id: int, source_pose: Transform3D, profile: SkillCinematicCameraProfile, clock: SkillExecutionClock) -> bool:
+	if request_id <= 0 or not source_pose.is_finite() or profile == null or clock == null or not is_instance_valid(_zoom_camera): return false
+	var scope := clock.get_bound_scope()
+	if scope == null or not scope.is_ancestor_of(self): return false
+	var front := profile.get_front_pose(source_pose)
+	if not front.is_finite(): return false
+	# 从真正可见的当前画面起步，替换旧返程/连携构图时也不先跳回默认机位。
+	var origin := _zoom_camera.global_transform
+	if _cinematic_id > 0: _restore_cinematic()
+	clear_presentation_focus()
+	_cinematic_original_process_mode = process_mode
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_cinematic_transition_done = false
+	_cinematic_pause = null
+	_cinematic_pause_token = 0
+	_cinematic_saved_local = _zoom_camera.transform
+	_cinematic_saved_projection = {"projection":_zoom_camera.projection,"fov":_zoom_camera.fov,"size":_zoom_camera.size}
+	_cinematic_id = request_id
+	_cinematic_phase = &"close"
+	_cinematic_profile = profile.duplicate() as SkillCinematicCameraProfile
+	_cinematic_clock = clock
+	_cinematic_elapsed = 0
+	_cinematic_from = origin
+	_zoom_camera.global_transform = origin
+	_cinematic_destination = front
+	return true
+
+## request_id须匹配当前演出；pause/token为同世界暂停协调器授予的镜头过渡凭证，菜单仍有优先权。
+func bind_cinematic_transition_pause(request_id: int, pause: GamePauseCoordinator, token: int) -> bool:
+	if request_id != _cinematic_id or pause == null or token <= 0 or _cinematic_clock == null or pause.get_bound_scope() != _cinematic_clock.get_bound_scope(): return false
+	_cinematic_pause = weakref(pause)
+	_cinematic_pause_token = token
+	return true
+
+## 转为普通战斗角度和冻结区域；可在真实释放前过渡，到位事实由cinematic_transition_finished通知。
+## radius_m为需容纳的水平半径；Arc取散布+爆炸半径，0表示沿普通战斗镜头距离构图，不重复策划配置。
+func show_cinematic_area(request_id: int, center: Vector3, radius_m: float) -> void:
+	if request_id != _cinematic_id or _cinematic_phase != &"close" or not center.is_finite() or not is_finite(radius_m) or radius_m < 0: return
+	_cinematic_phase = &"area"
+	_cinematic_transition_done = false
+	_cinematic_center = center
+	_cinematic_radius = radius_m
+	_cinematic_from = _zoom_camera.global_transform
+	_cinematic_elapsed = 0
+	var normal := _cinematic_normal_pose()
+	var distance := maxf(normal.origin.distance_to(_normal_position() - camera_offset), radius_m / tan(deg_to_rad(_zoom_camera.fov) * 0.5) * 1.15)
+	_cinematic_destination = Transform3D(normal.basis, center + normal.basis.z.normalized() * distance)
+
+## 仅匹配本次身份可交回玩家；immediate为A首发或异常退出，B正常结束按镜头资源的RETURN时长返回当前位置，默认0.2活动秒。
+func end_cinematic(request_id: int, immediate: bool = false) -> void:
+	if request_id != _cinematic_id or _cinematic_id == 0: return
+	if immediate:
+		_restore_cinematic()
+		return
+	_cinematic_phase = &"return"
+	_cinematic_from = _zoom_camera.global_transform
+	_cinematic_elapsed = 0
+
+## 是否仍持有特写、区域或返程构图；不等于世界正在慢放。
+func is_cinematic_active() -> bool:
+	return _cinematic_id > 0
+
+func _cinematic_normal_pose() -> Transform3D:
+	var pose := global_transform
+	pose.origin = _normal_position()
+	return pose * _cinematic_saved_local
+
+func _update_cinematic(delta: float) -> void:
+	if _cinematic_clock == null: return
+	if _cinematic_clock.get_bound_scope() == null or not is_instance_valid(_zoom_camera):
+		_restore_cinematic()
+		return
+	if not _has_valid_target():
+		_clear_target()
+		_resolve_follow_target()
+	var seconds := 0.0
+	if get_tree().paused:
+		var pause := _cinematic_pause.get_ref() as GamePauseCoordinator if _cinematic_pause != null else null
+		if _cinematic_transition_done or _cinematic_phase not in [&"close",&"area"] or pause == null or not pause.can_advance_cinematic_transition(_cinematic_pause_token): return
+		var world_time_scale := Engine.time_scale
+		seconds = clampf(delta/world_time_scale,0.0,0.1) if is_finite(world_time_scale) and world_time_scale > 0 and is_finite(delta) else 0.0
+	else:
+		seconds = _cinematic_clock.get_presentation_delta(delta,false)
+	if seconds <= 0: return
+	_cinematic_elapsed += seconds
+	if _cinematic_phase == &"close":
+		var push_duration := maxf(_cinematic_profile.get_closeup_transition_duration(), 0.000001)
+		var progress := clampf(_cinematic_elapsed / push_duration, 0.0, 1.0)
+		_zoom_camera.global_transform = _cinematic_from.interpolate_with(_cinematic_destination, progress * progress * (3.0 - 2.0 * progress))
+		if progress >= 1 and not _cinematic_transition_done:
+			_cinematic_transition_done = true
+			cinematic_transition_finished.emit(_cinematic_id,&"close")
+		return
+	var duration := _cinematic_profile.get_phase_duration(CameraEffectProfile.Phase.RETURN if _cinematic_phase == &"return" else CameraEffectProfile.Phase.ENTER)
+	var t := 1.0 if duration <= 0.0 else clampf(_cinematic_elapsed / duration, 0.0, 1.0)
+	var destination := _cinematic_normal_pose() if _cinematic_phase == &"return" else _cinematic_destination
+	_zoom_camera.global_transform = _cinematic_from.interpolate_with(destination, t * t * (3.0 - 2.0 * t))
+	if t >= 1 and _cinematic_phase == &"return":
+		_restore_cinematic()
+	elif t >= 1 and not _cinematic_transition_done:
+		_cinematic_transition_done = true
+		cinematic_transition_finished.emit(_cinematic_id,&"area")
+
+func _restore_cinematic() -> void:
+	process_mode = _cinematic_original_process_mode
+	_cinematic_pause = null
+	_cinematic_pause_token = 0
+	_cinematic_transition_done = false
+	_cinematic_id = 0
+	_cinematic_phase = &""
+	_cinematic_clock = null
+	_cinematic_profile = null
+	if is_instance_valid(_zoom_camera):
+		if _has_valid_target(): global_position = _normal_position()
+		_zoom_camera.transform = _cinematic_saved_local
+		if not _cinematic_saved_projection.is_empty():
+			_zoom_camera.projection = _cinematic_saved_projection.projection
+			_zoom_camera.fov = _cinematic_saved_projection.fov
+			_zoom_camera.size = _cinematic_saved_projection.size
+		_apply_zoom_position()
+
 var _focus_id: int = 0
 var _focus_source: WeakRef
 var _focus_profile: CameraEffectProfile
@@ -427,6 +574,9 @@ var _feedback_offsets: Dictionary = {}
 
 ## id为正且source同正常世界存活；只叠加临时Rig构图，不更换玩家target或停止正常跟随，非法策略返回false。
 func begin_presentation_focus(presentation_id: int, source: Node3D, profile: CameraEffectProfile) -> bool:
+	if _cinematic_id > 0:
+		if _cinematic_phase != &"return": return false
+		_restore_cinematic()
 	if presentation_id <= 0 or profile == null or not is_instance_valid(source) or not source.is_inside_tree() or source.is_queued_for_deletion(): return false
 	if source is UnitBase and source.is_dead(): return false
 	var world := _normal_world()

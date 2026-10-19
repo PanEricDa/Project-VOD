@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dga0kjc3d2h2l"]
 
 [ext_resource type="PackedScene" uid="uid://bnltv4w1d4jfk" path="res://UnitSystem/Visuals/Player/HeroVisual.tscn" id="1_visual"]
-[ext_resource type="PackedScene" uid="uid://c5j5eodw8fove" path="res://Item/Weapon/Shield/IronShieldVisual.tscn" id="2_5i0h5"]
-[ext_resource type="AnimationLibrary" uid="uid://njpdtps8x2gh" path="res://Item/Weapon/Shield/ShieldAnimationLibrary.res" id="3_txxyl"]
+[ext_resource type="PackedScene" uid="uid://dscgnfj560dfv" path="res://Item/Weapon/MagicGlobe/MagicGlobeVisual.tscn" id="2_5i0h5"]
+[ext_resource type="AnimationLibrary" uid="uid://xekaausbog11" path="res://Item/Weapon/MagicGlobe/MagicGlobeAnimationLibrary.res" id="3_txxyl"]
 
 [sub_resource type="Animation" id="Animation_5kj1s"]
 tracks/0/type = "value"
@@ -92,15 +92,15 @@ _data = {
 [node name="HeroVisual" parent="." unique_id=2025475360 instance=ExtResource("1_visual")]
 
 [node name="CharacterRoot" parent="HeroVisual" index="0" unique_id=1562324973]
-transform = Transform3D(1, 0, 0, 0, 1.0000005, 0, 0, 0, 0.99999964, 0, 0, 0)
+transform = Transform3D(0.9999998, 0, 0, 0, 1.0000002, 0, 0, 0, 0.9999997, 0, 0, 0)
 
 [node name="WeaponSocket" parent="HeroVisual/CharacterRoot" index="1" unique_id=2021864902]
 transform = Transform3D(1.0000011, 0, 0, 0, 1.0000012, 0, 0, 0, 1.0000008, 0.32, 0.28, -0.22)
 
-[node name="IronShieldVisual" parent="HeroVisual/CharacterRoot/WeaponSocket" index="1" unique_id=1010440417 instance=ExtResource("2_5i0h5")]
+[node name="MagicGlobeVisual" parent="HeroVisual/CharacterRoot/WeaponSocket" index="1" unique_id=151080071 instance=ExtResource("2_5i0h5")]
 
 [node name="CharacterAnimationPlayer" parent="HeroVisual" index="1" unique_id=634680723]
 libraries/ = SubResource("AnimationLibrary_wnkm0")
-libraries/ShieldAnimationLibrary = ExtResource("3_txxyl")
+libraries/MagicGlobeAnimationLibrary = ExtResource("3_txxyl")
 
 [editable path="HeroVisual"]

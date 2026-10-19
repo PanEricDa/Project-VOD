@@ -30,6 +30,7 @@ func _run() -> void:
 	var charge := (load(paths[0]) as PackedScene).instantiate() as Node3D
 	charge.set("autoplay", false)
 	world.add_child(charge)
+	_expect(charge.physics_interpolation_mode == Node.PHYSICS_INTERPOLATION_MODE_OFF and not charge.get_node("VisualRoot/RisingSparks").is_physics_interpolated(), "render-frame procedural sparks must not inherit physics interpolation")
 	charge.call("configure_cast", source, Transform3D(Basis.IDENTITY, Vector3(0.4, 0.8, 0)), 2.0)
 	charge.call("play")
 	await process_frame

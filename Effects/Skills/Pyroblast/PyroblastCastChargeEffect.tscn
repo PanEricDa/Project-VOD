@@ -93,6 +93,7 @@ _data = {
 }
 
 [node name="PyroblastCastChargeEffect" type="Node3D" unique_id=1630196662]
+physics_interpolation_mode = 2
 script = ExtResource("1_c0sp6")
 spark_size = 0.065
 

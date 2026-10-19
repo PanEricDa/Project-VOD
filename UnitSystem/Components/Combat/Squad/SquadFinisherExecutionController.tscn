@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://tl1yhilxdejt"]
+
+[ext_resource type="Script" uid="uid://dur2ka8416gqi" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherExecutionController.gd" id="1_cms85"]
+
+[node name="SquadFinisherExecutionController" type="Node" unique_id=1589923198]
+script = ExtResource("1_cms85")

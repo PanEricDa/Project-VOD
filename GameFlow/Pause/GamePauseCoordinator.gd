@@ -1,6 +1,6 @@
 class_name GamePauseCoordinator
 extends Node
-## 单世界暂停所有权与纯释放时钟；不使用time_scale，不推进任何战斗逻辑。
+## 单世界暂停/慢速所有权与纯释放时钟；慢速只设置time_scale，不自行推进战斗逻辑。
 ## battle_paused为树暂停事实，presentation_allowed仅普通/强调可真，显式暂停优先。
 signal pause_state_changed(battle_paused: bool, presentation_allowed: bool)
 const TREE_OWNER: StringName = &"_vod_pause_coordinator"
@@ -19,6 +19,9 @@ var _baseline_paused: bool = false
 var _owns_pause_session: bool = false
 var _last_state: Array = []
 var _detaching: bool = false
+var _scale_tokens: Dictionary = {}
+var _scale_baseline: float = 1.0
+var _owns_scale: bool = false
 
 func _ready() -> void: process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -69,6 +72,19 @@ func acquire_pause(owner: Node, reason: StringName) -> int:
 	if not _valid_owner(owner): return 0
 	return _new_token(owner,reason,false)
 
+## owner须同绑定世界；本token冻结全部战斗与普通表现，仅允许持有凭证的镜头过渡推进。
+## 菜单或其他暂停优先；返回正token，由调用方用release_pause释放，不能借此推进技能时钟。
+@warning_ignore("shadowed_variable_base_class")
+func acquire_cinematic_transition_pause(owner: Node) -> int:
+	if not _valid_owner(owner): return 0
+	return _new_token(owner,&"cinematic_transition",false,true)
+
+## token须为仍存活的镜头过渡凭证；任何其他暂停持有或外部基线暂停都会阻止该过渡。
+func can_advance_cinematic_transition(token: int) -> bool:
+	if not _tokens.has(token) or _baseline_paused or not bool(_tokens[token].get("camera_transition",false)): return false
+	if not _valid_owner(_from_ref(_tokens[token].owner)): return false
+	return _tokens.size() == 1
+
 ## 只释放对应token；未知/重复token无操作，不解除其他持有者。
 func release_pause(token: int) -> void:
 	if not _tokens.has(token): return
@@ -78,6 +94,33 @@ func release_pause(token: int) -> void:
 		_resume_frame = Engine.get_physics_frames()
 		_normal_advanced = false
 	_apply_pause()
+
+## owner须同绑定世界；scale为有限0<值<=1的绝对速度上限，reason为诊断键；失败返回0。
+## 多持有取最慢且不加速原基线；调用方用release_time_scale释放自己的token，不影响暂停。
+@warning_ignore("shadowed_variable_base_class")
+func acquire_time_scale(owner: Node, scale: float, reason: StringName) -> int:
+	if not _valid_owner(owner) or not is_finite(scale) or scale <= 0.0 or scale > 1.0: return 0
+	if not _owns_scale:
+		_scale_baseline = Engine.time_scale
+		_owns_scale = true
+	var token := _next_token
+	_next_token += 1
+	_scale_tokens[token] = {"owner":weakref(owner),"scale":scale,"reason":reason}
+	_apply_time_scale()
+	return token
+
+## 幂等释放本次慢速token；未知/重复不操作，最后持有释放恢复申请前倍率，不解除暂停。
+func release_time_scale(token: int) -> void:
+	if not _scale_tokens.has(token): return
+	_scale_tokens.erase(token)
+	_apply_time_scale()
+
+func _apply_time_scale() -> void:
+	if not _owns_scale: return
+	var value := _scale_baseline
+	for record: Dictionary in _scale_tokens.values(): value = minf(value,record.scale)
+	Engine.time_scale = value
+	if _scale_tokens.is_empty(): _owns_scale = false
 
 ## 仅当前强调暂停，且无显式持有及外部基线时为真。
 func is_release_accent_only() -> bool:
@@ -101,13 +144,13 @@ func register_release_instance(presentation_id: int, instance: Node) -> bool:
 	return true
 
 @warning_ignore("shadowed_variable_base_class")
-func _new_token(owner: Node, reason: StringName, accent: bool) -> int:
+func _new_token(owner: Node, reason: StringName, accent: bool, camera_transition: bool = false) -> int:
 	if _tokens.is_empty() and not _owns_pause_session:
 		_baseline_paused = get_tree().paused
 		_owns_pause_session = true
 	var token := _next_token
 	_next_token += 1
-	_tokens[token] = {"owner":weakref(owner),"reason":reason,"accent":accent}
+	_tokens[token] = {"owner":weakref(owner),"reason":reason,"accent":accent,"camera_transition":camera_transition}
 	# 强调token必须在状态发布前可见，确保首帧不把本次原生动画改成PAUSABLE。
 	if accent: _accent_token = token
 	_apply_pause()
@@ -115,6 +158,8 @@ func _new_token(owner: Node, reason: StringName, accent: bool) -> int:
 
 func _process(_delta: float) -> void:
 	if get_bound_scope() == null: return
+	for token in _scale_tokens.keys():
+		if not _valid_owner(_from_ref(_scale_tokens[token].owner)): release_time_scale(token)
 	for token in _tokens.keys():
 		if not _valid_owner(_from_ref(_tokens[token].owner)): release_pause(token)
 	if has_release_accent() and float(Time.get_ticks_usec()-_accent_start_usec)/1000000.0 >= _accent_duration:
@@ -191,6 +236,8 @@ func _on_scope_exiting() -> void: _unbind(true)
 func _unbind(world_exit: bool) -> void:
 	if _detaching: return
 	_detaching = true
+	_scale_tokens.clear()
+	_apply_time_scale()
 	var scope = _scope_ref.get_ref() if _scope_ref != null else null
 	if is_instance_valid(scope) and scope.tree_exiting.is_connected(_on_scope_exiting):
 		scope.tree_exiting.disconnect(_on_scope_exiting)

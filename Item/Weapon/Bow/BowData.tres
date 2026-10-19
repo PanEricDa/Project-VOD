@@ -14,4 +14,6 @@ animation_library = ExtResource("3_animation")
 attack_range = 6.0
 attack_range_tolerance = 0.2
 attack_movement_speed_multiplier = 0.0
+basic_attack_base_damage = 1.4
+basic_attack_power_ratio = 0.28
 basic_attack_damage_variance = 0.2

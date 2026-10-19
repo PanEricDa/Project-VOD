@@ -1,14 +1,15 @@
 [gd_scene format=3 uid="uid://cqp35eaph02gm"]
 
 [ext_resource type="PackedScene" uid="uid://ckposes0vweos" path="res://UnitSystem/AI/Enemy/EnemyBase.tscn" id="1_w8nak"]
-[ext_resource type="Resource" uid="uid://bu388bdhai45r" path="res://Item/Weapon/Sword/IronSwordData.tres" id="2_70tsv"]
+[ext_resource type="Resource" uid="uid://b8ttab5r10uqh" path="res://Item/Weapon/Sword/GoblinSwordData.tres" id="2_xfomj"]
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="3_xfomj"]
 
 [node name="GoblinWarrior" unique_id=1948486579 instance=ExtResource("1_w8nak")]
-starting_weapon = ExtResource("2_70tsv")
+starting_weapon = ExtResource("2_xfomj")
 movement_speed = 4.8
-maximum_health = 200.0
-attack_power = 5.0
+combat_targeting_radius = 0.0
+maximum_health = 500.0
+attack_power = 6.0
 defense = 2.0
 hit_movement_lock_duration = 0.04
 

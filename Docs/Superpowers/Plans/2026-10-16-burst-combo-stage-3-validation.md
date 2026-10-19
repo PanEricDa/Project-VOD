@@ -54,3 +54,43 @@
 Git仅本地记录，未推送、未合并、未创建PR。最终版本号见Git最新本地提交。
 
 最终收尾复验：重新独立运行全部137项，137/137退出0、有PASS，无SCRIPT ERROR/ERROR/超时。没有因审查意见再修改运行逻辑；两项Minor明确延后。临时执行目录已清理为可恢复归档，其他计划目录未触碰。
+
+## 2026-10-16：调试UI补充数值评分
+
+复用原Evaluation/ChainSummary标签，在连击后增加“评分105.00 / 100”。实时连携与1秒结算摘要均显示实际未封顶分数，保留两位小数；进度条仍最多100%。新一轮立即替换旧分数，PENDING与摘要结束后继续按原规则隐藏，不新增Inspector项、节点、场景或评分规则。
+
+新增真实UI断言先RED（实时105、摘要105、新轮5.20均未显示），再仅修改原显示格式GREEN。SquadChainRoundDisplayTest与SquadChainInputDisplayTest通过；完整回归137/137退出0、有PASS，无SCRIPT ERROR、ERROR或超时。原始结果归档于.superpowers/archives/2026-10-16-score-display/full-suite.json。
+
+
+## 2026-10-16：保留上一轮评分供调试查看
+
+移除UI内部1秒摘要计时，结算后的连击数、数值评分、评分条和结果保留到新轮第一次有效连携伤害；新指令受理/释放尚未命中时仍显示旧结果。闭窗后伤害间隔倒数立即隐藏，解绑/更换评价源时清空旧摘要，不延长业务窗口，不保存终结资格。未更改评分、专注收益或自然回复。
+
+真实UI测试先复现4项失败，再通过；新增暂停、未命中新轮、低分结果保留和解绑重绑检查。完整回归137/137通过，退出码0、有PASS，无SCRIPT ERROR、ERROR或超时；错误来源测试仍会主动触发既有预期警告。结果记录：.superpowers/archives/2026-10-16-score-display/retained-result-suite.json。
+
+
+## 2026-10-16：评分与专注获取难度系数
+
+在原SquadChainRoundController增加Evaluation / Score Difficulty，在原SquadFocusComponent增加Focus / Focus Gain Difficulty，各1个export float。均默认5、Inspector最低0.1、可超过10，并提供中文用途/约束/生效时机说明。无新增场景、脚本或资源，不改变原H0=20、D0=500及damage_to_focus_ratio=0.1。两处均采用原结果×5/各自难度，评分每轮受理时捕获，专注从下一笔有效常规伤害生效；100分资格线、连击/实际扣血、窗口、资源余额/容量/费用与零收益来源规则不变，不增加自然恢复。
+
+新增真实伤害行为测试先RED再GREEN：覆盖5/2.5/10/1/0.1、评分资格及跨轮快照、专注容量封顶/动态修改不重算余额/预留扣费不缩放/连携终结不回充/基础收益0仍关闭，以及0/负数/NaN/Inf拒绝无效输入。Godot编辑器API实测两个源场景的新增属性均对Inspector可见，默认值5.0，范围0.1,10.0,0.1,or_greater。
+
+定向测试启动时曾出现多种全局类型未识别；检查编辑器类索引注册后，无源码改动复跑通过。最终完整回归137/137通过，退出0、有PASS，无SCRIPT ERROR、ERROR或超时；非法配置/重复评价源等测试仍会主动发出预期警告。结果记录：.superpowers/archives/2026-10-16-score-display/difficulty-coefficients-suite.json。
+
+
+## 2026-10-16：对数连击与1.1次幂伤害评分
+
+已在原SquadChainRoundController实现S=[40×log₂(1+H/H0)+60×(D/D0)^1.1]×(5/难度)，按本轮累计H/D重算。无新增脚本、场景、资源或export参数，专注收益与技能规则未改。默认基准试调为H0=10、D0=100，原难度默认5作为当前曲线标准倍率，不承诺复刻旧线性分数。Godot编辑器API实例化确认当前SquadChainRoundPreview继承10/100，用户难度覆盖3保持不变；未编辑预览或哥布林场景。
+
+TDD先按批准的算例、边际收益与累计伤害规则观察RED，再实现GREEN；新增同一命中100伤害一次/拆十笔得分相同、十次独立命中100伤害只增加连击贡献、等总伤害下后十击收益小于前十击、同次命中伤害的边际贡献温和增加等检查。难度系数/快照与真实UI数值断言更新到曲线模型，保留原资格/闭窗/退款/晚到弹道规则。真实UI显示357.89（1击500伤害）、5.88（1击1伤害）且保持上次结果，100进度上限不截断实际评分。
+
+SquadChainRoundWindowTest、SquadChainRoundDisplayTest与SquadChainRoundIntegrationTest定向通过，完整回归137/137退出0、有PASS，无SCRIPT ERROR、ERROR或超时；既有负向测试保留预期警告。结果记录：.superpowers/archives/2026-10-16-score-display/curve-score-suite.json。
+
+
+## 2026-10-16：衔接窗口增加30%
+
+原评分节点damage_interval_seconds默认由2.0改为2.6秒，并同步中文参数说明与配置指南；未改评分、专注、技能速度、输入或续窗规则。当前预览无窗口覆盖值，直接继承新默认；未编辑用户预览或单位场景。
+
+按TDD新增正式源场景默认值驱动的真实伤害测试：旧2秒配置先出现3项预期失败，改为2.6后通过。验证首击开启2.6秒、2.1秒仍可衔接、恰在2.6秒命中可续窗并刷新完整2.6秒、超过2.6秒正常闭窗。既有时钟算法用例显式配置2秒夹具，避免试玩调参耦合核心契约；新增UI预览装配断言单独验证正式预览为2.6秒。
+
+窗口、UI及交付集成定向测试通过；完整回归137/137退出0、有PASS，无SCRIPT ERROR、ERROR或超时，负向测试保留预期警告。结果记录：.superpowers/archives/2026-10-16-score-display/window-extension-suite.json。

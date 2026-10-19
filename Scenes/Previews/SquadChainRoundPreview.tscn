@@ -1,20 +1,151 @@
 [gd_scene format=3 uid="uid://b7vrej053u66s"]
 
 [ext_resource type="PackedScene" uid="uid://cgnr2c4bnji4t" path="res://Scenes/Previews/ChainSkillPresentationPreview.tscn" id="1_parent"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_5cyrn"]
 [ext_resource type="PackedScene" uid="uid://dyah7h2ck4vyw" path="res://UnitSystem/Components/Combat/Squad/SquadChainRoundController.tscn" id="2_round"]
+[ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="3_irlrr"]
+[ext_resource type="Script" uid="uid://d02epfqku0fc0" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="4_0hqoe"]
+[ext_resource type="PackedScene" uid="uid://bf6jnj6t1rq0b" path="res://Item/Projectiles/PyroblastProjectile.tscn" id="5_7vnht"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="6_d822r"]
+[ext_resource type="Script" uid="uid://dbomxnas7fyr" path="res://SkillSystem/02-Delivery/MarkedHostileTargetExpansion.gd" id="7_cxavw"]
+[ext_resource type="PackedScene" uid="uid://bva8v76qriccx" path="res://Item/Projectiles/ExplosiveArrow.tscn" id="8_v4pbb"]
+[ext_resource type="PackedScene" uid="uid://cbecfr3g8svqm" path="res://Item/Projectiles/Arrow.tscn" id="9_lcxxm"]
+[ext_resource type="PackedScene" uid="uid://b1lqh3r7sqxr8" path="res://UnitSystem/Components/UI/SquadChainRoundDisplay.tscn" id="11_0hqoe"]
 
-[node name="SquadChainRoundPreview" instance=ExtResource("1_parent")]
+[sub_resource type="Resource" id="Resource_d822r"]
+resource_local_to_scene = true
+script = ExtResource("2_5cyrn")
+
+[sub_resource type="Resource" id="Resource_cxavw"]
+resource_local_to_scene = true
+script = ExtResource("2_5cyrn")
+target_collection_mode = 1
+
+[sub_resource type="Resource" id="Resource_v4pbb"]
+resource_local_to_scene = true
+script = ExtResource("2_5cyrn")
+
+[sub_resource type="Resource" id="Resource_lcxxm"]
+resource_local_to_scene = true
+script = ExtResource("2_5cyrn")
+
+[sub_resource type="Resource" id="Resource_bnrxa"]
+resource_local_to_scene = true
+script = ExtResource("2_5cyrn")
+
+[sub_resource type="Resource" id="Resource_aolbv"]
+resource_local_to_scene = true
+script = ExtResource("2_5cyrn")
+
+[sub_resource type="Resource" id="Resource_nq40k"]
+resource_local_to_scene = true
+script = ExtResource("4_0hqoe")
+projectile_scene = ExtResource("3_irlrr")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+impact_radius = 1.2
+
+[sub_resource type="Resource" id="Resource_u3j2u"]
+resource_local_to_scene = true
+script = ExtResource("7_cxavw")
+status_id = &"burning"
+
+[sub_resource type="Resource" id="Resource_a85hd"]
+resource_local_to_scene = true
+script = ExtResource("6_d822r")
+projectile_scene = ExtResource("5_7vnht")
+target_expansion = SubResource("Resource_u3j2u")
+
+[sub_resource type="Resource" id="Resource_khk6a"]
+resource_local_to_scene = true
+script = ExtResource("4_0hqoe")
+projectile_scene = ExtResource("3_irlrr")
+projectile_speed = 9.0
+turn_speed_degrees = 180.0
+maximum_lifetime = 3.0
+impact_radius = 1.2
+
+[sub_resource type="Resource" id="Resource_rpibg"]
+resource_local_to_scene = true
+script = ExtResource("6_d822r")
+projectile_scene = ExtResource("8_v4pbb")
+
+[sub_resource type="Resource" id="Resource_axflq"]
+resource_local_to_scene = true
+script = ExtResource("6_d822r")
+projectile_scene = ExtResource("9_lcxxm")
+shot_count = 3
+shot_interval_seconds = 0.14
+
+[sub_resource type="Resource" id="Resource_pxn8r"]
+resource_local_to_scene = true
+script = ExtResource("6_d822r")
+projectile_scene = ExtResource("9_lcxxm")
+shot_count = 3
+shot_interval_seconds = 0.14
+
+[node name="SquadChainRoundPreview" unique_id=2038132683 instance=ExtResource("1_parent")]
 script = null
 
-[node name="SquadFocusDebugDisplay" parent="." index="0"]
+[node name="SquadFocusDebugDisplay" parent="." index="0" unique_id=1081714811]
 visible = false
 debug_enabled = false
 
-[node name="SquadChainCommandDisplay" parent="." index="18" node_paths=PackedStringArray("round_source")]
+[node name="SquadFocusComponent" parent="." index="1" unique_id=1471205558]
+focus_gain_difficulty = 3.0
+
+[node name="GuardianShieldSkill" parent="Guardian/SkillHost/SkillSocket" index="0" unique_id=2125788544]
+delivery = SubResource("Resource_d822r")
+
+[node name="GuardianTauntSkill" parent="Guardian/SkillHost/SkillSocket" index="1" unique_id=1168872536]
+delivery = SubResource("Resource_cxavw")
+
+[node name="ComboGuardianBashSkill" parent="Guardian/SkillHost/SkillSocket" index="2" unique_id=1494957971]
+delivery = SubResource("Resource_v4pbb")
+
+[node name="HolyLightSkill" parent="Priest/SkillHost/SkillSocket" index="0" unique_id=75927867]
+delivery = SubResource("Resource_lcxxm")
+
+[node name="GreaterHealSkill" parent="Priest/SkillHost/SkillSocket" index="1" unique_id=2125516029]
+delivery = SubResource("Resource_bnrxa")
+
+[node name="ComboGreaterHealSkill" parent="Priest/SkillHost/SkillSocket" index="2" unique_id=1373932239]
+delivery = SubResource("Resource_aolbv")
+
+[node name="FireboltSkill" parent="Caster/SkillHost/SkillSocket" index="0" unique_id=165098916]
+delivery = SubResource("Resource_nq40k")
+
+[node name="PyroblastSkill" parent="Caster/SkillHost/SkillSocket" index="1" unique_id=1836847695]
+delivery = SubResource("Resource_a85hd")
+
+[node name="ComboFireboltSkill" parent="Caster/SkillHost/SkillSocket" index="2" unique_id=279338316]
+delivery = SubResource("Resource_khk6a")
+
+[node name="ExplosiveArrowSkill" parent="Archer/SkillHost/SkillSocket" index="0" unique_id=1956322953]
+delivery = SubResource("Resource_rpibg")
+
+[node name="RapidShotSkill" parent="Archer/SkillHost/SkillSocket" index="1" unique_id=1606068855]
+delivery = SubResource("Resource_axflq")
+
+[node name="ComboRapidShotSkill" parent="Archer/SkillHost/SkillSocket" index="2" unique_id=1190405242]
+delivery = SubResource("Resource_pxn8r")
+
+[node name="SquadChainRoundController" parent="." index="20" unique_id=1047347498 node_paths=PackedStringArray("command_source") instance=ExtResource("2_round")]
+command_source = NodePath("../SquadChainCommandController")
+score_difficulty = 2.0
+hit_score_scale = 20
+damage_score_scale = 2000.0
+
+[node name="SquadChainRoundDisplay" parent="." index="21" unique_id=886165465 node_paths=PackedStringArray("round_source") instance=ExtResource("11_0hqoe")]
 round_source = NodePath("../SquadChainRoundController")
 
-[node name="Title" parent="SquadChainCommandDisplay/Panel/VBox" index="0"]
-text = "连携伤害窗口验证  ·  1—4调用伙伴"
-
-[node name="SquadChainRoundController" parent="." index="20" node_paths=PackedStringArray("command_source") instance=ExtResource("2_round")]
-command_source = NodePath("../SquadChainCommandController")
+[editable path="EnemyContainer/Pack_C/GoblinWarrior"]
+[editable path="Guardian"]
+[editable path="Guardian/SkillHost"]
+[editable path="Priest"]
+[editable path="Priest/SkillHost"]
+[editable path="Caster"]
+[editable path="Caster/SkillHost"]
+[editable path="Archer"]
+[editable path="Archer/SkillHost"]

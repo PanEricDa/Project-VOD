@@ -3,13 +3,14 @@
 [ext_resource type="PackedScene" uid="uid://dkrndbbmiiq1d" path="res://SkillSystem/00-Templates/MeleeSkillTemplate.tscn" id="1_6fiuy"]
 [ext_resource type="Resource" uid="uid://40dsmfojclgh" path="res://Effects/Camera/Presets/ChainSkillFocus.tres" id="2_88xny"]
 [ext_resource type="PackedScene" path="res://Effects/Skills/GuardianShield/GuardianShieldSkillEffect.tscn" id="2_c8vgo"]
+[ext_resource type="PackedScene" uid="uid://deiipxw5gh26p" path="res://Effects/Skills/Shared/ReleaseAccentFlash.tscn" id="2_fs8jn"]
 [ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="3_88xny"]
 [ext_resource type="Script" uid="uid://mukvvanqkcl" path="res://SkillSystem/03-Extensions/StatModifierSkillEffect.gd" id="4_fs8jn"]
 [ext_resource type="Resource" uid="uid://0jmq715hfjxr" path="res://Effects/Combat/Presets/ChainReleaseAccent.tres" id="4_yp2rt"]
 [ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="5_yp2rt"]
 [ext_resource type="Script" uid="uid://yucsdny8htx4" path="res://SkillSystem/03-Extensions/ComboFocusCost.gd" id="6_ukaos"]
 
-[sub_resource type="Resource" id="Resource_ukaos"]
+[sub_resource type="Resource" id="Resource_yp2rt"]
 resource_local_to_scene = true
 script = ExtResource("3_88xny")
 
@@ -28,16 +29,20 @@ decision_delay_max = 0.0
 extra_hesitation_chance = 0.0
 extra_hesitation_min = 0.0
 extra_hesitation_max = 0.0
+cast_effect_scene = ExtResource("2_fs8jn")
+cast_effect_anchor = 3
+cast_effect_start_ratio = 0.5
 camera_effect_profile = ExtResource("2_88xny")
 release_effect_scene = ExtResource("2_c8vgo")
 release_effect_anchor = 3
 release_accent_profile = ExtResource("4_yp2rt")
-delivery = SubResource("Resource_ukaos")
+delivery = SubResource("Resource_yp2rt")
 
 [node name="MeleeAction" parent="." index="2"]
 hitbox_size = Vector3(2, 0.7, 2)
 hitbox_center_offset = Vector3(0, 0.25, 0.2)
-base_damage = 16.0
+base_damage = 19.2
+power_ratio = 1.2
 
 [node name="DefenseBuff" type="Node" parent="." index="3" unique_id=1085920036]
 script = ExtResource("4_fs8jn")
@@ -45,8 +50,8 @@ script = ExtResource("4_fs8jn")
 [node name="DamageEffect" type="Node" parent="." index="4" unique_id=1333068539]
 script = ExtResource("5_yp2rt")
 operation = 0
-base_amount = 12.0
-power_ratio = 1.0
+base_amount = 14.4
+power_ratio = 1.2
 
 [node name="ComboFocusCost" type="Node" parent="." index="5" unique_id=945039703]
 script = ExtResource("6_ukaos")

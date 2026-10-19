@@ -198,11 +198,11 @@ func _verify_role_stat_baselines() -> void:
 	var expected_roles: Array[Dictionary] = [
 		{
 			"path": "res://UnitSystem/Player/Hero/Hero.tscn",
-			"health": 120.0, "attack": 12.0, "defense": 8.0,
+			"health": 300.0, "attack": 12.0, "defense": 8.0,
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Guardian.tscn",
-			"health": 250.0, "attack": 8.0, "defense": 35.0,
+			"health": 650.0, "attack": 8.0, "defense": 35.0,
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Saber.tscn",
@@ -210,15 +210,15 @@ func _verify_role_stat_baselines() -> void:
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Archer.tscn",
-			"health": 95.0, "attack": 15.0, "defense": 3.0,
+			"health": 240.0, "attack": 15.0, "defense": 3.0,
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Caster.tscn",
-			"health": 90.0, "attack": 16.0, "defense": 2.0,
+			"health": 220.0, "attack": 16.0, "defense": 2.0,
 		},
 		{
 			"path": "res://UnitSystem/AI/Ally/Units/Priest.tscn",
-			"health": 105.0, "attack": 11.0, "defense": 5.0,
+			"health": 260.0, "attack": 11.0, "defense": 5.0,
 		},
 		{
 			"path": "res://UnitSystem/AI/Enemy/EnemyBase.tscn",

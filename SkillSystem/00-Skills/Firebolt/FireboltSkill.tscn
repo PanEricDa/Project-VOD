@@ -5,9 +5,9 @@
 [ext_resource type="PackedScene" uid="uid://h1yto3c6wup5" path="res://Item/Projectiles/FireBall.tscn" id="3_projectile"]
 [ext_resource type="Script" uid="uid://d02epfqku0fc0" path="res://SkillSystem/02-Delivery/TrackingProjectileDeliveryConfig.gd" id="4_delivery"]
 [ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="5_damage"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/ApplyNamedStatusSkillEffect.gd" id="6_status"]
+[ext_resource type="Script" uid="uid://cstrjdbel01mt" path="res://SkillSystem/03-Extensions/ApplyNamedStatusSkillEffect.gd" id="6_status"]
 
-[sub_resource type="Resource" id="Resource_rjchh"]
+[sub_resource type="Resource" id="Resource_xhlvp"]
 resource_local_to_scene = true
 script = ExtResource("4_delivery")
 projectile_scene = ExtResource("3_projectile")
@@ -24,14 +24,15 @@ cast_range = 6.0
 base_cast_time = 0.75
 skill_cooldown = 3.0
 cast_effect_scene = ExtResource("2_cast")
-delivery = SubResource("Resource_rjchh")
+delivery = SubResource("Resource_xhlvp")
 
 [node name="DamageEffect" type="Node" parent="." index="2" unique_id=2138507386]
 script = ExtResource("5_damage")
 operation = 0
+base_amount = 24.0
 power_ratio = 1.0
 
-[node name="BurningStatusEffect" type="Node" parent="." index="3"]
+[node name="BurningStatusEffect" type="Node" parent="." index="3" unique_id=98217259]
 script = ExtResource("6_status")
 status_id = &"burning"
 duration_seconds = 8.0

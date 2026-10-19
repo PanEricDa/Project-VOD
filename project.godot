@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Vestiges of the divine"
-run/main_scene="uid://b57b7knoialwy"
+run/main_scene="res://Scenes/CombatRoom.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://Icon.svg"
 

@@ -1,0 +1,102 @@
+[gd_scene format=3 uid="uid://b1lqh3r7sqxr8"]
+
+[ext_resource type="Script" uid="uid://db7l8l3hes0wv" path="res://UnitSystem/Components/UI/SquadChainRoundDisplay.gd" id="1_bkv75"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_iwd6f"]
+bg_color = Color(0.02, 0.035, 0.06, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0ire1"]
+bg_color = Color(0.6, 0.8, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mkeqc"]
+bg_color = Color(0.96, 0.75, 0.28, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="SquadChainRoundDisplay" type="CanvasLayer" unique_id=886165465]
+layer = 15
+script = ExtResource("1_bkv75")
+
+[node name="Panel" type="Control" parent="." unique_id=1002882016]
+layout_mode = 3
+anchor_left = 0.78
+anchor_top = 0.32
+anchor_right = 0.78
+anchor_bottom = 0.32
+offset_left = -210.0
+offset_top = -24.0
+offset_right = 70.0
+offset_bottom = 150.0
+scale = Vector2(1.5, 1.5)
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel" unique_id=1715354928]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="ComboRow" type="Control" parent="Panel/VBox" unique_id=1490224989]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Number" type="Label" parent="Panel/VBox/ComboRow" unique_id=747983505]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -90.0
+theme_override_colors/font_color = Color(0.92, 0.97, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.01, 0.025, 0.06, 0.85)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/font_size = 68
+text = "28"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Caption" type="Label" parent="Panel/VBox/ComboRow" unique_id=673454646]
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -82.0
+offset_top = 40.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(0.76, 0.86, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "COMBO"
+
+[node name="ScoreProgress" type="ProgressBar" parent="Panel/VBox" unique_id=1960806716]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+tooltip_text = "终结进度"
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_iwd6f")
+theme_override_styles/fill = SubResource("StyleBoxFlat_0ire1")
+max_value = 1.0
+step = 0.001
+value = 0.72
+show_percentage = false
+
+[node name="DamageInterval" type="ProgressBar" parent="Panel/VBox" unique_id=1299712480]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+tooltip_text = "连击伤害间隔倒数；暂停时冻结"
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_iwd6f")
+theme_override_styles/fill = SubResource("StyleBoxFlat_mkeqc")
+max_value = 1.0
+step = 0.001
+value = 0.55
+show_percentage = false

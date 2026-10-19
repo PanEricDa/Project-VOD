@@ -29,5 +29,6 @@ delivery = SubResource("Resource_yx4jc")
 
 [node name="ThreatEffect" type="Node" parent="." index="2" unique_id=1466073863]
 script = ExtResource("3_threat")
+threat_amount = 400.0
 
 [node name="GuardianTauntNeededCondition" parent="." index="3" unique_id=2122616291 instance=ExtResource("4_condition")]

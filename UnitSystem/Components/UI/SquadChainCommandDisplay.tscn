@@ -73,12 +73,6 @@ corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eaocv"]
-bg_color = Color(0.6, 0.8, 1, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2m47q"]
-bg_color = Color(0.95, 0.77, 0.3, 1)
-
 [node name="SquadChainCommandDisplay" type="CanvasLayer" unique_id=1905817382]
 layer = 15
 script = ExtResource("1_i78jb")
@@ -104,27 +98,22 @@ mouse_filter = 2
 
 [node name="Title" type="Label" parent="Panel/VBox" unique_id=656253865]
 layout_mode = 2
-text = "阶段二指令验证 · 1—4 请求伙伴技能（非正式连携窗口）"
+text = "连携指令 · 1—4 请求伙伴技能"
 
-[node name="Evaluation" type="VBoxContainer" parent="Panel/VBox" unique_id=69285732]
-visible = false
+[node name="Focus" type="VBoxContainer" parent="Panel/VBox" unique_id=884083490]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="Focus" type="VBoxContainer" parent="Panel/VBox/Evaluation" unique_id=884083490]
-layout_mode = 2
-mouse_filter = 2
-
-[node name="Values" type="Label" parent="Panel/VBox/Evaluation/Focus" unique_id=1122614607]
+[node name="Values" type="Label" parent="Panel/VBox/Focus" unique_id=1122614607]
 layout_mode = 2
 text = "专注 100  /  预留 0  /  可用 100"
 
-[node name="Bars" type="Control" parent="Panel/VBox/Evaluation/Focus" unique_id=383667802]
+[node name="Bars" type="Control" parent="Panel/VBox/Focus" unique_id=383667802]
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="UsedAndReserved" type="ProgressBar" parent="Panel/VBox/Evaluation/Focus/Bars" unique_id=1786267856]
+[node name="UsedAndReserved" type="ProgressBar" parent="Panel/VBox/Focus/Bars" unique_id=1786267856]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -134,7 +123,7 @@ max_value = 1.0
 step = 0.001
 show_percentage = false
 
-[node name="Available" type="ProgressBar" parent="Panel/VBox/Evaluation/Focus/Bars" unique_id=725312301]
+[node name="Available" type="ProgressBar" parent="Panel/VBox/Focus/Bars" unique_id=725312301]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -143,36 +132,6 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_22v6t")
 max_value = 1.0
 step = 0.001
 show_percentage = false
-
-[node name="ChainSummary" type="Label" parent="Panel/VBox/Evaluation" unique_id=2130170098]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.9, 1, 1)
-text = "连击"
-
-[node name="ScoreProgress" type="ProgressBar" parent="Panel/VBox/Evaluation" unique_id=1294671891]
-custom_minimum_size = Vector2(0, 12)
-layout_mode = 2
-tooltip_text = "终结进度"
-mouse_filter = 2
-theme_override_styles/fill = SubResource("StyleBoxFlat_eaocv")
-max_value = 1.0
-step = 0.001
-show_percentage = false
-
-[node name="DamageInterval" type="ProgressBar" parent="Panel/VBox/Evaluation" unique_id=1748976912]
-custom_minimum_size = Vector2(0, 6)
-layout_mode = 2
-tooltip_text = "距最后伤害的剩余间隔（暂停时冻结）"
-mouse_filter = 2
-theme_override_styles/fill = SubResource("StyleBoxFlat_2m47q")
-max_value = 1.0
-step = 0.001
-show_percentage = false
-
-[node name="Result" type="Label" parent="Panel/VBox/Evaluation" unique_id=1872088611]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.83, 0.38, 1)
-text = "终结就绪"
 
 [node name="Cards" type="HBoxContainer" parent="Panel/VBox" unique_id=618411605]
 layout_mode = 2

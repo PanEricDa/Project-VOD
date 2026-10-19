@@ -5,6 +5,14 @@ extends Node
 signal delivery_started(context: SkillContext)
 signal delivery_finished(context: SkillContext, result: SkillDeliveryResult)
 signal delivery_failed(context: SkillContext, reason: StringName)
+## 本次所有待发项目终结，和交付/主视觉完成分开。
+signal emission_finished(context: SkillContext)
+## 命中表现尚未进树，订阅者登记完成与时钟，不参与伤害。
+signal impact_presentation_prepared(context: SkillContext, instance: Node3D)
+## 第index颗成功发出，point为冻结世界落点/目标点。
+signal projectile_launched(context: SkillContext, index: int, point: Vector3)
+## 第index颗已经落地并完成本颗数值，主视觉可能仍播放。
+signal projectile_landed(context: SkillContext, index: int, point: Vector3)
 const DIRECTION_EPSILON_SQUARED: float = 0.000001
 var _busy: bool = false
 var _current_context: SkillContext
@@ -78,12 +86,27 @@ func _execute_arc_projectile(
 	add_child(session)
 	session.delivery_finished.connect(_on_arc_finished.bind(session))
 	session.delivery_failed.connect(_on_arc_failed.bind(session))
+	session.emission_finished.connect(func(ctx: SkillContext) -> void: emission_finished.emit(ctx))
+	session.impact_presentation_prepared.connect(func(ctx: SkillContext, instance: Node3D) -> void: impact_presentation_prepared.emit(ctx, instance))
+	session.projectile_launched.connect(func(ctx: SkillContext, index: int, point: Vector3) -> void: projectile_launched.emit(ctx, index, point))
+	session.projectile_landed.connect(func(ctx: SkillContext, index: int, point: Vector3) -> void: projectile_landed.emit(ctx, index, point))
+	# start内部首发即可触发同步中断，先登记，失败再回滚，不能让停止接口漏掉启动中的会话。
+	_arc_sessions.append(session)
 	if not session.start(config, context, launch_transform, effects):
+		_arc_sessions.erase(session)
 		session.queue_free()
 		return false
-	_arc_sessions.append(session)
 	delivery_started.emit(context)
 	return true
+
+## 按根执行正身份只停止后续发射；已发在途保留，不可用于取消其他技能会话。
+func stop_pending_emission(request_id: int) -> void:
+	if request_id <= 0: return
+	for session: ArcProjectileDeliverySession in _arc_sessions.duplicate():
+		if is_instance_valid(session):
+			var context: SkillContext = session.get_delivery_context()
+			if context != null and (context.execution_id == request_id or (context.damage_context != null and context.damage_context.request_id == request_id)):
+				session.stop_pending_emission()
 
 func _on_arc_finished(context: SkillContext, result: SkillDeliveryResult, session: ArcProjectileDeliverySession) -> void:
 	_arc_sessions.erase(session)

@@ -45,8 +45,8 @@ func _run() -> void:
 				is_equal_approx(float(sword.get("attack_movement_speed_multiplier")), 1.0),
 				"Melee weapons keep full movement during basic attacks by default"
 			)
-		_expect(sword.get("basic_attack_base_damage") == 5.0, "Iron Sword basic attack base damage is 5.0")
-		_expect(sword.get("basic_attack_power_ratio") == 1.0, "Iron Sword basic attack power ratio is 1.0")
+		_expect(sword.get("basic_attack_base_damage") == 3.0, "Iron Sword basic attack base damage is 3.0")
+		_expect(sword.get("basic_attack_power_ratio") == 0.25, "Iron Sword basic attack power ratio is 0.25")
 		_expect(sword.call("get_combo_damage_multiplier", 1) == 1.0, "Iron Sword uses the default combo multiplier when no per-step multiplier is configured")
 		_expect(sword.call("get_combo_damage_multiplier", 2) == 1.0, "Iron Sword combo step 2 multiplier is 1.0")
 		_expect(sword.call("get_combo_damage_multiplier", 3) == 1.0, "Iron Sword uses the default multiplier for all unconfigured combo steps")

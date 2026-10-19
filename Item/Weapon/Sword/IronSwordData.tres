@@ -13,4 +13,6 @@ display_name = "Iron Sword"
 visual_scene = ExtResource("2_visual")
 animation_library = ExtResource("1_d52qx")
 attack_range_tolerance = 0.4
+basic_attack_base_damage = 3.0
+basic_attack_power_ratio = 0.25
 basic_attack_damage_variance = 0.05

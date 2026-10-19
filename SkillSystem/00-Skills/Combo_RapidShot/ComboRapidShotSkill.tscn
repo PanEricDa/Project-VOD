@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/MultiShotSkillTemplate.tscn" id="1_gvcyh"]
 [ext_resource type="Resource" uid="uid://40dsmfojclgh" path="res://Effects/Camera/Presets/ChainSkillFocus.tres" id="2_8l220"]
+[ext_resource type="PackedScene" uid="uid://deiipxw5gh26p" path="res://Effects/Skills/Shared/ReleaseAccentFlash.tscn" id="2_d0sbu"]
 [ext_resource type="PackedScene" uid="uid://cbecfr3g8svqm" path="res://Item/Projectiles/Arrow.tscn" id="2_v3q8w"]
 [ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="3_8l220"]
 [ext_resource type="Resource" uid="uid://0jmq715hfjxr" path="res://Effects/Combat/Presets/ChainReleaseAccent.tres" id="3_d0sbu"]
@@ -28,6 +29,9 @@ decision_delay_max = 0.0
 extra_hesitation_chance = 0.0
 extra_hesitation_min = 0.0
 extra_hesitation_max = 0.0
+cast_effect_scene = ExtResource("2_d0sbu")
+cast_effect_anchor = 3
+cast_effect_start_ratio = 0.5
 camera_effect_profile = ExtResource("2_8l220")
 release_accent_profile = ExtResource("3_d0sbu")
 delivery = SubResource("Resource_hro22")
@@ -35,8 +39,8 @@ delivery = SubResource("Resource_hro22")
 [node name="DamageEffect" type="Node" parent="." index="2" unique_id=1141423784]
 script = ExtResource("4_d0sbu")
 operation = 0
-base_amount = 1.0
-power_ratio = 0.35
+base_amount = 7.56
+power_ratio = 0.336
 
 [node name="ComboFocusCost" type="Node" parent="." index="3" unique_id=734217053]
 script = ExtResource("5_hro22")

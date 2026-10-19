@@ -70,7 +70,10 @@ func _check_scene(unit_name: String, skill_names: Array[String]) -> void:
 		else:
 			var expected := unit.get_node("SkillHost/SkillSocket/%s" % skill_names[index])
 			_expect(actual == expected, "%s slot %d references original node" % [unit_name, index])
-	_expect(host.get_finisher_skill() == null, "%s finisher empty" % unit_name)
+	if unit_name == "Caster":
+		_expect(host.get_finisher_skill() == unit.get_node("SkillHost/SkillSocket/FlameBarrageFinisherSkill"), "Caster finisher references its own skill instance")
+	else:
+		_expect(host.get_finisher_skill() == null, "%s finisher empty" % unit_name)
 	unit.free()
 
 

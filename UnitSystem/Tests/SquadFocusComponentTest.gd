@@ -58,6 +58,7 @@ func _run() -> void:
 	_expect(focus.get_reserved_focus() == 0.0 and focus.get_current_focus() == 50.0, "unbind resets session")
 	world.free()
 	_verify_reentrant_binding()
+	_verify_gain_difficulty()
 	_finish()
 func _verify_reentrant_binding() -> void:
 	var old_world = Node3D.new()
@@ -92,6 +93,48 @@ func _verify_reentrant_binding() -> void:
 	focus.free()
 	old_world.free()
 	new_world.free()
+
+func _verify_gain_difficulty() -> void:
+	var world := Node3D.new()
+	root.add_child(world)
+	var source := UnitBase.new()
+	source.team_id = 1
+	world.add_child(source)
+	var target := UnitBase.new()
+	target.team_id = 2
+	target.maximum_health = 10000.0
+	world.add_child(target)
+	var focus := SquadFocusComponent.new()
+	focus.auto_bind_parent = false
+	world.add_child(focus)
+	var party: Array[UnitBase] = [source]
+	_expect(focus.bind_scope(world,party), "gain difficulty fixture binds real damage source")
+	for row in [[5.0,10.0],[2.5,20.0],[10.0,5.0],[1.0,50.0],[0.1,100.0]]:
+		focus.reset_focus()
+		focus.set("focus_gain_difficulty",row[0])
+		CombatValueResolver.apply_damage(source,target,100.0,0.0,1.0,1.0,0.0,CombatDamageContext.create(source,world))
+		_expect(is_equal_approx(focus.get_current_focus(),row[1]), "focus difficulty uses reciprocal baseline5 and respects capacity "+str(row))
+	for invalid in [0.0,-1.0,NAN,INF]:
+		focus.reset_focus()
+		focus.set("focus_gain_difficulty",invalid)
+		CombatValueResolver.apply_damage(source,target,10.0,0.0,1.0,1.0,0.0,CombatDamageContext.create(source,world))
+		_expect(focus.get_current_focus() == 0.0, "invalid gain difficulty refuses income without invalid balance")
+	focus.reset_focus()
+	focus.set("focus_gain_difficulty",2.5)
+	CombatValueResolver.apply_damage(source,target,100.0,0.0,1.0,1.0,0.0,CombatDamageContext.create(source,world))
+	focus.set("focus_gain_difficulty",10.0)
+	_expect(is_equal_approx(focus.get_current_focus(),20.0), "editing difficulty does not rescale saved balance")
+	CombatValueResolver.apply_damage(source,target,100.0,0.0,1.0,1.0,0.0,CombatDamageContext.create(source,world))
+	_expect(is_equal_approx(focus.get_current_focus(),25.0), "next event immediately uses edited gain difficulty")
+	_expect(focus.reserve(901,20.0) and focus.commit(901,20.0) and is_equal_approx(focus.get_current_focus(),5.0), "gain difficulty does not scale reservation or spending")
+	focus.set("focus_gain_difficulty",1.0)
+	for origin in [CombatDamageContext.Origin.CHAIN,CombatDamageContext.Origin.FINISHER]:
+		CombatValueResolver.apply_damage(source,target,100.0,0.0,1.0,1.0,0.0,CombatDamageContext.create(source,world,origin))
+	_expect(is_equal_approx(focus.get_current_focus(),5.0), "easy difficulty does not turn zero-yield chain or finisher into focus income")
+	focus.damage_to_focus_ratio = 0.0
+	CombatValueResolver.apply_damage(source,target,100.0,0.0,1.0,1.0,0.0,CombatDamageContext.create(source,world))
+	_expect(is_equal_approx(focus.get_current_focus(),5.0), "zero base ratio still disables gain at easy difficulty")
+	world.free()
 
 func _expect(ok: bool, message: String) -> void:
 	if not ok: failures.append(message)

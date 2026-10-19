@@ -8,8 +8,9 @@
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.17294908, -1.7744957, 1.1991208)
 starting_weapon = ExtResource("2_qcxik")
 movement_speed = 4.5
-maximum_health = 150.0
-attack_power = 3.0
+combat_targeting_radius = 0.0
+maximum_health = 350.0
+attack_power = 4.0
 defense = 1.0
 hit_movement_lock_duration = 0.1
 

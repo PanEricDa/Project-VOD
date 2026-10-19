@@ -8,19 +8,19 @@
 [ext_resource type="PackedScene" uid="uid://cyj2p3visptjw" path="res://SkillSystem/00-Skills/GuardianShield/GuardianShieldSkill.tscn" id="5_skill"]
 [ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="5_xppbt"]
 [ext_resource type="Resource" uid="uid://cnrmochu3ntvo" path="res://UnitSystem/Components/Targeting/AI/Policies/GuardianProtect.tres" id="6_protect"]
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/GuardianTaunt/GuardianTauntSkill.tscn" id="7_taunt"]
+[ext_resource type="PackedScene" uid="uid://cfo5ywuu8jkn2" path="res://SkillSystem/00-Skills/GuardianTaunt/GuardianTauntSkill.tscn" id="7_taunt"]
 [ext_resource type="PackedScene" uid="uid://cgeig6u8vwmpy" path="res://SkillSystem/00-Skills/Combo_GuardianBash/ComboGuardianBashSkill.tscn" id="7_w7l1r"]
 
-[sub_resource type="Resource" id="Resource_aw3mq"]
+[sub_resource type="Resource" id="Resource_dxu28"]
 resource_local_to_scene = true
 script = ExtResource("5_xppbt")
 
-[sub_resource type="Resource" id="Resource_gqtm3"]
+[sub_resource type="Resource" id="Resource_bk5fc"]
 resource_local_to_scene = true
 script = ExtResource("5_xppbt")
 target_collection_mode = 1
 
-[sub_resource type="Resource" id="Resource_dxu28"]
+[sub_resource type="Resource" id="Resource_5cnl5"]
 resource_local_to_scene = true
 script = ExtResource("5_xppbt")
 
@@ -33,7 +33,7 @@ starting_weapon = ExtResource("2_336a2")
 movement_speed = 4.8
 targeting_radius = 6.0
 combat_targeting_radius = 12.0
-maximum_health = 250.0
+maximum_health = 650.0
 attack_power = 8.0
 defense = 35.0
 threat_takeover_ratio = 1.05
@@ -45,13 +45,13 @@ regular_skills = [NodePath("SkillSocket/GuardianShieldSkill"), NodePath("SkillSo
 combo_skill = NodePath("SkillSocket/ComboGuardianBashSkill")
 
 [node name="GuardianShieldSkill" parent="SkillHost/SkillSocket" index="0" unique_id=2125788544 instance=ExtResource("5_skill")]
-delivery = SubResource("Resource_aw3mq")
+delivery = SubResource("Resource_dxu28")
 
 [node name="GuardianTauntSkill" parent="SkillHost/SkillSocket" index="1" unique_id=1168872536 instance=ExtResource("7_taunt")]
-delivery = SubResource("Resource_gqtm3")
+delivery = SubResource("Resource_bk5fc")
 
 [node name="ComboGuardianBashSkill" parent="SkillHost/SkillSocket" index="2" unique_id=1494957971 instance=ExtResource("7_w7l1r")]
-delivery = SubResource("Resource_dxu28")
+delivery = SubResource("Resource_5cnl5")
 
 [node name="CombatSystem" parent="." index="3" unique_id=1080413471 instance=ExtResource("4_combat")]
 debug_hitbox_enabled = true

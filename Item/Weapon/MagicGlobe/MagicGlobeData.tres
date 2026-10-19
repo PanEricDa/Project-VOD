@@ -11,3 +11,5 @@ hitbox_center_offsets = Array[Vector3]([Vector3(0, 0.3, 0.5)])
 display_name = "Magic Globe"
 visual_scene = ExtResource("2_visual")
 animation_library = ExtResource("3_animation")
+basic_attack_base_damage = 2.0
+basic_attack_power_ratio = 0.25

@@ -23,6 +23,14 @@ signal camera_effect_requested(profile: CameraEffectProfile, source: Node3D, tar
 signal release_instance_prepared(presentation: SkillPresentationContext, instance: Node)
 ## 成功释放表现启动，presentation保持同一施放身份，不代表命中。
 signal release_presentation_started(presentation: SkillPresentationContext)
+## 全部待发项目结束，不等于伤害或主视觉结束。
+signal emission_finished(context: SkillContext)
+## 主爆炸进树前事实，用于演出时钟和完成屏障，不执行伤害。
+signal impact_presentation_prepared(context: SkillContext, instance: Node3D)
+## 已成功发出第index颗，point为世界冻结目标点。
+signal projectile_launched(context: SkillContext, index: int, point: Vector3)
+## 第index颗已落地并结算，本次主表现可继续。
+signal projectile_landed(context: SkillContext, index: int, point: Vector3)
 signal delivery_finished(context: SkillContext, result: SkillDeliveryResult)
 ## 某次交付最终失败，始终携带原context；不依赖装备技能当前状态，不表示可退款。
 signal delivery_failed(context: SkillContext, reason: StringName)
@@ -84,8 +92,11 @@ var cast_range: float = 5.0
 @export var require_targetable: bool = true
 ## 开启后拒绝死亡目标；治疗复活或尸体类技能需要明确关闭此项。
 @export var require_alive: bool = true
-## 开启后在动画 release_action 时再次验证目标有效性与施法距离；失败时取消本次释放。
+## 开启后在动画 release_action 时再次验证目标有效性及“施法距离+释放容差”；失败时取消本次释放。
 @export var validate_target_on_release: bool = true
+## 已开始施法后，释放帧允许在 cast_range 外额外延伸的水平距离，单位米；默认0保持原射程。
+## 仅在validate_target_on_release开启时生效，不扩大选取、启动或接近距离，也不绕过死亡与其他目标合法性检查。
+@export_range(0.0, 100.0, 0.1, "or_greater") var release_range_tolerance_m: float = 0.0
 
 @export_category("Casting")
 @export_range(0.0, 30.0, 0.05, "or_greater")
@@ -145,6 +156,9 @@ var extra_hesitation_max: float = 5.0
 ## 施法视觉开始的归一化进度，0为开始即播放（兼容旧内容），0.5为本次实际施法时间的一半，1为释放时刻。
 ## 以战斗时钟和施法速度换算后的本次时长计时；暂停不推进，取消不补播；仅影响Cast视觉，不移动音效、镜头或释放时停。
 @export_range(0.0, 1.0, 0.05) var cast_effect_start_ratio: float = 0.0
+@export_subgroup("Cinematic")
+## 可选专属动作与A/B演出配置；默认空保持普通技能，终结用途由请求入口而非此资源决定。
+@export var cinematic_profile: SkillCinematicProfile
 @export_subgroup("Camera")
 ## 可选镜头策略；默认空，供关卡表现组件在实际施法时消费，不改变技能。
 @export var camera_effect_profile: CameraEffectProfile
@@ -213,15 +227,29 @@ func _ready() -> void:
 	else:
 		push_warning("Skill RuntimeEffects presentation player is missing; gameplay remains enabled.")
 	if is_instance_valid(_delivery_runner):
+		_delivery_runner.emission_finished.connect(func(ctx: SkillContext) -> void: emission_finished.emit(ctx))
+		_delivery_runner.impact_presentation_prepared.connect(func(ctx: SkillContext, instance: Node3D) -> void: impact_presentation_prepared.emit(ctx, instance))
+		_delivery_runner.projectile_launched.connect(func(ctx: SkillContext, index: int, point: Vector3) -> void: projectile_launched.emit(ctx, index, point))
+		_delivery_runner.projectile_landed.connect(func(ctx: SkillContext, index: int, point: Vector3) -> void: projectile_landed.emit(ctx, index, point))
 		_delivery_runner.delivery_started.connect(_on_runner_delivery_started)
 		_delivery_runner.delivery_finished.connect(_on_runner_delivery_finished)
 		_delivery_runner.delivery_failed.connect(_on_runner_delivery_failed)
 
 
+var _pending_ground_release: Dictionary = {}
+
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	_advance_cast_presentation(delta)
+	if not _pending_ground_release.is_empty():
+		var pending := _pending_ground_release
+		_pending_ground_release = {}
+		if pending.context == _current_context and _state in [SkillState.QUEUED,SkillState.CASTING]:
+			_commit_release(pending.context,pending.transform)
+	var cast_delta := delta
+	if _current_context != null and _current_context.execution_clock != null:
+		cast_delta = _current_context.execution_clock.get_delta(delta)
+	_advance_cast_presentation(cast_delta)
 	if _is_chain_root(_current_context):
 		# 原有计时照常推进，连携不启动/清空它们，也不以计时替代动作占用。
 		if _post_release_hesitation_remaining > 0.0:
@@ -330,6 +358,15 @@ func confirm_action_started(cast_transform: Transform3D) -> bool:
 	return true
 
 
+## 当前动作是否仍可真实释放；只读、不付款、不生成交付，复用正式释放的目标/容差规则。
+func can_release_action() -> bool:
+	return _state == SkillState.CASTING and _current_context != null and _is_release_target_valid(_current_context)
+
+func _is_release_target_valid(context: SkillContext) -> bool:
+	return context != null and (not validate_target_on_release or (
+		_is_candidate_valid(context.resolved_target,false)
+		and _is_target_in_cast_range(context.resolved_target,context,release_range_tolerance_m)))
+
 ## 动画 Release 方法轨道调用的交付入口。
 func release_action(launch_transform: Transform3D) -> bool:
 	if (
@@ -354,14 +391,12 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 		or delivery == null
 	):
 		return false
+	if delivery is ArcProjectileDeliveryConfig and delivery.destination_mode == ArcProjectileDeliveryConfig.DestinationMode.RANDOM_GROUND_CIRCLE and not Engine.is_in_physics_frame():
+		# 动作或触发可从渲染回调发来；只排本实例原context，下一物理帧再采样地面和提交成本。
+		_pending_ground_release = {"context":context,"transform":launch_transform}
+		return true
 	_last_action_transform = launch_transform
-	if (
-		validate_target_on_release
-		and (
-			not _is_candidate_valid(_current_context.resolved_target, false)
-			or not _is_target_in_cast_range(_current_context.resolved_target)
-		)
-	):
+	if not _is_release_target_valid(_current_context):
 		_fail_active(&"target_invalid_on_release", false)
 		return false
 
@@ -463,6 +498,16 @@ func can_request(context: SkillContext) -> bool:
 	return _can_accept_purpose(context) and _prepare_context(context) != null
 
 
+## 在当前位置可立即开始的只读预检；复用目标/条件/成本/范围，供终结可用性使用，不寻路排队。
+func can_start_in_place(context: SkillContext) -> bool:
+	if not _can_accept_purpose(context) or get_effective_cast_time() < 0: return false
+	var prepared := _prepare_context(context)
+	return prepared != null and _is_target_in_cast_range(prepared.resolved_target, prepared)
+
+## 只停止本根请求尚未发射的项目；已发交付保持，不取消其他并行施放。
+func stop_pending_emission(request_id: int) -> void:
+	if is_instance_valid(_delivery_runner): _delivery_runner.stop_pending_emission(request_id)
+
 func is_ready() -> bool:
 	return _state == SkillState.READY
 
@@ -492,6 +537,16 @@ func get_post_release_hesitation_remaining() -> float:
 ## 返回角色动作层需要的只读负载快照；无近战动作组件时返回空字典。
 ## 行为层只能消费此公开结果，不需知道技能场景内部的组件名称或节点路径。
 func get_action_payload() -> Dictionary:
+	if cinematic_profile != null and _current_context != null and _current_context.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION:
+		var profile := _current_context.cinematic_profile_snapshot if _current_context.cinematic_profile_snapshot != null else cinematic_profile
+		var budget := profile.action_animation.length + 1.0
+		if delivery is ArcProjectileDeliveryConfig:
+			var config := delivery as ArcProjectileDeliveryConfig
+			var count := config.shot_count
+			if config.destination_mode == ArcProjectileDeliveryConfig.DestinationMode.UNIT_TARGET and config.target_expansion != null:
+				count *= maxi(1, config.target_expansion.select_targets(_current_context, _current_context.resolved_target as UnitBase).size())
+			budget = maxf(budget, get_effective_cast_time() + (count - 1) * config.shot_interval_seconds + 1.0)
+		return {"action_animation":profile.action_animation, "execution_clock":_current_context.execution_clock, "wait_for_emission":delivery is ArcProjectileDeliveryConfig, "action_budget_seconds":budget}
 	for child: Node in get_children():
 		if child is MeleeSkillAction:
 			var payload := (child as MeleeSkillAction).get_action_payload(threat_multiplier)
@@ -537,7 +592,7 @@ func _is_chain_root(context: SkillContext) -> bool:
 func _can_accept_purpose(context: SkillContext) -> bool:
 	if _is_chain_root(context):
 		return _state in [SkillState.READY, SkillState.COOLDOWN, SkillState.POST_RELEASE_HESITATION]
-	return _state == SkillState.READY and context != null and context.purpose == SkillContext.Purpose.REGULAR
+	return _state == SkillState.READY and context != null and (context.purpose == SkillContext.Purpose.REGULAR or (context.purpose == SkillContext.Purpose.FINISHER and context.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION and context.request_source == SkillContext.RequestSource.EXPLICIT))
 
 
 func _idle_timing_state() -> SkillState:
@@ -549,15 +604,19 @@ func _idle_timing_state() -> SkillState:
 func _prepare_context(source: SkillContext) -> SkillContext:
 	if (
 		source == null
-		or source.purpose not in [SkillContext.Purpose.REGULAR, SkillContext.Purpose.CHAIN]
-		or (source.purpose == SkillContext.Purpose.CHAIN and (source.execution_mode != SkillContext.ExecutionMode.CHARACTER_ACTION or source.request_source != SkillContext.RequestSource.EXPLICIT))
+		or source.purpose not in [SkillContext.Purpose.REGULAR, SkillContext.Purpose.CHAIN, SkillContext.Purpose.FINISHER]
+		or (source.purpose in [SkillContext.Purpose.CHAIN, SkillContext.Purpose.FINISHER] and (source.execution_mode != SkillContext.ExecutionMode.CHARACTER_ACTION or source.request_source != SkillContext.RequestSource.EXPLICIT))
 		or not is_instance_valid(_skill_owner)
 		or not _skill_owner.is_inside_tree()
 		or delivery == null
 		or not delivery.validate_configuration().is_empty()
 	):
 		return null
+	if cinematic_profile != null and source.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION and not cinematic_profile.validate_configuration().is_empty():
+		return null
 	var prepared := source.duplicate_context() as SkillContext
+	if prepared.cinematic_profile_snapshot == null and cinematic_profile != null and prepared.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION:
+		prepared.cinematic_profile_snapshot = cinematic_profile.duplicate() as SkillCinematicProfile
 	prepared.caster = _skill_owner
 	prepared.host = _skill_host
 	if is_instance_valid(_delivery_parent):
@@ -565,7 +624,7 @@ func _prepare_context(source: SkillContext) -> SkillContext:
 	if not is_instance_valid(prepared.delivery_parent):
 		return null
 	if prepared.damage_context == null:
-		prepared.damage_context = CombatDamageContext.create(_skill_owner, prepared.delivery_parent, CombatDamageContext.Origin.NORMAL, CombatDamageContext.allocate_id(), 0, skill_id)
+		prepared.damage_context = CombatDamageContext.create(_skill_owner, prepared.delivery_parent, CombatDamageContext.Origin.FINISHER if prepared.purpose == SkillContext.Purpose.FINISHER else CombatDamageContext.Origin.NORMAL, CombatDamageContext.allocate_id(), 0, skill_id)
 	else:
 		prepared.damage_context = prepared.damage_context.for_skill(skill_id)
 	prepared.resolved_target = _resolve_target(prepared)
@@ -627,7 +686,9 @@ func _is_candidate_valid(candidate_value: Variant, include_range: bool) -> bool:
 	return not include_range or _is_target_in_cast_range(candidate)
 
 
-func _is_target_in_cast_range(target_value: Variant, context: SkillContext = null) -> bool:
+## target_value为待检目标；context默认取当前请求，直接触发时由其发射位置作为距离起点。
+## additional_range_m为本次检查额外允许的水平米数；默认0，只有真实释放检查传入技能容差，不影响启动射程。
+func _is_target_in_cast_range(target_value: Variant, context: SkillContext = null, additional_range_m: float = 0.0) -> bool:
 	if (
 		not is_instance_valid(target_value)
 		or not target_value is Node3D
@@ -645,12 +706,12 @@ func _is_target_in_cast_range(target_value: Variant, context: SkillContext = nul
 		origin = active_context.activation_transform.origin
 	var offset: Vector3 = target.global_position - origin
 	offset.y = 0.0
-	return offset.length() <= maxf(cast_range, 0.0) + 0.05
+	return offset.length() <= maxf(cast_range, 0.0) + maxf(additional_range_m, 0.0) + 0.05
 
 
 ## 查找根技能唯一费用组件；缺失、重复或非法返回null，普通技能无需配置。
 func get_combo_focus_cost() -> ComboFocusCost:
-	var found: ComboFocusCost
+	var found: ComboFocusCost = null
 	for child: Node in get_children():
 		if child is ComboFocusCost:
 			if found != null: return null
@@ -751,6 +812,8 @@ func _spawn_cast_presentation(origin: Transform3D) -> void:
 	var effect := _spawn_presentation(cast_effect_scene, pose)
 	if not is_instance_valid(effect): return
 	_cast_effect_instance = effect
+	if _current_context != null and effect.has_method(&"set_execution_clock"):
+		effect.call(&"set_execution_clock", _current_context.execution_clock)
 	if is_instance_valid(attach) and attach.is_inside_tree() and not attach.is_queued_for_deletion():
 		effect.reparent(attach, true)
 	if effect.has_method(&"configure_cast"):

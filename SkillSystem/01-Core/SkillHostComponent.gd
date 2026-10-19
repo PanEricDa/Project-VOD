@@ -2,6 +2,12 @@
 class_name SkillHostComponent
 extends Node
 ## Host已完成动作身份迁移后通知；request为本次根，presentation是可空只读事实。
+## 终结动作确认开始，context为本次带正身份的根请求，不表示成功释放。
+signal finisher_action_started(context: SkillContext)
+## 终结待发项目已结束，request_id仅用于匹配当前动作门闩。
+signal finisher_emission_finished(request_id: int)
+## 终结动作遭硬中断；已释放时只停止未发，旧在途保留。
+signal finisher_action_cancelled(context: SkillContext, reason: StringName)
 signal command_action_started(request: SkillCommandRequest, presentation: SkillPresentationContext)
 ## 已注册技能的纯表现实例准备事实；禁止用于更改动作/费用。
 signal release_instance_prepared(presentation: SkillPresentationContext, instance: Node)
@@ -72,6 +78,7 @@ var _pending_context: SkillContext
 var _pending_command: SkillCommandRequest
 var _active_command: SkillCommandRequest
 var _active_action_context: SkillContext
+var _finisher_release_gate: WeakRef
 var _action_state_provider: Node
 var _cancelling_command_id: int = 0
 var _skill_casting_enabled: bool = true
@@ -99,6 +106,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
+	if get_finisher_action_context() != null and not _command_cast_allowed():
+		cancel_active_skill(&"finisher_cast_unavailable")
 	if (_pending_command != null or _active_command != null) and not _command_cast_allowed():
 		_cancel_all_commands(&"command_cast_unavailable")
 	if not _use_external_global_cooldown and _global_cooldown_remaining > 0.0:
@@ -273,11 +282,11 @@ func enqueue_command(request: SkillCommandRequest) -> bool:
 ## 是否有一条未开始请求，包括接近与等待旧动作；不包含已开始动作。
 func has_pending_command() -> bool: return _pending_command != null
 ## 从动画开始到动作终结的占用；技能释放/READY不提前解锁。
-func has_command_action_lock() -> bool: return _active_command != null and _active_command.has_action_started() and not _active_command.has_action_finished()
+func has_command_action_lock() -> bool: return get_finisher_action_context() != null or _active_command != null and _active_command.has_action_started() and not _active_command.has_action_finished()
 ## 返回等待请求身份；空为0，供只读显示与带ID回调。
 func get_pending_command_id() -> int: return _pending_command.request_id if _pending_command != null else 0
 ## 返回已开始动作身份；空为0，不能用此识别旧投射物。
-func get_active_command_id() -> int: return _active_command.request_id if _active_command != null else 0
+func get_active_command_id() -> int: return _active_command.request_id if _active_command != null else (_active_action_context.execution_id if get_finisher_action_context() != null else 0)
 ## 只读指令动作阶段，与技能冷却/交付结束分开。
 func get_command_phase() -> StringName:
 	if _active_command != null: return &"released" if _active_command.has_released() else &"casting"
@@ -393,15 +402,44 @@ func request_finisher(
 	candidate_targets: Array[Node3D] = [],
 	target_position: Vector3 = Vector3.INF
 ) -> bool:
-	if not _can_start_request():
-		return false
+	return activate_finisher(prepare_finisher_context(target, candidate_targets, target_position))
+
+## 只读预检已装配终结技；preferred_target为合法时优先的玩家意图，候选与位置沿用原规则。
+## 不考虑将被抢占的动作忙碌/GCD，不绕过死亡、封锁、技能自身冷却、条件、成本或即时射程。
+func prepare_finisher_context(preferred_target: Node3D = null, candidates: Array[Node3D] = [], target_position: Vector3 = Vector3.INF) -> SkillContext:
 	var skill := get_finisher_skill()
-	if skill == null:
+	if skill == null or not _command_cast_allowed(): return null
+	var target := preferred_target
+	if is_instance_valid(_target_candidate_provider) and _target_candidate_provider.has_method(&"get_locked_target"):
+		var current := _target_candidate_provider.call(&"get_locked_target") as Node3D
+		if is_instance_valid(current): target = current
+	var context := _create_context(target, candidates if not candidates.is_empty() else _get_candidate_snapshot(), target_position, SkillContext.RequestSource.EXPLICIT, false)
+	context.purpose = SkillContext.Purpose.FINISHER
+	context.preferred_target = preferred_target
+	context.damage_context = CombatDamageContext.create(_caster, _delivery_parent, CombatDamageContext.Origin.FINISHER, 0, 0, skill.skill_id)
+	if not skill.can_start_in_place(context): return null
+	return skill.prepare_request(context)
+
+## 接受本Host预检产生的context；调用方可预先注入请求时钟/局部种子，不得跨世界或宿主。
+## 先再验证后分配身份并抢占；仍从SkillBase.activate进入同一管线，true仅为请求受理。
+func activate_finisher(context: SkillContext) -> bool:
+	var skill := get_finisher_skill()
+	if context == null or skill == null or not _command_cast_allowed() or context.host != self or context.caster != _caster or context.delivery_parent != _delivery_parent or context.purpose != SkillContext.Purpose.FINISHER or not skill.can_start_in_place(context):
 		return false
-	return _request_resolved_skill(
-		skill, target, candidate_targets, target_position,
-		SkillContext.RequestSource.EXPLICIT
-	)
+	var prepared := skill.prepare_request(context)
+	if prepared == null: return false
+	prepared.execution_id = CombatDamageContext.allocate_id()
+	prepared.damage_context = CombatDamageContext.create(_caster, _delivery_parent, CombatDamageContext.Origin.FINISHER, prepared.execution_id, 0, skill.skill_id)
+	_cancel_all_commands(&"finisher_preempted")
+	cancel_active_skill(&"finisher_preempted")
+	if is_instance_valid(_action_state_provider) and _action_state_provider.has_method(&"cancel_current_action"):
+		_action_state_provider.call(&"cancel_current_action")
+	if not _command_cast_allowed() or get_finisher_skill() != skill: return false
+	return _begin_decision(skill, prepared)
+
+## 当前终结动作的独立context；已释放后仍保留到动作结束，不把在途火球当作动作占用。
+func get_finisher_action_context() -> SkillContext:
+	return _active_action_context if _active_action_context != null and _active_action_context.purpose == SkillContext.Purpose.FINISHER else null
 
 
 func _request_resolved_skill(
@@ -504,7 +542,7 @@ func _get_candidate_snapshot() -> Array[Node3D]:
 func confirm_active_action_started(cast_transform: Transform3D, expected_request_id: int = 0) -> bool:
 	var request := _pending_command if _pending_command != null and _active_skill == _pending_command.get_skill() else _active_command
 	if request != null and expected_request_id != request.request_id: return false
-	if request == null and expected_request_id != 0: return false
+	if request == null and expected_request_id != get_active_command_id(): return false
 	if not is_instance_valid(_active_skill) or not _active_skill.confirm_action_started(cast_transform): return false
 	if request != null:
 		if _pending_command != request or request.has_failed() or not is_instance_valid(_active_skill): return false
@@ -514,14 +552,39 @@ func confirm_active_action_started(cast_transform: Transform3D, expected_request
 		command_state_changed.emit()
 		if _active_command == request and not request.has_failed() and is_instance_valid(_active_skill):
 			command_action_started.emit(request, _active_skill.get_current_presentation_context())
+	elif get_finisher_action_context() != null:
+		finisher_action_started.emit(_active_action_context)
 	return true
 
 
-## 从动作释放标记进入技能交付；连携需匹配当前正ID，迟到/重复标记不命中新动作。
+## provider为同世界终结协调器，须提供request_finisher_release(context,transform)->bool；不替换普通技能管线。
+## 同时只允许一个仍存活的提供者；成功只表示取得延迟释放协调权，不启动动作。
+func set_finisher_release_gate(provider: Node) -> bool:
+	var prior: Node = _finisher_release_gate.get_ref() as Node if _finisher_release_gate != null else null
+	if is_instance_valid(prior) and prior != provider: return false
+	if not is_instance_valid(provider) or not is_instance_valid(_delivery_parent) or not _delivery_parent.is_ancestor_of(provider) or not provider.has_method("request_finisher_release"): return false
+	_finisher_release_gate = weakref(provider)
+	return true
+
+## 仅provider本人可清除等待接口；旧协调器清理不得移除新提供者。
+func clear_finisher_release_gate(provider: Node) -> void:
+	if _finisher_release_gate != null and _finisher_release_gate.get_ref() == provider: _finisher_release_gate = null
+
+## 镜头到位后由当前provider提交原context和发射姿态；身份/宿主/封锁仍须合法，只执行原SkillBase管线。
+func commit_finisher_release(provider: Node, context: SkillContext, launch_transform: Transform3D) -> bool:
+	if _finisher_release_gate == null or _finisher_release_gate.get_ref() != provider or context == null or get_finisher_action_context() != context or not _command_cast_allowed(): return false
+	return is_instance_valid(_active_skill) and _active_skill.release_action(launch_transform)
+
+## 从动作释放标记请求交付；连携需匹配当前正ID，迟到/重复标记不命中新动作。
+## 若已安装终结释放门闩，true仅表示等待请求已受理，镜头到位后才由commit_finisher_release真正交付。
 func release_active_action(launch_transform: Transform3D, expected_request_id: int = 0) -> bool:
 	if _active_command != null:
 		if expected_request_id != _active_command.request_id or _active_command.has_released(): return false
-	elif expected_request_id != 0: return false
+	elif expected_request_id != get_active_command_id(): return false
+	var context := get_finisher_action_context()
+	var gate := _finisher_release_gate.get_ref() as Node if _finisher_release_gate != null else null
+	if context != null and is_instance_valid(gate):
+		return bool(gate.call("request_finisher_release",context,launch_transform))
 	return is_instance_valid(_active_skill) and _active_skill.release_action(launch_transform)
 
 
@@ -539,12 +602,23 @@ func finish_active_action(expected_request_id: int = 0) -> void:
 		request.mark_action_finished()
 		command_state_changed.emit()
 		return
-	if expected_request_id != 0 or not is_instance_valid(_active_skill): return
+	if expected_request_id != get_active_command_id() or not is_instance_valid(_active_skill): return
 	_active_skill.finish_action()
 	_release_active_skill()
 
 
 func cancel_active_skill(reason: StringName = &"cancelled") -> void:
+	var finisher := get_finisher_action_context()
+	if finisher != null:
+		var skill := get_active_skill()
+		if skill != null: skill.stop_pending_emission(finisher.execution_id)
+		if not _context_matches_active(finisher): return
+		if skill != null: skill.cancel_skill(reason)
+		# cancel_skill的终态回调可能已关闭旧动作并同步受理新动作，只能清理原身份。
+		if not _context_matches_active(finisher): return
+		_release_active_skill()
+		finisher_action_cancelled.emit(finisher, reason)
+		return
 	if _active_command != null:
 		cancel_command(_active_command.request_id, reason)
 		return
@@ -558,7 +632,9 @@ func cancel_active_skill(reason: StringName = &"cancelled") -> void:
 
 func set_cast_blocked(blocked: bool) -> void:
 	_cast_blocked = blocked
-	if blocked: _cancel_all_commands(&"cast_blocked")
+	if blocked:
+		_cancel_all_commands(&"cast_blocked")
+		if get_finisher_action_context() != null: cancel_active_skill(&"cast_blocked")
 
 
 ## 返回实际施法封锁，供指令资格/UI只读使用；不包含冷却或动作忙碌。
@@ -745,6 +821,7 @@ func _find_skill(skill_id: StringName) -> SkillBase:
 
 
 func _connect_skill(skill: SkillBase) -> void:
+	skill.emission_finished.connect(_on_finisher_emission_finished)
 	skill.release_instance_prepared.connect(_on_skill_release_instance_prepared)
 	skill.release_presentation_started.connect(_on_skill_release_presentation_started)
 	skill.action_requested.connect(_on_skill_action_requested)
@@ -756,6 +833,7 @@ func _connect_skill(skill: SkillBase) -> void:
 
 func _disconnect_skill(skill: SkillBase) -> void:
 	var connections: Array[Array] = [
+		[skill.emission_finished, Callable(self, &"_on_finisher_emission_finished")],
 		[skill.release_instance_prepared, Callable(self, &"_on_skill_release_instance_prepared")],
 		[skill.release_presentation_started, Callable(self, &"_on_skill_release_presentation_started")],
 		[skill.action_requested, Callable(self, &"_on_skill_action_requested")],
@@ -770,6 +848,10 @@ func _disconnect_skill(skill: SkillBase) -> void:
 		if signal_value.is_connected(callback):
 			signal_value.disconnect(callback)
 
+
+func _on_finisher_emission_finished(context: SkillContext) -> void:
+	if _context_matches_active(context) and context.purpose == SkillContext.Purpose.FINISHER:
+		finisher_emission_finished.emit(context.execution_id)
 
 func _on_skill_action_requested(
 	skill: SkillBase,
@@ -811,6 +893,13 @@ func _on_skill_terminal(
 	_reason: StringName
 ) -> void:
 	if not _context_matches_active(_context): return
+	if _context.purpose == SkillContext.Purpose.FINISHER:
+		var skill := get_active_skill()
+		if skill != null: skill.stop_pending_emission(_context.execution_id)
+		if not _context_matches_active(_context): return
+		_release_active_skill()
+		finisher_action_cancelled.emit(_context, _reason)
+		return
 	if _context.command_request != null:
 		if _cancelling_command_id == _context.command_request.request_id: return
 		if not _context.command_request.has_released():

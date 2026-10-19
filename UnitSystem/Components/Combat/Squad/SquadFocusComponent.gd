@@ -1,13 +1,15 @@
 class_name SquadFocusComponent
 extends Node
 ## 场景级专注池；只消费实际事件，不决定技能或连携窗口，不依赖玩家存活。
-## 三个资源参数与一个装配开关；账目、身份和监听连接均为内部运行状态。
+## 四个资源参数与一个装配开关；账目、身份和监听连接均为内部运行状态。
 
 @export_category("Focus")
 ## 专注容量，单位为专注点，默认 100；有限正数。初始化/reset 时生效，不改变正在预留的事务。
 @export_range(0.01, 1000000.0, 0.1, "or_greater") var maximum_focus: float = 100.0
 ## 初始化专注点，默认 0，限制在容量内；只在新绑定或 reset 时应用，不随 UI 刷新重置。
 @export_range(0.0, 1000000.0, 0.1, "or_greater") var initial_focus: float = 0.0
+## 专注获取难度，无单位，默认5保持原收益；须有限且大于0，Inspector最低0.1。原收益乘5/本值，越低获取越快；编辑从下一笔有效常规伤害生效，不重算已有余额、费用或容量，不提供自然恢复；非法值停止新增收益。
+@export_range(0.1, 10.0, 0.1, "or_greater") var focus_gain_difficulty: float = 5.0
 ## 每点有效常规伤害换算的专注点，默认 0.1 仅为开发占位；0 关闭收益。只影响本队资源，不改变伤害。
 @export_range(0.0, 100.0, 0.01, "or_greater") var damage_to_focus_ratio: float = 0.1
 @export_category("Assembly")
@@ -234,8 +236,9 @@ func _on_damage_resolved(event: CombatDamageEvent, generation: int) -> void:
 	if event.scene_scope_id != _scope.get_instance_id() or not _party.has(event.source_instance_id) or not _observed.has(event.target_instance_id): return
 	if event.source_team_id == 0 or event.source_team_id != _party[event.source_instance_id] or event.target_team_id == 0 or event.target_team_id == event.source_team_id: return
 	if not is_finite(damage_to_focus_ratio) or damage_to_focus_ratio <= 0.0 or not is_finite(event.actual_damage) or event.actual_damage <= 0.0: return
+	if not is_finite(focus_gain_difficulty) or focus_gain_difficulty <= 0.0: return
 	if event.focus_yield_multiplier <= 0.0 or not event.claim(_consumer_key): return
-	var gain = event.actual_damage * event.focus_yield_multiplier * damage_to_focus_ratio
+	var gain = event.actual_damage * event.focus_yield_multiplier * damage_to_focus_ratio * (5.0/focus_gain_difficulty)
 	if not is_finite(gain): return
 	_current = minf(_current + gain, _capacity)
 	_notify()

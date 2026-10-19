@@ -1,35 +1,33 @@
 [gd_scene format=3 uid="uid://cecsxbuy8t6bx"]
 
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
-[ext_resource type="Script" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="2_arc"]
-[ext_resource type="PackedScene" path="res://Item/Projectiles/ExplosiveFragment.tscn" id="3_projectile"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_damage"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/TriggerSkillEffect.gd" id="5_trigger"]
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn" id="6_child"]
+[ext_resource type="PackedScene" uid="uid://cx8c1bg3n1p75" path="res://SkillSystem/00-Templates/RangedSkillTemplate.tscn" id="1_template"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="2_arc"]
+[ext_resource type="PackedScene" uid="uid://baxaiswp3lvvn" path="res://Item/Projectiles/ExplosiveFragment.tscn" id="3_projectile"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="4_damage"]
+[ext_resource type="Script" uid="uid://hxil6may7ooj" path="res://SkillSystem/03-Extensions/TriggerSkillEffect.gd" id="5_trigger"]
+[ext_resource type="PackedScene" uid="uid://d2p0pi40ftwd6" path="res://SkillSystem/00-Skills/Trig_BurningSplash/BurningSplashSkill.tscn" id="6_child"]
 
-[sub_resource type="Resource" id="ArcDelivery"]
+[sub_resource type="Resource" id="Resource_8y8mv"]
 resource_local_to_scene = true
 script = ExtResource("2_arc")
 projectile_scene = ExtResource("3_projectile")
 
-[node name="ExplosiveFragmentSkill" instance=ExtResource("1_template")]
+[node name="ExplosiveFragmentSkill" unique_id=1689682318 instance=ExtResource("1_template")]
 skill_id = &"explosive_fragment"
 display_name = "Explosive Fragment"
 cast_range = 3.0
 base_cast_time = 0.0
 skill_cooldown = 0.0
 automatic_cast_enabled = false
-delivery = SubResource("ArcDelivery")
+delivery = SubResource("Resource_8y8mv")
 
-[node name="DamageEffect" type="Node" parent="." index="2"]
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=52926338]
 script = ExtResource("4_damage")
 operation = 0
-base_amount = 3.0
-power_ratio = 0.25
+base_amount = 2.8
+power_ratio = 0.28
 
-[node name="TriggerBurningSplash" type="Node" parent="." index="3"]
+[node name="TriggerBurningSplash" type="Node" parent="." index="3" unique_id=2028535719]
 script = ExtResource("5_trigger")
 child_skill_scene = ExtResource("6_child")
 required_status_id = &"burning"
-radius_m = 3.0
-max_targets = 3

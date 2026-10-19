@@ -10,6 +10,13 @@ signal projectile_hit(
 	hit_direction: Vector3
 )
 
+## 命中主视觉尚未进树时通知；消费者可登记请求时钟和完成监听，不能在此执行伤害。
+signal impact_presentation_prepared(instance: Node3D)
+var _execution_clock: SkillExecutionClock
+var _fixed_destination: Vector3 = Vector3.INF
+var _born_physics_frame: int = -1
+var _impact_radius: float = 0.0
+
 enum HitRule {
 	## 终点持续跟随有效目标，到达后直接确认命中。
 	TARGET_ARRIVAL,
@@ -55,6 +62,7 @@ func _ready() -> void:
 
 ## 从指定世界坐标开始向目标飞行。投射物自身的 Inspector 参数决定全部弹道行为。
 func launch(target: UnitBase, start_position: Vector3) -> bool:
+	_fixed_destination = Vector3.INF
 	if hit_rule != HitRule.TARGET_ARRIVAL:
 		return false
 	if not is_instance_valid(target) or not target.is_inside_tree():
@@ -72,9 +80,12 @@ func launch(target: UnitBase, start_position: Vector3) -> bool:
 
 
 func _physics_process(delta: float) -> void:
-	if not flight_is_active:
+	if _fixed_destination.is_finite() and Engine.get_physics_frames() <= _born_physics_frame: return
+	if _execution_clock != null:
+		delta = _execution_clock.get_delta(delta)
+	if not flight_is_active or delta <= 0:
 		return
-	if not is_instance_valid(tracked_target) or not tracked_target.is_inside_tree():
+	if not _fixed_destination.is_finite() and (not is_instance_valid(tracked_target) or not tracked_target.is_inside_tree()):
 		_finish_without_hit()
 		return
 	elapsed_time += maxf(delta, 0.0)
@@ -83,7 +94,7 @@ func _physics_process(delta: float) -> void:
 		return
 	var has_arrived: bool = elapsed_time + 0.000001 >= flight_duration
 	var progress: float = 1.0 if has_arrived else clampf(elapsed_time / flight_duration, 0.0, 1.0)
-	var tracked_end: Vector3 = tracked_target.global_position + Vector3.UP * target_height_offset
+	var tracked_end: Vector3 = _fixed_destination if _fixed_destination.is_finite() else tracked_target.global_position + Vector3.UP * target_height_offset
 	var base_position: Vector3 = launch_position.lerp(tracked_end, progress)
 	var next_position: Vector3 = base_position + Vector3.UP * sin(progress * PI) * arc_height
 	var flight_direction: Vector3 = next_position - global_position
@@ -117,16 +128,47 @@ func _finish_with_hit(hit_position: Vector3, flight_direction: Vector3) -> void:
 
 
 func _spawn_impact_presentation(hit_position: Vector3) -> void:
-	if impact_effect_scene == null or not is_instance_valid(tracked_target) or tracked_target.is_dead():
+	if impact_effect_scene == null or (not _fixed_destination.is_finite() and (not is_instance_valid(tracked_target) or tracked_target.is_dead())):
 		return
 	var instance: Node = impact_effect_scene.instantiate()
 	if not instance is Node3D:
 		instance.free()
 		return
 	var effect := instance as Node3D
-	get_parent().add_child(effect)
-	effect.global_transform = Transform3D(Basis.IDENTITY, hit_position)
+	effect.transform = Transform3D(Basis.IDENTITY, hit_position)
+	if get_parent() is Node3D:
+		effect.transform = (get_parent() as Node3D).global_transform.affine_inverse() * effect.transform
+	if effect.has_method(&"set_execution_clock"):
+		effect.call(&"set_execution_clock", _execution_clock)
+	if _impact_radius > 0 and effect.has_method(&"configure_impact_radius"):
+		effect.call(&"configure_impact_radius", _impact_radius)
+	impact_presentation_prepared.emit(effect)
+	if is_instance_valid(effect) and is_inside_tree():
+		get_parent().add_child(effect)
 
+
+## 注入可选请求时钟及本次视觉半径；null保持原世界时间，半径0保持资产原尺寸。
+func set_execution_clock(clock: SkillExecutionClock, impact_radius_m: float = 0.0) -> void:
+	_execution_clock = clock
+	_impact_radius = impact_radius_m
+	for child: Node in get_children():
+		if child.has_method(&"set_execution_clock"):
+			child.call(&"set_execution_clock", clock)
+
+## 向固定世界落点发射，不追踪单位；落地信号target为空，交付按自身范围规则处理。
+func launch_point(destination: Vector3, start_position: Vector3) -> bool:
+	if not destination.is_finite() or not start_position.is_finite() or flight_duration <= 0 or maximum_lifetime <= 0:
+		return false
+	tracked_target = null
+	_fixed_destination = destination
+	launch_position = start_position
+	elapsed_time = 0.0
+	hit_was_emitted = false
+	flight_is_active = true
+	global_position = start_position
+	_born_physics_frame = Engine.get_physics_frames()
+	set_physics_process(true)
+	return true
 
 func _finish_without_hit() -> void:
 	flight_is_active = false

@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="SkillCinematicCameraProfile" format=3 uid="uid://dqp68e52t6h1u"]
+
+[ext_resource type="Script" uid="uid://lxfda6ak2807" path="res://Effects/Camera/SkillCinematicCameraProfile.gd" id="1_oadxe"]
+
+[resource]
+script = ExtResource("1_oadxe")

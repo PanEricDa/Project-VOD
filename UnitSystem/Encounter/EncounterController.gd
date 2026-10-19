@@ -17,8 +17,8 @@ signal pack_cleared(pack: Node3D, registered_enemy_count: int)
 ## 所有非空且追踪有效的 Pack 都已清除时发送一次。
 ## 此信号不直接决定奖励、门、场景切换或玩家胜负，只提供给未来房间逻辑订阅。
 signal room_cleared()
-## 已登记敌人未先发送 died 就离开场景树时发送。
-## pack 会保持 TRACKING_INVALID，不会再触发本轮 clear，调用方应据此排查生成、删除或场景切换流程。
+## 已登记敌人未先发送 died 就离开场景树，且帧末确认房间与Pack仍在树中时发送。
+## pack 会保持 TRACKING_INVALID，不会再触发本轮 clear；removed_enemy若已被释放则为null。正常整场卸载不发送，调用方应据此排查真正的异常删怪。
 signal pack_tracking_invalid(pack: Node3D, removed_enemy: EnemyBase)
 
 ## Pack 内所有存活敌人脱战后，确认重置前持续保持非战斗的时间，单位为秒。
@@ -252,10 +252,34 @@ func _on_enemy_tree_exiting(pack: Node3D, enemy: EnemyBase) -> void:
 		return
 	if record.tracking_invalid:
 		return
+	# 立即禁止错误clear，但等待整次离树传播完成再确认是否仅是房间正常退出。
 	record.tracking_invalid = true
 	record.state = PackState.TRACKING_INVALID
-	pack_tracking_invalid.emit(pack, enemy)
-	_log_debug("Pack %s tracking invalid: %s" % [pack.name, enemy.name])
+	_confirm_enemy_tree_exit.call_deferred(weakref(pack),weakref(enemy),enemy.get_instance_id(),record)
+
+
+## pack_ref与enemy_ref为离树时的弱引用，不延长节点生命；enemy_id只用于已释放对象的诊断。
+## expected_record须仍是当前登记记录；房间/Pack整体离树、控制器卸载或重新登记均丢弃过期通知。
+func _confirm_enemy_tree_exit(pack_ref: WeakRef, enemy_ref: WeakRef, enemy_id: int, expected_record: PackRecord) -> void:
+	var room_root := get_parent()
+	var pack := pack_ref.get_ref() as Node3D
+	if (
+		not is_inside_tree()
+		or _scene_unload_requested
+		or is_queued_for_deletion()
+		or not is_instance_valid(room_root)
+		or not room_root.is_inside_tree()
+		or room_root.is_queued_for_deletion()
+		or not is_instance_valid(pack)
+		or not pack.is_inside_tree()
+		or _get_record(pack) != expected_record
+	):
+		return
+	var enemy := enemy_ref.get_ref() as EnemyBase
+	pack_tracking_invalid.emit(pack,enemy)
+	# 信号订阅方可能卸载房间；再次检查对象，避免诊断代码反过来访问释放后的节点。
+	if not is_instance_valid(pack) or not pack.is_inside_tree(): return
+	_log_debug("Pack %s tracking invalid: enemy #%d" % [pack.name,enemy_id])
 	push_warning("EncounterController: Enemy left tree without died signal. Pack=" + str(pack.get_path()))
 
 

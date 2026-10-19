@@ -1,0 +1,53 @@
+[gd_scene format=3 uid="uid://co2m3r48287tf"]
+
+[ext_resource type="PackedScene" uid="uid://b57b7knoialwy" path="res://Scenes/TestCombatRoom.tscn" id="1_22jl0"]
+[ext_resource type="PackedScene" uid="uid://bicf8lfkrvq47" path="res://UnitSystem/Components/Combat/Squad/SquadChainCommandController.tscn" id="2_318je"]
+[ext_resource type="PackedScene" uid="uid://w13q6dviajxb" path="res://UnitSystem/Components/UI/SquadChainCommandDisplay.tscn" id="3_50b8j"]
+[ext_resource type="PackedScene" uid="uid://2w3hno0nmrld" path="res://UnitSystem/Components/Combat/Squad/ChainSkillPresentationController.tscn" id="4_dih7n"]
+[ext_resource type="PackedScene" uid="uid://dyah7h2ck4vyw" path="res://UnitSystem/Components/Combat/Squad/SquadChainRoundController.tscn" id="5_galwr"]
+[ext_resource type="PackedScene" uid="uid://dju4phgtqafqo" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherSelectionController.tscn" id="6_bp6ll"]
+[ext_resource type="PackedScene" uid="uid://1w1ftyj1dedn" path="res://UnitSystem/Components/UI/SquadFinisherSelectionDisplay.tscn" id="7_fqtua"]
+[ext_resource type="PackedScene" uid="uid://tl1yhilxdejt" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherExecutionController.tscn" id="8_q3ym5"]
+[ext_resource type="PackedScene" uid="uid://b1lqh3r7sqxr8" path="res://UnitSystem/Components/UI/SquadChainRoundDisplay.tscn" id="9_50b8j"]
+
+[node name="CombatRoom" unique_id=369100259 instance=ExtResource("1_22jl0")]
+
+[node name="SquadFocusDebugDisplay" parent="." index="0" unique_id=1081714811]
+debug_enabled = false
+
+[node name="SquadFocusComponent" parent="." index="1" unique_id=1471205558]
+initial_focus = 100.0
+focus_gain_difficulty = 5.0
+
+[node name="SquadChainCommandController" parent="." index="17" unique_id=1575406938 node_paths=PackedStringArray("companions", "focus_source") instance=ExtResource("2_318je")]
+companions = [NodePath("../Guardian"), NodePath("../Priest"), NodePath("../Caster"), NodePath("../Archer")]
+focus_source = NodePath("../SquadFocusComponent")
+
+[node name="SquadChainCommandDisplay" parent="." index="18" unique_id=1905817382 node_paths=PackedStringArray("command_source") instance=ExtResource("3_50b8j")]
+command_source = NodePath("../SquadChainCommandController")
+
+[node name="ChainSkillPresentationController" parent="." index="19" unique_id=1084723942 node_paths=PackedStringArray("command_source", "camera_source") instance=ExtResource("4_dih7n")]
+command_source = NodePath("../SquadChainCommandController")
+camera_source = NodePath("../CameraRig")
+
+[node name="SquadChainRoundController" parent="." index="20" unique_id=41611880 node_paths=PackedStringArray("command_source") instance=ExtResource("5_galwr")]
+command_source = NodePath("../SquadChainCommandController")
+score_difficulty = 2.0
+hit_score_scale = 15
+damage_score_scale = 1000.01
+
+[node name="SquadFinisherSelectionController" parent="." index="21" unique_id=23158010 node_paths=PackedStringArray("round_source", "pause_source") instance=ExtResource("6_bp6ll")]
+round_source = NodePath("../SquadChainRoundController")
+pause_source = NodePath("../ChainSkillPresentationController/PauseCoordinator")
+
+[node name="SquadFinisherSelectionDisplay" parent="." index="22" unique_id=1487045130 node_paths=PackedStringArray("selection_source") instance=ExtResource("7_fqtua")]
+selection_source = NodePath("../SquadFinisherSelectionController")
+
+[node name="SquadFinisherExecutionController" parent="." index="23" unique_id=1589923198 node_paths=PackedStringArray("selection_source", "camera_source") instance=ExtResource("8_q3ym5")]
+selection_source = NodePath("../SquadFinisherSelectionController")
+camera_source = NodePath("../CameraRig")
+
+[node name="SquadChainRoundDisplay" parent="." index="24" unique_id=886165465 node_paths=PackedStringArray("round_source") instance=ExtResource("9_50b8j")]
+round_source = NodePath("../SquadChainRoundController")
+
+[editable path="EnemyContainer/Pack_C/GoblinWarrior"]

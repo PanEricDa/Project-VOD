@@ -30,6 +30,7 @@ func _run() -> void:
 	await _verify_pack_lifecycle()
 	await _verify_death_wins_over_reset()
 	await _verify_explicit_scene_unload_suppresses_tracking_warning()
+	await _verify_implicit_room_exit_and_live_enemy_removal()
 	await _verify_test_combat_room_assembly()
 	_finish()
 
@@ -251,6 +252,46 @@ func _verify_explicit_scene_unload_suppresses_tracking_warning() -> void:
 	reload_room.queue_free()
 	await process_frame
 
+
+func _verify_implicit_room_exit_and_live_enemy_removal() -> void:
+	for mode: String in ["free","detach","ancestor_queue","enemy_only","enemy_detach"]:
+		var outer := Node3D.new()
+		_world.add_child(outer)
+		var room := Node3D.new()
+		outer.add_child(room)
+		var container := Node3D.new()
+		container.name = "EnemyContainer"
+		room.add_child(container)
+		var pack := Node3D.new()
+		pack.name = "ExitProbe"
+		container.add_child(pack)
+		var enemy := _create_enemy("AliveEnemy")
+		pack.add_child(enemy)
+		var controller := (load(CONTROLLER_SCENE_PATH) as PackedScene).instantiate() as EncounterController
+		room.add_child(controller)
+		var events: Array = []
+		var removed_nodes: Array = []
+		controller.pack_tracking_invalid.connect(func(_pack, removed_enemy):
+			events.append("invalid")
+			removed_nodes.append(removed_enemy))
+		controller.pack_cleared.connect(func(_pack, _count): events.append("cleared"))
+		await process_frame
+		await process_frame
+		if mode == "free": room.free()
+		elif mode == "detach": outer.remove_child(room)
+		elif mode == "ancestor_queue": outer.queue_free()
+		elif mode == "enemy_detach": pack.remove_child(enemy)
+		else: enemy.queue_free()
+		await process_frame
+		await process_frame
+		_expect(events == (["invalid"] if mode in ["enemy_only","enemy_detach"] else []), "whole-room exit must not invalidate packs but live enemy deletion must: "+mode+" "+str(events))
+		if mode == "enemy_only": _expect(removed_nodes == [null], "deferred deletion notification safely reports a freed enemy as null")
+		if mode == "enemy_detach":
+			_expect(removed_nodes == [enemy], "a removed but live enemy remains available in the diagnostic signal")
+			enemy.free()
+		if mode == "detach": room.free()
+		if is_instance_valid(outer): outer.queue_free()
+		await process_frame
 
 func _create_enemy(enemy_name: String) -> EnemyBase:
 	var enemy := (load(ENEMY_SCENE_PATH) as PackedScene).instantiate() as EnemyBase

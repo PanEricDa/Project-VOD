@@ -43,7 +43,7 @@ func prepare_release(context: SkillContext, action_transform: Transform3D,
 		SkillBase.PresentationAnchor.TARGET_POSITION:
 			if context.target_position.is_finite():
 				pose = Transform3D(Basis.IDENTITY, context.target_position)
-	return {"presentation": presentation_context.for_release(context, pose) if presentation_context != null else null,
+	return {"execution_clock":context.execution_clock, "presentation": presentation_context.for_release(context, pose) if presentation_context != null else null,
 		"visual_scene": visual_scene, "audio_stream": audio_stream, "camera_profile": camera_profile,
 		"world_transform": pose, "world_parent_ref": weakref(context.delivery_parent),
 		"attach_parent_ref": weakref(parent) if parent != null else null,
@@ -88,6 +88,8 @@ func _play_visual(snapshot: Dictionary) -> void:
 		push_warning("Release visual must have a Node3D root; other channels remain enabled.")
 		return
 	var visual := node as Node3D
+	if visual.has_method(&"set_execution_clock"):
+		visual.call(&"set_execution_clock", snapshot.get("execution_clock"))
 	var pose: Transform3D = snapshot["world_transform"]
 	# 在add_child触发ready之前设置最终局部变换，正确处理带变换的世界/附着父节点。
 	visual.transform = (parent as Node3D).global_transform.affine_inverse() * pose if parent is Node3D and not visual.top_level else pose

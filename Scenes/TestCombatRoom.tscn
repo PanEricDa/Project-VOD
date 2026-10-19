@@ -40,8 +40,6 @@ fog_light_energy = 0.8
 fog_density = 0.003
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_8wwas"]
-vertices = PackedVector3Array(-40, 0, -50, 40, 0, -50, 40, 0, 50, -40, 0, 50)
-polygons = [PackedInt32Array(0, 1, 2, 3)]
 agent_height = 0.5
 agent_radius = 0.25
 
@@ -52,6 +50,7 @@ focus_source = NodePath("../SquadFocusComponent")
 debug_enabled = true
 
 [node name="SquadFocusComponent" parent="." unique_id=1471205558 instance=ExtResource("2_8boc2")]
+focus_gain_difficulty = 10.0
 
 [node name="Ground" type="CSGBox3D" parent="." unique_id=1165615627]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
@@ -94,62 +93,49 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4113255, 0, -4.7680807)
 
 [node name="GoblinWarrior" parent="EnemyContainer/Pack_A" unique_id=1948486579 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3091416, 0, 0)
-combat_targeting_radius = 0.0
 
 [node name="GoblinWarrior2" parent="EnemyContainer/Pack_A" unique_id=1942734927 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3351798, 0, 0)
-combat_targeting_radius = 0.0
 
 [node name="GoblinWarrior3" parent="EnemyContainer/Pack_A" unique_id=313678618 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3091416, 0, 1.5789001)
-combat_targeting_radius = 0.0
 
 [node name="Pack_B" type="Node3D" parent="EnemyContainer" unique_id=1435788145]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.954334, 0, -21.66187)
 
 [node name="GoblinWarrior" parent="EnemyContainer/Pack_B" unique_id=1690692877 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1068983, 0, 0)
-combat_targeting_radius = 0.0
 
 [node name="GoblinWarrior2" parent="EnemyContainer/Pack_B" unique_id=1584272130 instance=ExtResource("4_5f76c")]
-combat_targeting_radius = 0.0
 
 [node name="GoblinArcher" parent="EnemyContainer/Pack_B" unique_id=95843393 instance=ExtResource("5_q71sd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.22892)
-combat_targeting_radius = 0.0
 
 [node name="GoblinArcher2" parent="EnemyContainer/Pack_B" unique_id=515074805 instance=ExtResource("5_q71sd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8773403, 0, 0)
-combat_targeting_radius = 0.0
 
 [node name="Pack_C" type="Node3D" parent="EnemyContainer" unique_id=423947785]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.731205, 0, -33.03395)
 
 [node name="GoblinArcher" parent="EnemyContainer/Pack_C" unique_id=1589762219 instance=ExtResource("5_q71sd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2.4067764)
-combat_targeting_radius = 0.0
 
 [node name="GoblinArcher2" parent="EnemyContainer/Pack_C" unique_id=1062118579 instance=ExtResource("5_q71sd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7847748, 0, -2.4067764)
 movement_speed = 3.8
 targeting_radius = 4.0
-combat_targeting_radius = 0.0
 
 [node name="GoblinWarrior" parent="EnemyContainer/Pack_C" unique_id=1376914418 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22694397, 0, 0.93665314)
-combat_targeting_radius = 0.0
 
 [node name="GoblinWarrior2" parent="EnemyContainer/Pack_C" unique_id=1728512069 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1424541, 0, -0.57408905)
-combat_targeting_radius = 0.0
 
 [node name="GoblinWarrior3" parent="EnemyContainer/Pack_C" unique_id=1805358774 instance=ExtResource("4_5f76c")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1460752, 0, -0.9629669)
-combat_targeting_radius = 0.0
 
 [node name="Hero" parent="." unique_id=1528668348 instance=ExtResource("5_o18qo")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.9848228, 0, 7.3288093)
-maximum_health = 300.0
 defense = 10.0
 
 [node name="EncounterController" parent="." unique_id=1972353907 instance=ExtResource("10_3fbv1")]
@@ -165,7 +151,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.647898, 0.49999952, 6.466
 
 [node name="Caster" parent="." unique_id=361830826 instance=ExtResource("12_d35n2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.276782, 0.5, 9.337597)
-combat_targeting_radius = 0.0
 
 [node name="Archer" parent="." unique_id=1871583316 instance=ExtResource("12_q71sd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.892951, 0, 10.451373)

@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://dop80lc060tub"]
+
+[ext_resource type="Script" uid="uid://bu0pxpairgi7s" path="res://Item/Projectiles/TrackingArcProjectile.gd" id="1_kys40"]
+[ext_resource type="PackedScene" uid="uid://ddaf5843m1y5g" path="res://Effects/Skills/FlameBarrage/FlameBarrageImpactEffect.tscn" id="2_plpf2"]
+[ext_resource type="PackedScene" uid="uid://58gihcexwdae" path="res://Effects/Skills/FlameBarrage/FlameBarrageFlightEffect.tscn" id="3_rdkax"]
+[ext_resource type="Script" uid="uid://dd4puoecp4xlx" path="res://Effects/Skills/FlameBarrage/FlameBarrageEffectPlayer.gd" id="4_k4ny1"]
+
+[node name="FlameBarrageProjectile" type="Node3D" unique_id=1061086305]
+script = ExtResource("1_kys40")
+flight_duration = 0.5
+arc_height = 3.0
+target_height_offset = 0.0
+maximum_lifetime = 3.0
+impact_effect_scene = ExtResource("2_plpf2")
+
+[node name="FlameBarrageFlightEffect" type="Node3D" parent="." unique_id=236879436 instance=ExtResource("3_rdkax")]
+script = ExtResource("4_k4ny1")

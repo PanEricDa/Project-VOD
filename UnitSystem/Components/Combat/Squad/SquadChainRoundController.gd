@@ -7,12 +7,18 @@ enum Phase { IDLE, PENDING, ACTIVE }
 ## 本关卡原伙伴指令源，默认空；世界、请求与队伍均沿用此源，不重复配置。
 @export var command_source: SquadChainCommandController
 @export_category("Evaluation")
-## 距最后一次有效连携伤害的正常战斗秒数，默认2；须有限且正，下一轮生效，不是整轮总时限。
-@export_range(0.01, 30.0, 0.01, "or_greater") var damage_interval_seconds: float = 2.0
-## 连击换算尺度H0，单位次，默认20且至少1；下一轮生效，与伤害贡献相加。
-@export_range(1, 10000, 1, "or_greater") var hit_score_scale: int = 20
-## 实际扣血换算尺度D0，单位生命点，默认500且有限正；下一轮生效，不读取面板或过量伤害。
-@export_range(0.01, 1000000.0, 0.1, "or_greater") var damage_score_scale: float = 500.0
+## 评分难度，无单位，默认5为曲线评分的标准倍率，并不沿用旧线性分数；须有限且大于0，Inspector最低0.1。曲线总分乘5/本值，越低越容易达100分；本轮受理时捕获，编辑只影响下一轮，不改变实际伤害或连击；评分达到100后会影响动态伤害间隔。
+@export_range(0.1, 10.0, 0.1, "or_greater") var score_difficulty: float = 5.0
+## 基础伤害间隔，单位正常战斗秒，默认2.5；评分不超过100时完整保留，超过100后按指数曲线缩短。须有限且正，本轮受理时捕获，下一轮生效，不是整轮总时限。
+@export_range(0.01, 30.0, 0.01, "or_greater") var damage_interval_seconds: float = 2.5
+## 达标后可缩短到的最短伤害间隔，单位正常战斗秒，默认0.8；须有限且正。高于基础间隔时按基础值处理，不反向延长窗口；本轮受理时捕获，只影响连携闭窗与倒数显示。
+@export_range(0.01, 30.0, 0.01, "or_greater") var minimum_damage_interval_seconds: float = 0.8
+## 达到最短间隔所需的综合评分，默认150；须有限且大于100。100到本值之间先陡后缓地指数缩短，到达后保持最短间隔；本轮受理时捕获，不改变评分公式或终结伤害。
+@export_range(100.01, 10000.0, 0.1, "or_greater") var minimum_interval_score: float = 150.0
+## 连击曲线基准H0，单位次，默认10且至少1；达到本基准时贡献40分（难度5），之后仍加分但边际递减。下一轮生效，不改变实际命中计数。
+@export_range(1, 10000, 1, "or_greater") var hit_score_scale: int = 10
+## 伤害曲线基准D0，单位实际生命损失，默认100且有限正；累计达到本基准时贡献60分（难度5），按1.1次幂温和加速。下一轮生效，不读取面板或过量伤害，不按单笔伤害分别取幂。
+@export_range(0.01, 1000000.0, 0.1, "or_greater") var damage_score_scale: float = 100.0
 ## snapshot为纯值副本；状态/评分/业务剩余时间改变后通知，消费者只读使用。
 signal round_state_changed(snapshot: Dictionary)
 ## result为曾ACTIVE轮次的结算纯值副本；每轮最多一次，空批次与解绑不发送。
@@ -28,8 +34,12 @@ var _round_id: int = 0
 var _closed_round_id: int = 0
 var _phase: Phase = Phase.IDLE
 var _interval: float = 0.0
+var _base_interval: float = 0.0
+var _minimum_interval: float = 0.0
+var _minimum_interval_score: float = 150.0
 var _hit_scale: int = 1
 var _damage_scale: float = 1.0
+var _score_multiplier: float = 1.0
 var _hits: int = 0
 var _damage: float = 0.0
 var _score: float = 0.0
@@ -65,17 +75,21 @@ func acquire_round() -> int:
 	if generation != _generation or not _usable(): return 0
 	if _round_id != 0: return _round_id
 	if not _configuration_valid():
-		push_warning("连携评价间隔/H0/D0必须有限且为正；拒绝建立新轮，不取消旧请求。")
+		push_warning("连携评分/窗口配置无效：难度、基础/最短间隔和H0/D0须为有限正数，最短间隔评分须大于100；拒绝新轮，不取消旧请求。")
 		return 0
 	_round_id = CombatDamageContext.allocate_id()
-	_interval = damage_interval_seconds
+	_base_interval = damage_interval_seconds
+	_minimum_interval = minf(minimum_damage_interval_seconds,_base_interval)
+	_minimum_interval_score = minimum_interval_score
+	_interval = _base_interval
 	_hit_scale = hit_score_scale
 	_damage_scale = damage_score_scale
+	_score_multiplier = 5.0/score_difficulty
 	_phase = Phase.PENDING
 	_publish()
 	return _round_id
 
-## 返回独立纯值快照；不会触发轮次创建/结算，不包含Node、Request或内部字典引用。
+## 返回独立纯值快照；interval_seconds为当前评分下的实际伤害间隔，remaining_seconds为其业务剩余秒数。查询不创建/结算轮次，不包含Node、Request或内部字典引用。
 func get_round_status() -> Dictionary:
 	return {"bound":_usable(),"phase":_phase,"round_id":_round_id,
 		"hit_count":_hits,"total_damage":_damage,"score":_score,
@@ -85,7 +99,13 @@ func get_round_status() -> Dictionary:
 		"last_result":_last_result.duplicate(true)}
 
 func _configuration_valid() -> bool:
-	return is_finite(damage_interval_seconds) and damage_interval_seconds > 0.0 and hit_score_scale >= 1 and is_finite(damage_score_scale) and damage_score_scale > 0.0
+	return (
+		is_finite(score_difficulty) and score_difficulty > 0.0
+		and is_finite(damage_interval_seconds) and damage_interval_seconds > 0.0
+		and is_finite(minimum_damage_interval_seconds) and minimum_damage_interval_seconds > 0.0
+		and is_finite(minimum_interval_score) and minimum_interval_score > 100.0
+		and hit_score_scale >= 1 and is_finite(damage_score_scale) and damage_score_scale > 0.0
+	)
 
 func _refresh_binding() -> void:
 	if _detaching: return
@@ -141,6 +161,9 @@ func _reset_round() -> void:
 	_damage = 0.0
 	_score = 0.0
 	_interval = 0.0
+	_base_interval = 0.0
+	_minimum_interval = 0.0
+	_minimum_interval_score = 150.0
 	_deadline_usec = 0
 	_events.clear()
 	_hit_keys.clear()
@@ -236,10 +259,24 @@ func _on_damage_resolved(event: CombatDamageEvent, generation: int) -> void:
 		_hit_keys[hit_key] = true
 		_hits += 1
 	_damage += event.actual_damage
-	_score = 100.0*(float(_hits)/float(_hit_scale)+_damage/_damage_scale)
+	# 只对本轮累计H/D重算曲线；同一命中拆分多个伤害效果不会改变伤害项。
+	var hit_points := 40.0*log(1.0+float(_hits)/float(_hit_scale))/log(2.0)
+	var damage_points := 60.0*pow(_damage/_damage_scale,1.1)
+	_score = (hit_points+damage_points)*_score_multiplier
 	_phase = Phase.ACTIVE
+	_interval = _interval_for_score(_score)
 	_deadline_usec = _clock_usec+roundi(_interval*1000000.0)
 	_publish()
+
+# 只读本轮快照：100分连续衔接基础间隔，到指定分数精确落到下限；指数3为内部形状，不额外暴露调参。
+# 仅在有效伤害计分后重设deadline；等待期间不因查询/Inspector编辑再次压缩倒计时。
+func _interval_for_score(score: float) -> float:
+	if score <= 100.0: return _base_interval
+	if score >= _minimum_interval_score: return _minimum_interval
+	var progress := (score-100.0)/(_minimum_interval_score-100.0)
+	var tail := exp(-3.0)
+	var weight := (exp(-3.0*progress)-tail)/(1.0-tail)
+	return clampf(lerpf(_minimum_interval,_base_interval,weight),_minimum_interval,_base_interval)
 
 func _scan_units(node: Node) -> void:
 	if node is UnitBase: _observe(node)
@@ -288,7 +325,7 @@ func _usable() -> bool:
 func _get_configuration_warnings() -> PackedStringArray:
 	var warnings := PackedStringArray()
 	if command_source == null: warnings.append("请连接本关卡原伙伴指令源。")
-	if not _configuration_valid(): warnings.append("伤害间隔/H0/D0必须有限且为正。")
+	if not _configuration_valid(): warnings.append("评分难度、基础/最短伤害间隔和H0/D0须为有限正数；最短间隔评分须有限且大于100。")
 	return warnings
 
 func _exit_tree() -> void:

@@ -278,7 +278,7 @@ func _refresh_debuff_dots() -> void:
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = BURNING_DOT_COLOR
-	_set_corner_radius(style, DEBUFF_DOT_SIZE / 2)
+	_set_corner_radius(style, floori(float(DEBUFF_DOT_SIZE) * 0.5))
 	dot.add_theme_stylebox_override(&"panel", style)
 	_debuff_dots.add_child(dot)
 

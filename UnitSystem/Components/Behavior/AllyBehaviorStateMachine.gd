@@ -733,6 +733,10 @@ func _configure_action_executors() -> void:
 	if is_instance_valid(_skill_host):
 		_skill_host.set_use_external_global_cooldown(true)
 		_skill_host.set_action_state_provider(_combat_system)
+		if not _skill_host.finisher_action_cancelled.is_connected(_on_finisher_action_cancelled):
+			_skill_host.finisher_action_cancelled.connect(_on_finisher_action_cancelled)
+		if not _skill_host.finisher_emission_finished.is_connected(_on_finisher_emission_finished):
+			_skill_host.finisher_emission_finished.connect(_on_finisher_emission_finished)
 		if not _skill_host.command_failed.is_connected(_on_command_failed):
 			_skill_host.command_failed.connect(_on_command_failed)
 		if not _skill_host.action_requested.is_connected(
@@ -874,7 +878,7 @@ func _on_skill_action_requested(
 	_clear_skill_approach_request()
 	var action_payload: Dictionary = _skill.get_action_payload()
 	var context := _skill.get_current_context()
-	var request_id: int = context.command_request.request_id if context != null and context.command_request != null else 0
+	var request_id: int = context.command_request.request_id if context != null and context.command_request != null else (context.execution_id if context != null and context.purpose == SkillContext.Purpose.FINISHER else 0)
 	if is_instance_valid(target):
 		var facing: Vector3 = (
 			target.global_position - _owner_body.global_position
@@ -937,9 +941,21 @@ func _on_external_action_lifecycle(request_id: int, event: StringName) -> void:
 			_skill_host.finish_active_action(request_id)
 		&"cancel":
 			_clear_skill_approach_request()
-			if request_id > 0: _skill_host.cancel_command(request_id, &"action_driver_cancelled")
+			if _skill_host.get_finisher_action_context() != null: _skill_host.cancel_active_skill(&"action_driver_cancelled")
+			elif request_id > 0: _skill_host.cancel_command(request_id, &"action_driver_cancelled")
 			else: _skill_host.cancel_active_skill(&"action_driver_cancelled")
 
+
+func _on_finisher_action_cancelled(context: SkillContext, _reason: StringName) -> void:
+	if context != null and is_instance_valid(_combat_system):
+		var driver := _combat_system.get_attack_controller()
+		if driver != null and driver.get_external_request_id() == context.execution_id:
+			_combat_system.cancel_external_action()
+
+func _on_finisher_emission_finished(request_id: int) -> void:
+	if is_instance_valid(_combat_system):
+		var driver := _combat_system.get_attack_controller()
+		if driver != null: driver.mark_external_emission_finished(request_id)
 
 func _on_command_failed(request_id: int, _reason: StringName) -> void:
 	if is_instance_valid(_combat_system):

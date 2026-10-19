@@ -10,15 +10,15 @@
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="5_oond8"]
 [ext_resource type="PackedScene" uid="uid://cfr7lb2gr8yo" path="res://SkillSystem/00-Skills/Combo_GreaterHeal/ComboGreaterHealSkill.tscn" id="7_ql2cl"]
 
-[sub_resource type="Resource" id="Resource_7pws7"]
-resource_local_to_scene = true
-script = ExtResource("5_f7dx7")
-
-[sub_resource type="Resource" id="Resource_555uq"]
-resource_local_to_scene = true
-script = ExtResource("5_f7dx7")
-
 [sub_resource type="Resource" id="Resource_oond8"]
+resource_local_to_scene = true
+script = ExtResource("5_f7dx7")
+
+[sub_resource type="Resource" id="Resource_f7dx7"]
+resource_local_to_scene = true
+script = ExtResource("5_f7dx7")
+
+[sub_resource type="Resource" id="Resource_mli7d"]
 resource_local_to_scene = true
 script = ExtResource("5_f7dx7")
 
@@ -38,7 +38,7 @@ dash_acceleration = 35.1
 rotation_speed = 5.0
 targeting_radius = 6.0
 combat_targeting_radius = 0.0
-maximum_health = 105.0
+maximum_health = 260.0
 attack_power = 11.0
 defense = 5.0
 hit_movement_lock_duration = 0.1
@@ -48,13 +48,13 @@ regular_skills = [NodePath("SkillSocket/HolyLightSkill"), NodePath("SkillSocket/
 combo_skill = NodePath("SkillSocket/ComboGreaterHealSkill")
 
 [node name="HolyLightSkill" parent="SkillHost/SkillSocket" index="0" unique_id=75927867 instance=ExtResource("4_njum3")]
-delivery = SubResource("Resource_7pws7")
+delivery = SubResource("Resource_oond8")
 
 [node name="GreaterHealSkill" parent="SkillHost/SkillSocket" index="1" unique_id=2125516029 instance=ExtResource("5_greater_heal")]
-delivery = SubResource("Resource_555uq")
+delivery = SubResource("Resource_f7dx7")
 
 [node name="ComboGreaterHealSkill" parent="SkillHost/SkillSocket" index="2" unique_id=1373932239 instance=ExtResource("7_ql2cl")]
-delivery = SubResource("Resource_oond8")
+delivery = SubResource("Resource_mli7d")
 
 [node name="CombatSystem" parent="." index="6" unique_id=1762750344 instance=ExtResource("5_oond8")]
 debug_hitbox_enabled = true

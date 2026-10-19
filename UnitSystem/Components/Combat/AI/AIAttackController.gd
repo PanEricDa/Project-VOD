@@ -80,6 +80,13 @@ var _external_release_reported: bool = false
 var _external_action_deadline: float = 0.0
 var _external_melee_payload: Dictionary = {}
 
+var _cinematic_library: AnimationLibrary
+var _cinematic_clock: SkillExecutionClock
+var _cinematic_original_method_callback: int = AnimationMixer.ANIMATION_CALLBACK_MODE_METHOD_DEFERRED
+var _cinematic_release_time: float = 0.0
+var _cinematic_original_callback: int = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
+var _cinematic_animation_complete: bool = false
+var _cinematic_emission_complete: bool = true
 var _hit_stop_active: bool = false
 var _animation_was_playing_before_hit_stop: bool = false
 
@@ -188,6 +195,11 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 			"effective_cast_time must be finite and non-negative"
 		)
 	var requested_animation: StringName = action_payload.get("animation_name", &"")
+	var action_animation := action_payload.get("action_animation") as Animation
+	if action_animation != null:
+		if not _prepare_cinematic_action(action_animation, action_payload):
+			return _reject_external_action("invalid dedicated action animation")
+		requested_animation = &"_skill_cinematic/action"
 	var resolved_action: Dictionary = _resolve_cast_animation(effective_cast_time, requested_animation)
 	if resolved_action.is_empty():
 		return _reject_external_action(
@@ -209,7 +221,7 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 	_current_external_action_animation = animation_name
 	_external_request_id = request_id
 	_external_release_reported = false
-	_external_action_deadline = _animation_player.get_animation(animation_name).length / playback_speed + 1.0
+	_external_action_deadline = maxf(_animation_player.get_animation(animation_name).length / playback_speed + 1.0, float(action_payload.get("action_budget_seconds",0.0)))
 	_external_melee_payload = action_payload.duplicate()
 	_current_target = target
 	_current_attack_index = 1
@@ -223,6 +235,9 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 		-1.0,
 		playback_speed
 	)
+	if _cinematic_library != null:
+		# 只求值起始姿态，不提前调用零帧方法；Host确认开始后由协调器进入等待。
+		_animation_player.seek(0.0,true,true)
 	return true
 
 
@@ -234,7 +249,7 @@ func _resolve_cast_animation(effective_cast_time: float, requested_animation: St
 	if not is_instance_valid(_animation_player):
 		return {}
 	var local_animation := requested_animation if not requested_animation.is_empty() else BASIC_CAST_ANIMATION_NAME
-	var weapon_animation := StringName(str(WEAPON_LIBRARY_NAME) + "/" + str(local_animation))
+	var weapon_animation := local_animation if str(local_animation).contains("/") else StringName(str(WEAPON_LIBRARY_NAME) + "/" + str(local_animation))
 	for animation_name: StringName in [weapon_animation]:
 		if not _animation_player.has_animation(animation_name):
 			continue
@@ -265,6 +280,7 @@ func _resolve_cast_animation(effective_cast_time: float, requested_animation: St
 
 ## 配置或传入数据错误必须留下可检索的明确原因，同时保持失败返回值供上层取消动作。
 func _reject_external_action(reason: String) -> bool:
+	_release_cinematic_driver()
 	push_error("AIAttackController: external action rejected: " + reason)
 	return false
 
@@ -279,6 +295,7 @@ func cancel_external_action() -> void:
 	_current_external_action_animation = &""
 	_external_melee_payload.clear()
 	_state = AttackState.IDLE
+	_release_cinematic_driver()
 	var cancelled_id := _external_request_id
 	_external_request_id = 0
 	_external_action_deadline = 0.0
@@ -346,6 +363,7 @@ func get_external_request_id() -> int:
 
 
 func _process(delta: float) -> void:
+	if _cinematic_library != null: return
 	if _state != AttackState.EXTERNAL_ACTION or _hit_stop_active: return
 	_external_action_deadline -= maxf(delta, 0.0)
 	if _external_action_deadline <= 0.0: cancel_external_action()
@@ -651,6 +669,10 @@ func _on_animation_finished(animation_name: StringName) -> void:
 		_state == AttackState.EXTERNAL_ACTION
 		and animation_name == _current_external_action_animation
 	):
+		if _cinematic_library != null:
+			_cinematic_animation_complete = true
+			_try_finish_cinematic_action()
+			return
 		_finish_external_action()
 		return
 	if (
@@ -682,12 +704,15 @@ func _on_external_action_release_requested() -> void:
 
 
 func _on_external_action_finish_requested() -> void:
+	# 专属动作保持用户finish标记，不改写资产；动作门闩还须等片段自然完成与待发项目结束。
+	if _cinematic_library != null: return
 	if _state == AttackState.EXTERNAL_ACTION:
 		_finish_external_action()
 
 
 func _finish_external_action() -> void:
 	set_hit_stop_active(false)
+	_release_cinematic_driver()
 	_current_external_action_animation = &""
 	_external_melee_payload.clear()
 	_state = AttackState.IDLE
@@ -698,6 +723,64 @@ func _finish_external_action() -> void:
 	external_action_lifecycle.emit(finished_id, &"finish")
 	external_action_finished.emit()
 
+
+## request_id须匹配本次正身份；仅打开待发结束门闩，不根据技能状态提前结束动画。
+func mark_external_emission_finished(request_id: int) -> void:
+	if _state != AttackState.EXTERNAL_ACTION or _external_request_id != request_id or _cinematic_library == null: return
+	_cinematic_emission_complete = true
+	_try_finish_cinematic_action()
+
+func _prepare_cinematic_action(animation: Animation, payload: Dictionary) -> bool:
+	if animation.loop_mode != Animation.LOOP_NONE or not is_finite(animation.length) or animation.length <= 0: return false
+	if _find_method_marker_times(animation, &"release_action").size() != 1: return false
+	if _animation_player.has_animation_library(&"_skill_cinematic"):
+		_animation_player.remove_animation_library(&"_skill_cinematic")
+	_cinematic_library = AnimationLibrary.new()
+	_cinematic_library.add_animation(&"action", animation)
+	_animation_player.add_animation_library(&"_skill_cinematic", _cinematic_library)
+	_cinematic_clock = payload.get("execution_clock") as SkillExecutionClock
+	_cinematic_original_callback = _animation_player.callback_mode_process
+	_cinematic_original_method_callback = _animation_player.callback_mode_method
+	_cinematic_release_time = _find_method_marker_times(animation,&"release_action")[0]
+	_animation_player.callback_mode_method = AnimationMixer.ANIMATION_CALLBACK_MODE_METHOD_IMMEDIATE
+	_animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	_cinematic_animation_complete = false
+	_cinematic_emission_complete = not bool(payload.get("wait_for_emission", false))
+	return true
+
+func _physics_process(delta: float) -> void:
+	if _cinematic_library == null or _state != AttackState.EXTERNAL_ACTION or _hit_stop_active: return
+	if _cinematic_clock != null: delta = _cinematic_clock.get_action_delta(delta)
+	if delta <= 0: return
+	if not _external_release_reported:
+		var speed := _animation_player.get_playing_speed()
+		if speed <= 0: return
+		var remaining := maxf(_cinematic_release_time-_animation_player.current_animation_position,0.0)/speed
+		delta = minf(delta,remaining)
+	_external_action_deadline -= delta
+	if delta > 0: _animation_player.advance(delta)
+	if _state == AttackState.EXTERNAL_ACTION and not _external_release_reported and _animation_player.current_animation_position >= _cinematic_release_time-0.000001:
+		_on_external_action_release_requested()
+	if _state == AttackState.EXTERNAL_ACTION and _external_action_deadline <= 0:
+		cancel_external_action()
+
+func _try_finish_cinematic_action() -> void:
+	if _cinematic_animation_complete and _cinematic_emission_complete and _state == AttackState.EXTERNAL_ACTION:
+		_finish_external_action()
+
+func _release_cinematic_driver() -> void:
+	if _cinematic_library == null: return
+	var old_library := _cinematic_library
+	_cinematic_library = null
+	_cinematic_clock = null
+	if is_instance_valid(_animation_player):
+		_animation_player.callback_mode_process = _cinematic_original_callback as AnimationMixer.AnimationCallbackModeProcess
+		_animation_player.callback_mode_method = _cinematic_original_method_callback as AnimationMixer.AnimationCallbackModeMethod
+		call_deferred("_remove_cinematic_library", old_library)
+
+func _remove_cinematic_library(library: AnimationLibrary) -> void:
+	if is_instance_valid(_animation_player) and _animation_player.has_animation_library(&"_skill_cinematic") and _animation_player.get_animation_library(&"_skill_cinematic") == library:
+		_animation_player.remove_animation_library(&"_skill_cinematic")
 
 func _on_hit_window_open_requested() -> void:
 	if _equipped_weapon == null:
@@ -784,6 +867,10 @@ func _remove_equipped_assets(clear_weapon_data: bool) -> void:
 
 
 func _exit_tree() -> void:
+	if _cinematic_library != null:
+		var library := _cinematic_library
+		cancel_external_action()
+		_remove_cinematic_library(library)
 	set_hit_stop_active(false)
 	_close_attack_hit_window()
 	if is_instance_valid(_owner_body):

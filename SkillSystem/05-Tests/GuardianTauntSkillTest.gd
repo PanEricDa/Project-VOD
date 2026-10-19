@@ -109,7 +109,7 @@ func _run() -> void:
 		_expect(
 			is_equal_approx(
 				(threat_effect as ThreatChangeSkillEffect).threat_amount,
-				200.0
+				400.0
 			),
 			"Guardian Taunt injects the designed fixed threat"
 		)

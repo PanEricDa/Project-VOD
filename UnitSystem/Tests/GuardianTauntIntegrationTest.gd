@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Guardian 范围仇恨技能的真实场景端到端验证：
 ## 装配契约（guardian_taunt 与 guardian_shield_bash 并存）、真实施放链路、
-## 精确范围交付（0.6/5.0 命中、5.1 排除）、固定 200 仇恨、既有接管规则不被强制、
+## 精确范围交付（0.6/5.0 命中、5.1 排除）、固定 400 仇恨、既有接管规则不被强制、
 ## 长冷却启动与既有 S 形衰减。
 ## Guardian 根物理被关闭以排除其近战与行为系统对仇恨表的污染；
 ## 技能施放与交付由 SkillBase 自身的施法计时器驱动，与根物理无关。
@@ -125,7 +125,7 @@ func _run() -> void:
 	)
 	threat_d.call(
 		"submit_threat",
-		ThreatEvent.create_damage(existing_source, 250.0)
+		ThreatEvent.create_damage(existing_source, 500.0)
 	)
 	await physics_frame
 	await physics_frame
@@ -147,11 +147,11 @@ func _run() -> void:
 	# 普攻伤害不会经结算器混入敌人的 Guardian 仇恨行。
 	guardian.combat_action_policy = 2
 	guardian.set_automatic_skill_cast_enabled(true)
-	# 巨大半衰期下固定 200 仍会以每帧约 1e-9 的幅度缓慢衰减，
-	# 检测阈值取 199.0 以覆盖浮点尾差，精确值由后续 is_equal_approx 断言把关。
+	# 巨大半衰期下固定 400 仍会以每帧约 1e-9 的幅度缓慢衰减，
+	# 检测阈值取 399.0 以覆盖浮点尾差，精确值由后续 is_equal_approx 断言把关。
 	var delivered: bool = false
 	for _frame: int in range(480):
-		if float(threat_a.call(&"get_threat_for", guardian)) >= 199.0:
+		if float(threat_a.call(&"get_threat_for", guardian)) >= 399.0:
 			delivered = true
 			break
 		await physics_frame
@@ -165,16 +165,16 @@ func _run() -> void:
 	_expect(
 		is_equal_approx(
 			float(threat_a.call(&"get_threat_for", guardian)),
-			200.0
+			400.0
 		),
-		"EnemyA receives exactly 200 Guardian threat"
+		"EnemyA receives exactly 400 Guardian threat"
 	)
 	_expect(
 		is_equal_approx(
 			float(threat_b.call(&"get_threat_for", guardian)),
-			200.0
+			400.0
 		),
-		"EnemyB at the boundary receives exactly 200 Guardian threat"
+		"EnemyB at the boundary receives exactly 400 Guardian threat"
 	)
 	_expect(
 		is_zero_approx(
@@ -185,9 +185,9 @@ func _run() -> void:
 	_expect(
 		is_equal_approx(
 			float(threat_d.call(&"get_threat_for", guardian)),
-			200.0
+			400.0
 		),
-		"EnemyD receives exactly 200 Guardian threat"
+		"EnemyD receives exactly 400 Guardian threat"
 	)
 	_expect(
 		enemy_a.get_targeting_component() != null
@@ -210,7 +210,7 @@ func _run() -> void:
 	await physics_frame
 	var after_decay := float(threat_a.call(&"get_threat_for", guardian))
 	_expect(
-		after_decay > 0.0 and after_decay < 200.0,
+		after_decay > 0.0 and after_decay < 400.0,
 		"Guardian threat decays through the existing curve (before=%s after=%s)"
 		% [decayed, after_decay]
 	)

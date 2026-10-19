@@ -1,22 +1,16 @@
 @tool
 class_name SquadChainCommandDisplay
 extends CanvasLayer
-## 原四槽只读反馈；不持有技能或Request，不处理输入、费用或暂停。
+## 四槽指令与专注只读反馈；不持有技能或Request，不处理输入、费用、评分或暂停。
 ## 关联本关卡原指令源，默认空；只影响本显示。
 @export var command_source: SquadChainCommandController
-## 可空的本关卡正式评价源，默认空保留旧四卡；须与command_source同源同世界，仅增加只读显示。
-@export var round_source: SquadChainRoundController
 ## 成功释放后的绿色保留秒数，默认0.3，包含释放强调；0立即清除，仅影响UI。
 @export_range(0.0, 3.0, 0.05) var success_hold_seconds: float = 0.3
 ## 释放前失败/拒绝的红色提示秒数，默认0.3；0关闭，仅影响UI。
 @export_range(0.0, 3.0, 0.05) var failure_hold_seconds: float = 0.3
 var _bound_source: WeakRef
-var _bound_round: WeakRef
 var _bound_focus: WeakRef
-var _evaluation_signature: Array = []
-var _round_snapshot: Dictionary = {}
-var _summary_result: Dictionary = {}
-var _summary_remaining: float = 0.0
+var _focus_signature: Array = []
 var _panel_bottom_offset: float = -55.0
 var _request_slots: Dictionary = {}
 var _success: Array[Dictionary] = [{},{},{},{}]
@@ -48,8 +42,7 @@ func _process(_delta: float) -> void:
 	_refresh_binding()
 	var source := _source()
 	if source != null and source.is_feedback_suspended(): return
-	_summary_remaining = maxf(_summary_remaining-elapsed,0.0)
-	_update_evaluation()
+	_update_focus()
 	for slot in range(4):
 		_cached_confirmation_remaining[slot] = maxf(0.0,_cached_confirmation_remaining[slot]-elapsed)
 		for records in [_success,_failure]:
@@ -61,7 +54,7 @@ func _process(_delta: float) -> void:
 func _refresh_binding() -> void:
 	var old := _source()
 	if old == command_source and old != null:
-		_refresh_evaluation_binding()
+		_refresh_focus_binding()
 		return
 	_detach()
 	if is_instance_valid(command_source):
@@ -69,7 +62,7 @@ func _refresh_binding() -> void:
 		for pair in _connections(command_source):
 			pair[0].connect(pair[1])
 	for slot in range(4): _update_card(slot)
-	_refresh_evaluation_binding()
+	_refresh_focus_binding()
 
 func _connections(source: SquadChainCommandController) -> Array:
 	return [
@@ -156,7 +149,7 @@ func _show_failure(slot: int, id: int, reason: StringName) -> void:
 func _on_lifetime_finished(id: int, _round: int) -> void: _request_slots.erase(id)
 
 func _on_scope_changed(_scope: Node) -> void:
-	_detach_evaluation()
+	_detach_focus()
 	_request_slots.clear()
 	for slot in range(4):
 		_success[slot] = {}
@@ -180,7 +173,7 @@ func _source() -> SquadChainCommandController:
 	return source if is_instance_valid(source) and source.is_inside_tree() else null
 
 func _detach() -> void:
-	_detach_evaluation()
+	_detach_focus()
 	var old := _source()
 	if old != null:
 		for pair in _connections(old):
@@ -192,92 +185,44 @@ func _detach() -> void:
 func _node_id(node: Node) -> int:
 	return node.get_instance_id() if is_instance_valid(node) else 0
 
-func _refresh_evaluation_binding() -> void:
+func _refresh_focus_binding() -> void:
 	var source := _source()
-	var candidate := round_source if is_instance_valid(round_source) and round_source.is_inside_tree() else null
 	var pool := source.focus_source if source != null and is_instance_valid(source.focus_source) else null
-	var snapshot: Dictionary = candidate.get_round_status() if candidate != null else {}
 	var scope := source.get_bound_scope() if source != null else null
-	var signature := [_node_id(source),_node_id(candidate),_node_id(pool),_node_id(scope),
-		_node_id(candidate.command_source) if candidate != null else 0,snapshot.get("bound",false)]
-	if signature == _evaluation_signature: return
-	_detach_evaluation()
-	_evaluation_signature = signature
-	if source == null or candidate == null: return
-	if candidate.command_source != source:
-		push_warning("伙伴UI的评价源必须连接同一个指令源与战场；隐藏错误评价，不影响技能。")
-		return
-	if scope == null or not snapshot.get("bound",false) or pool == null or pool.get_bound_scope() != scope: return
-	_bound_round = weakref(candidate)
+	var signature := [_node_id(source),_node_id(pool),_node_id(scope),_node_id(pool.get_bound_scope()) if pool != null else 0]
+	if signature == _focus_signature: return
+	_detach_focus()
+	_focus_signature = signature
+	if source == null or pool == null or scope == null or pool.get_bound_scope() != scope: return
 	_bound_focus = weakref(pool)
-	candidate.round_state_changed.connect(_on_round_state)
-	candidate.round_finished.connect(_on_round_finished)
-	pool.focus_changed.connect(_on_evaluation_focus_changed)
-	_on_round_state(snapshot)
+	pool.focus_changed.connect(_on_focus_changed)
+	_update_focus()
 
-func _on_round_state(snapshot: Dictionary) -> void:
-	_round_snapshot = snapshot.duplicate(true)
-	if snapshot.get("phase",0) == SquadChainRoundController.Phase.ACTIVE:
-		_summary_remaining = 0.0
-		_summary_result.clear()
-	_update_evaluation()
+func _on_focus_changed(_current: float, _reserved: float, _available: float) -> void:
+	_update_focus()
 
-func _on_round_finished(result: Dictionary) -> void:
-	_summary_result = result.duplicate(true)
-	_summary_remaining = 1.0
-	_update_evaluation()
-
-func _on_evaluation_focus_changed(_current: float, _reserved: float, _available: float) -> void:
-	_update_evaluation()
-
-func _update_evaluation() -> void:
-	var area := get_node_or_null("Panel/VBox/Evaluation") as Control
+func _update_focus() -> void:
+	var area := get_node_or_null("Panel/VBox/Focus") as Control
 	if area == null: return
-	var evaluator = _bound_round.get_ref() if _bound_round != null else null
 	var pool = _bound_focus.get_ref() if _bound_focus != null else null
-	var valid: bool = is_instance_valid(evaluator) and is_instance_valid(pool) and _round_snapshot.get("bound",false)
-	area.visible = valid
-	if valid:
+	area.visible = is_instance_valid(pool)
+	if area.visible:
 		var capacity: float = maxf(pool.get_maximum_focus(),0.001)
-		area.get_node("Focus/Values").text = "专注 %.0f  /  预留 %.0f  /  可用 %.0f" % [pool.get_current_focus(),pool.get_reserved_focus(),pool.get_available_focus()]
-		area.get_node("Focus/Bars/UsedAndReserved").value = clampf(pool.get_current_focus()/capacity,0.0,1.0)
-		area.get_node("Focus/Bars/Available").value = clampf(pool.get_available_focus()/capacity,0.0,1.0)
-		var active: bool = _round_snapshot.get("phase",0) == SquadChainRoundController.Phase.ACTIVE
-		var summary: bool = _summary_remaining > 0.0 and not _summary_result.is_empty()
-		var shown: Dictionary = _round_snapshot if active else _summary_result
-		var combo_label := area.get_node("ChainSummary") as Label
-		combo_label.visible = active or summary
-		combo_label.text = "%d 连击" % int(shown.get("hit_count",0))
-		var progress := area.get_node("ScoreProgress") as ProgressBar
-		progress.visible = active or summary
-		progress.value = _round_snapshot.get("progress_ratio",0.0) if active else clampf(float(shown.get("score",0.0))/100.0,0.0,1.0)
-		var interval := area.get_node("DamageInterval") as ProgressBar
-		interval.visible = active
-		var duration: float = _round_snapshot.get("interval_seconds",0.0)
-		interval.value = clampf(float(_round_snapshot.get("remaining_seconds",0.0))/duration,0.0,1.0) if active and duration > 0.0 else 0.0
-		var result_label := area.get_node("Result") as Label
-		result_label.visible = (active and _round_snapshot.get("finisher_ready",false)) or summary
-		result_label.text = "终结就绪" if active else ("已取得终结资格" if shown.get("qualified",false) else "连携结束")
+		area.get_node("Values").text = "专注 %.0f  /  预留 %.0f  /  可用 %.0f" % [pool.get_current_focus(),pool.get_reserved_focus(),pool.get_available_focus()]
+		area.get_node("Bars/UsedAndReserved").value = clampf(pool.get_current_focus()/capacity,0.0,1.0)
+		area.get_node("Bars/Available").value = clampf(pool.get_available_focus()/capacity,0.0,1.0)
 	var panel := get_node_or_null("Panel") as Control
 	if panel != null:
 		panel.offset_top = _panel_bottom_offset-maxf(160.0,panel.get_combined_minimum_size().y)
 		panel.offset_bottom = _panel_bottom_offset
 
-func _detach_evaluation() -> void:
-	var evaluator = _bound_round.get_ref() if _bound_round != null else null
+func _detach_focus() -> void:
 	var pool = _bound_focus.get_ref() if _bound_focus != null else null
-	if is_instance_valid(evaluator):
-		if evaluator.round_state_changed.is_connected(_on_round_state): evaluator.round_state_changed.disconnect(_on_round_state)
-		if evaluator.round_finished.is_connected(_on_round_finished): evaluator.round_finished.disconnect(_on_round_finished)
-	if is_instance_valid(pool) and pool.focus_changed.is_connected(_on_evaluation_focus_changed):
-		pool.focus_changed.disconnect(_on_evaluation_focus_changed)
-	_bound_round = null
+	if is_instance_valid(pool) and pool.focus_changed.is_connected(_on_focus_changed):
+		pool.focus_changed.disconnect(_on_focus_changed)
 	_bound_focus = null
-	_evaluation_signature.clear()
-	_round_snapshot.clear()
-	_summary_result.clear()
-	_summary_remaining = 0.0
-	_update_evaluation()
+	_focus_signature.clear()
+	_update_focus()
 
 func _exit_tree() -> void:
 	if not Engine.is_editor_hint(): _detach()

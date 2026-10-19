@@ -203,12 +203,12 @@ func _test_distance_mapping() -> void:
 	# 捕获远处与近处被相同低上限压平、过大死区及非有限输入未防护。
 	var profile := SkillFocusCameraProfile.new()
 	var previous := 0.0
-	for fixture in [{"distance":1.0,"want":0.1344},{"distance":5.0,"want":2.4},{"distance":10.0,"want":4.8}]:
+	for fixture in [{"distance":1.0,"want":0.16128},{"distance":5.0,"want":2.88},{"distance":10.0,"want":5.76}]:
 		var value := profile.get_focus_offset(Vector3(fixture.distance, 40.0, 0.0), 20.0)
 		_expect(is_equal_approx(value.x, fixture.want) and is_zero_approx(value.y), "distance curve gives weak nearby and stronger distant attention without vertical movement")
 		_expect(value.x > previous, "attention grows monotonically through useful companion distances")
 		previous = value.x
-	_expect(is_equal_approx(profile.get_focus_offset(Vector3(1000,0,0),20).length(),4.8), "very distant caster remains capped instead of taking over camera")
+	_expect(is_equal_approx(profile.get_focus_offset(Vector3(1000,0,0),20).length(),5.76), "very distant caster remains capped instead of taking over camera")
 	_expect(profile.get_focus_offset(Vector3.ZERO,20) == Vector3.ZERO and profile.get_focus_offset(Vector3(INF,0,0),20) == Vector3.ZERO, "zero and invalid distance cannot move camera")
 	_expect(profile.has_method("get_transition_duration"), "camera strategy can slow larger transitions without adding designer fields")
 	if profile.has_method("get_transition_duration"):

@@ -16,8 +16,16 @@ var target_position: Vector3 = Vector3.INF
 var delivery_parent: Node
 ## 单次伤害来源快照；空表示尚未创建。复制必须独立，衍生交付继承根归属与收益。
 var damage_context: CombatDamageContext
+## 可选请求级时间域；普通请求为空，副本/衍生交付共享同一时钟，不写入静态资源。
+var execution_clock: SkillExecutionClock
+## 角色动作开始时采用的演出只读副本；A/B与动画配置只影响下次，不持有运行进度。
+var cinematic_profile_snapshot: SkillCinematicProfile
+## 本次根执行正身份，普通兼容为0；仅供动画/交付隔离，不是策划配置。
+var execution_id: int = 0
+## 本次地面采样局部随机种子；0为独立随机，预览可给固定非0值，不修改全局随机源。
+var scatter_seed: int = 0
 ## 请求用途；普通默认REGULAR，CHAIN仅用于角色动作根连携，不传给触发子技能。
-enum Purpose { REGULAR, CHAIN }
+enum Purpose { REGULAR, CHAIN, FINISHER }
 var purpose: int = Purpose.REGULAR
 ## 可选首选目标意图；技能自行验证关系，默认空，不改变AI长期锁定。
 var preferred_target: Node3D
@@ -67,6 +75,10 @@ func duplicate_context() -> RefCounted:
 	copy.delivery_parent = (
 		delivery_parent if is_instance_valid(delivery_parent) else null
 	)
+	copy.cinematic_profile_snapshot = cinematic_profile_snapshot
+	copy.execution_clock = execution_clock
+	copy.execution_id = execution_id
+	copy.scatter_seed = scatter_seed
 	copy.purpose = purpose
 	copy.preferred_target = preferred_target if is_instance_valid(preferred_target) else null
 	copy.command_request = command_request

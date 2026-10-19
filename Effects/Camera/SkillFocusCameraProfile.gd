@@ -2,8 +2,8 @@
 class_name SkillFocusCameraProfile
 extends CameraEffectProfile
 ## 玩家锚定的距离加权构图；幅度、距离曲线及额外缓动时间内部封装，共享资源不存播放进度。
-## 最终位移倍率；当前2.0使相同距离下的目标偏移为原版两倍，不改变距离曲线形状。
-const MOVEMENT_DISTANCE_MULTIPLIER: float = 2.0
+## 最终位移倍率；当前2.4使相同距离下的目标偏移为原版2.4倍（上一版2.0的1.2倍），不改变距离曲线形状。
+const MOVEMENT_DISTANCE_MULTIPLIER: float = 2.4
 const FULL_ATTENTION_DISTANCE_METERS: float = 10.0
 const MAX_OFFSET_WIDTH_RATIO: float = 0.12
 const MAX_SOURCE_DISTANCE_RATIO: float = 0.45
@@ -29,7 +29,7 @@ func get_transition_duration(from_pose: Transform3D, destination_pose: Transform
 	return duration / ENTER_SPEED_MULTIPLIER if phase == Phase.ENTER else duration
 ## source_offset为伙伴相对玩家位置的世界偏移；view_width为玩家深度处视野宽度（米）。
 ## 水平距离从0到10米用平滑曲线增强；基础上限12%视野宽/45%伙伴距离，再乘最终倍率。
-## 当前倍率2.0对应上限24%视野宽/90%伙伴距离，不增加垂直位移；时停与缓动规则不变。
+## 当前倍率2.4对应上限28.8%视野宽/108%伙伴距离，不增加垂直位移；时停与缓动规则不变。
 func get_focus_offset(source_offset: Vector3, view_width: float) -> Vector3:
 	if not source_offset.is_finite() or not is_finite(view_width) or view_width <= 0.0:
 		return Vector3.ZERO

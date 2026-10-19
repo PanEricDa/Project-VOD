@@ -22,6 +22,8 @@ static func make_fixture(parent: Node) -> Dictionary:
 	f.commander = commander
 	commander.command_accepted.connect(func(request): f.requests[request.request_id] = request)
 	var evaluator = load(ROUND_PATH).new()
+	# 夹具基础间隔为2秒；达标后仍使用正式自适应曲线，默认2.5秒另作验证。
+	evaluator.damage_interval_seconds = 2.0
 	evaluator.command_source = commander
 	f.world.add_child(evaluator)
 	evaluator.set_physics_process(false)
@@ -40,10 +42,14 @@ func _run() -> void:
 	await _test_provider_ownership_is_compare_and_clear()
 	await _test_released_identity_query()
 	await _test_first_damage_and_deadlines()
+	await _test_default_window_extension()
 	await _test_strict_expiry_before_sweep()
 	await _test_delta_fraction_and_pause()
 	await _test_event_and_hit_dedup()
 	await _test_score_three_paths_and_snapshot()
+	await _test_score_difficulty_and_snapshot()
+	await _test_curve_examples_and_marginals()
+	await _test_curve_damage_partition()
 	await _test_aoe_and_invalid_events()
 	await _test_close_once_and_reentry()
 	await _test_invalid_configuration_fails_closed()
@@ -175,6 +181,27 @@ func _test_first_damage_and_deadlines() -> void:
 	f.world.free()
 	await process_frame
 
+func _test_default_window_extension() -> void:
+	var source_scene := load("res://UnitSystem/Components/Combat/Squad/SquadChainRoundController.tscn") as PackedScene
+	var source := source_scene.instantiate()
+	var default_interval: float = source.damage_interval_seconds
+	source.free()
+	var f := make_fixture(root)
+	f.round.damage_interval_seconds = default_interval
+	await physics_frame
+	var request := start_released(f)
+	deal(f,request,25)
+	_expect(is_equal_approx(f.round.get_round_status().remaining_seconds,2.5), "formal default opens a2.5-second window")
+	advance(f,2.1)
+	_expect(f.round.peek_current_round() == request.round_id, "chain remains open beyond old two-second deadline")
+	advance(f,0.4)
+	deal(f,request,25)
+	_expect(f.round.get_round_status().hit_count == 2 and is_equal_approx(f.round.get_round_status().remaining_seconds,2.5), "damage at exact2.5-second deadline continues and refreshes the full window")
+	advance(f,2.500001)
+	_expect(f.round.peek_current_round() == 0, "strictly more than2.5 seconds without damage closes normally")
+	f.world.free()
+	await process_frame
+
 func _test_strict_expiry_before_sweep() -> void:
 	var f := make_fixture(root)
 	await physics_frame
@@ -242,7 +269,7 @@ func _test_event_and_hit_dedup() -> void:
 	deal(f,request,15,hit)
 	_expect(f.round.get_round_status().hit_count == 1, "same hit split into two damage effects counts once")
 	_expect(is_equal_approx(f.round.get_round_status().total_damage,25), "split hit sums real damage")
-	_expect(is_equal_approx(f.round.get_round_status().score,10), "one hit plus25 damage equals10 score")
+	_expect(is_equal_approx(f.round.get_round_status().score,18.5583993994), "split hit uses cumulative25 damage and one logarithmic hit")
 	advance(f,1.0)
 	f.enemy.damage_resolved.emit(events[0])
 	_expect(f.round.get_round_status().hit_count == 1 and is_equal_approx(f.round.get_round_status().total_damage,25), "duplicate event adds neither H nor D")
@@ -251,7 +278,7 @@ func _test_event_and_hit_dedup() -> void:
 	await process_frame
 
 func _test_score_three_paths_and_snapshot() -> void:
-	for row in [[20,1.0,104.0],[1,500.0,105.0],[10,25.0,100.0],[1,25.0,10.0]]:
+	for row in [[40,1.0,114.775768673,1.257526283],[1,500.0,357.885823876,0.8],[10,10.0,100.0,2.0],[1,25.0,18.5583993994,2.0]]:
 		var f := make_fixture(root)
 		await physics_frame
 		var request := start_released(f)
@@ -265,7 +292,7 @@ func _test_score_three_paths_and_snapshot() -> void:
 		f.round.damage_interval_seconds = 0.5
 		f.round.hit_score_scale = 1
 		f.round.damage_score_scale = 1
-		_expect(is_equal_approx(f.round.get_round_status().interval_seconds,2), "current round retains captured interval")
+		_expect(is_equal_approx(f.round.get_round_status().interval_seconds,row[3]), "current score uses captured adaptive curve despite Inspector edits")
 		advance(f,2.000001)
 		advance(f,1)
 		_expect(finished.size() == 1 and qualified.size() == (1 if row[2] >= 100 else 0), "one closure and only qualifying score event")
@@ -285,6 +312,91 @@ func _test_score_three_paths_and_snapshot() -> void:
 	f.enemy.set("_current_health",5.0)
 	deal(f,request,500)
 	_expect(is_equal_approx(f.round.get_round_status().total_damage,5), "overkill counts only remaining5 health")
+	f.world.free()
+	await process_frame
+
+func _test_score_difficulty_and_snapshot() -> void:
+	for row in [[5.0,65.50014095,false],[2.5,131.00028190,true],[10.0,32.750070475,false],[1.0,327.50070475,true],[0.1,3275.00704750,true]]:
+		var f := make_fixture(root)
+		await physics_frame
+		f.round.set("score_difficulty",row[0])
+		var qualified: Array = []
+		f.round.finisher_qualified.connect(func(result): qualified.append(result))
+		var request := start_released(f)
+		deal(f,request,100)
+		var snapshot: Dictionary = f.round.get_round_status()
+		_expect(is_equal_approx(snapshot.score,row[1]), "difficulty scales both score contributions using baseline5 "+str(row))
+		_expect(snapshot.hit_count == 1 and is_equal_approx(snapshot.total_damage,100), "score difficulty never changes actual hit or damage")
+		_expect(snapshot.finisher_ready == row[2] and qualified.is_empty(), "difficulty affects readiness but not immediate qualification")
+		advance(f,2.000001)
+		_expect(qualified.size() == (1 if row[2] else 0), "difficulty-scaled threshold governs closing qualification")
+		f.world.free()
+		await process_frame
+	var f := make_fixture(root)
+	await physics_frame
+	f.round.set("score_difficulty",2.5)
+	var request := start_released(f)
+	f.round.set("score_difficulty",10.0)
+	deal(f,request,100)
+	_expect(is_equal_approx(f.round.get_round_status().score,131.00028190), "difficulty is captured on admission before first damage")
+	advance(f,2.000001)
+	f.animation.finish_action()
+	var next := start_released(f)
+	deal(f,next,100)
+	_expect(is_equal_approx(f.round.get_round_status().score,32.750070475), "next round uses edited difficulty without changing previous result")
+	_expect(is_equal_approx(f.round.get_round_status().last_result.score,131.00028190), "last result retains original difficulty")
+	f.world.free()
+	await process_frame
+
+func _test_curve_examples_and_marginals() -> void:
+	var balanced_scores: Array[float] = []
+	for row in [[5,30.0,39.3567267390],[20,20.0,73.6145790991],[40,40.0,114.775768673],[10,100.0,100.0],[3,150.0,108.864641889],[20,100.0,123.398500029],[30,100.0,140.0],[3,200.0,143.753280435]]:
+		var f := make_fixture(root)
+		await physics_frame
+		f.round.hit_score_scale = 10
+		f.round.damage_score_scale = 100.0
+		var request := start_released(f)
+		for i in range(row[0]): deal(f,request,row[1]/float(row[0]))
+		var snapshot: Dictionary = f.round.get_round_status()
+		_expect(is_equal_approx(snapshot.score,row[2]), "approved curve example "+str(row))
+		_expect(snapshot.hit_count == row[0] and is_equal_approx(snapshot.total_damage,row[1]), "curve never changes observed H or D")
+		if row[1] == 100.0: balanced_scores.append(snapshot.score)
+		f.world.free()
+		await process_frame
+	# 同为100伤害，10/20/30次命中应得到100/123.3985/140分。
+	_expect(balanced_scores.size() == 3 and balanced_scores[1]-balanced_scores[0] > balanced_scores[2]-balanced_scores[1] and balanced_scores[2] > balanced_scores[1], "later ten-hit blocks keep increasing score but contribute less")
+	var f := make_fixture(root)
+	await physics_frame
+	var request := start_released(f)
+	var hit := CombatDamageContext.allocate_id()
+	deal(f,request,50.0,hit)
+	var first: float = f.round.get_round_status().score
+	deal(f,request,50.0,hit)
+	var second: float = f.round.get_round_status().score
+	deal(f,request,50.0,hit)
+	var third: float = f.round.get_round_status().score
+	_expect(first > 0.0 and second > first and third-second > second-first+0.1, "same hit cumulative damage has gently increasing marginal score")
+	_expect(f.round.get_round_status().hit_count == 1, "split damage cannot fabricate extra hits")
+	f.world.free()
+	await process_frame
+
+func _test_curve_damage_partition() -> void:
+	var f := make_fixture(root)
+	await physics_frame
+	var first := start_released(f)
+	deal(f,first,100.0)
+	_expect(is_equal_approx(f.round.get_round_status().score,65.50014095), "one hit100 has independently calculated curve score")
+	advance(f,2.000001)
+	f.animation.finish_action()
+	var second := start_released(f)
+	var hit := CombatDamageContext.allocate_id()
+	for i in range(10): deal(f,second,10.0,hit)
+	_expect(is_equal_approx(f.round.get_round_status().score,65.50014095), "same hit100 split into ten events preserves entire damage contribution")
+	advance(f,2.000001)
+	f.animation.finish_action()
+	var third := start_released(f)
+	for i in range(10): deal(f,third,10.0)
+	_expect(is_equal_approx(f.round.get_round_status().score,100.0), "ten distinct hits100 share damage points but earn higher combo contribution")
 	f.world.free()
 	await process_frame
 
@@ -341,7 +453,7 @@ func _test_close_once_and_reentry() -> void:
 
 
 func _test_invalid_configuration_fails_closed() -> void:
-	for entry in [["damage_interval_seconds",0.0],["damage_interval_seconds",NAN],["damage_interval_seconds",INF],["hit_score_scale",0],["damage_score_scale",-1.0],["damage_score_scale",INF]]:
+	for entry in [["damage_interval_seconds",0.0],["damage_interval_seconds",NAN],["damage_interval_seconds",INF],["hit_score_scale",0],["damage_score_scale",-1.0],["damage_score_scale",INF],["score_difficulty",0.0],["score_difficulty",-1.0],["score_difficulty",NAN],["score_difficulty",INF]]:
 		var f := make_fixture(root)
 		await physics_frame
 		f.round.set(entry[0],entry[1])

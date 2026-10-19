@@ -11,3 +11,5 @@ hitbox_center_offsets = Array[Vector3]([Vector3(-0.1, 0.25, 0.7)])
 display_name = "Staff"
 visual_scene = ExtResource("2_visual")
 animation_library = ExtResource("3_animation")
+basic_attack_base_damage = 2.0
+basic_attack_power_ratio = 0.25

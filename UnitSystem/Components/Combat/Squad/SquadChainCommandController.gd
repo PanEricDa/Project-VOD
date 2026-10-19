@@ -45,6 +45,8 @@ var _host_connections: Array[Dictionary] = []
 var _peek_round: Callable
 var _acquire_round: Callable
 var _input_enabled: bool = true
+var _input_blocks: Dictionary = {}
+var _next_input_block: int = 1
 var _configuration_signature: Array = []
 var _status_signatures: Array = [{}, {}, {}, {}]
 var _last_acquired_round: int = 0
@@ -77,6 +79,31 @@ func _process(_delta: float) -> void:
 func set_input_enabled(enabled: bool) -> void:
 	_input_enabled = enabled
 	_notify_slots()
+
+## 同绑定世界owner申请新指令输入阻断，reason为诊断键；失败返回0。不撤销已受理请求。
+@warning_ignore("shadowed_variable_base_class")
+func acquire_input_block(owner: Node, reason: StringName) -> int:
+	if not _valid_input_owner(owner): return 0
+	var token := _next_input_block
+	_next_input_block += 1
+	_input_blocks[token] = {"owner":weakref(owner),"reason":reason}
+	_notify_slots()
+	return token
+
+## 幂等释放本方输入token；不修改set_input_enabled原开关，不影响其他持有者。
+func release_input_block(token: int) -> void:
+	if not _input_blocks.has(token): return
+	_input_blocks.erase(token)
+	_notify_slots()
+
+@warning_ignore("shadowed_variable_base_class")
+func _valid_input_owner(owner: Node) -> bool:
+	return is_instance_valid(_scope) and is_instance_valid(owner) and owner.is_inside_tree() and not owner.is_queued_for_deletion() and (owner == _scope or _scope.is_ancestor_of(owner))
+
+func _has_input_block() -> bool:
+	for token in _input_blocks.keys():
+		if not _valid_input_owner(_input_blocks[token].owner.get_ref()): _input_blocks.erase(token)
+	return not _input_blocks.is_empty()
 
 ## 注入轮次所有者的无参数int回调；peek仅查询（0=尚无批次），acquire用于真实受理且返回正单调身份。
 ## 两者缺失时失败关闭，不能让UI刷新分配轮次；切换回调不取消已受理旧请求。
@@ -231,7 +258,7 @@ func get_slot_status(slot_index: int) -> Dictionary:
 
 func _input_reason() -> StringName:
 	if _clearing or not is_instance_valid(_scope) or not is_instance_valid(focus_source) or focus_source.get_bound_scope() != _scope: return &"focus_unbound"
-	if not is_inside_tree() or (get_tree().paused and not _accent_input_allowed()) or not _input_enabled: return &"input_disabled"
+	if not is_inside_tree() or (get_tree().paused and not _accent_input_allowed()) or not _input_enabled or _has_input_block(): return &"input_disabled"
 	if not is_instance_valid(_player) or _player.is_dead() or not _player.is_player_input_enabled(): return &"player_unavailable"
 	return &""
 
@@ -329,7 +356,7 @@ func _on_scope_changed(scope_root: Node) -> void:
 	if companions.size() == 4:
 		for slot in range(4):
 			var actor := companions[slot]
-			if not is_instance_valid(actor): continue
+			if not is_instance_valid(actor) or companions.count(actor) != 1 or not actor.is_inside_tree() or not _scope.is_ancestor_of(actor): continue
 			var host := actor.get_node_or_null(^"SkillHost") as SkillHostComponent
 			if host == null: continue
 			var started := _on_host_started.bind(slot, _generation)
@@ -355,6 +382,7 @@ func _collect_players(node: Node, players: Array[PlayerBase]) -> void:
 func _clear_scope() -> void:
 	if _clearing: return
 	_clearing = true
+	_input_blocks.clear()
 	_generation += 1
 	_scope = null
 	_player = null
@@ -416,6 +444,10 @@ func _exit_tree() -> void:
 	if not Engine.is_editor_hint(): _detach_focus()
 
 ## 返回原指令源当前绑定世界；空表示未装配，不创建或维持新世界。
+## 返回当前已绑定玩家，仅只读锁定意图；未绑定/离树返回null，不另搜索或改变玩家锁定。
+func get_bound_player() -> PlayerBase:
+	return _player if is_instance_valid(_player) and _player.is_inside_tree() else null
+
 func get_bound_scope() -> Node: return _scope if is_instance_valid(_scope) else null
 
 func _valid_presentation(presentation: SkillPresentationContext, slot: int, generation: int) -> bool:

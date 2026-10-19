@@ -1,18 +1,28 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://bge7wn8phr643"]
 
 [ext_resource type="PackedScene" path="res://SkillSystem/00-Templates/MultiShotSkillTemplate.tscn" id="1_template"]
-[ext_resource type="Script" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="2_damage"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="2_damage"]
+[ext_resource type="PackedScene" uid="uid://cbecfr3g8svqm" path="res://Item/Projectiles/Arrow.tscn" id="2_fun7n"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="3_h7din"]
 
-[node name="RapidShotSkill" instance=ExtResource("1_template")]
+[sub_resource type="Resource" id="Resource_g5bp3"]
+resource_local_to_scene = true
+script = ExtResource("3_h7din")
+projectile_scene = ExtResource("2_fun7n")
+shot_count = 3
+shot_interval_seconds = 0.14
+
+[node name="RapidShotSkill" unique_id=261148350 instance=ExtResource("1_template")]
 skill_id = &"rapid_shot"
 display_name = "Rapid Shot"
 ai_priority = 8
 cast_range = 6.0
 base_cast_time = 0.4
 skill_cooldown = 5.0
+delivery = SubResource("Resource_g5bp3")
 
-[node name="DamageEffect" type="Node" parent="." index="2"]
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=1282683605]
 script = ExtResource("2_damage")
 operation = 0
-base_amount = 1.0
-power_ratio = 0.35
+base_amount = 6.3
+power_ratio = 0.28

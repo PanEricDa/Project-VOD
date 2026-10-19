@@ -8,6 +8,18 @@ signal delivery_finished(context: SkillContext, result: SkillDeliveryResult)
 ## 全部箭矢未能命中或效果执行失败时发出；reason 标识交付失败原因。
 signal delivery_failed(context: SkillContext, reason: StringName)
 
+## 全部待发项目已结束，不表示在途或视觉结束；每会话仅通知一次。
+signal emission_finished(context: SkillContext)
+## 独立命中表现进树前的准备通知，允许登记时钟和结束监听。
+signal impact_presentation_prepared(context: SkillContext, instance: Node3D)
+## 第index颗已成功创建并发射，point为冻结的世界落点/单位位置。
+signal projectile_launched(context: SkillContext, index: int, point: Vector3)
+## 第index颗已抵达；数值在本通知前完成，不等于主要视觉已结束。
+signal projectile_landed(context: SkillContext, index: int, point: Vector3)
+var _ground_points: PackedVector3Array = PackedVector3Array()
+var _ground_mode: bool = false
+var _emission_notified: bool = false
+var _projectile_indices: Dictionary = {}
 var _config: ArcProjectileDeliveryConfig
 var _context: SkillContext
 var _effects: Array[SkillEffectBase] = []
@@ -33,6 +45,7 @@ func _ready() -> void:
 
 ## 启动一次交付；配置、施法者、目标、世界父节点和发射变换都必须有效。
 ## 成功返回 true，随后以完成或失败信号终结；第一支箭无法启动时返回 false 且不发信号。
+## 地面模式必须在物理帧调用，以安全采样真实地形；SkillBase负责将渲染来源的释放转入物理帧。
 func start(
 	config: ArcProjectileDeliveryConfig,
 	context: SkillContext,
@@ -50,16 +63,22 @@ func start(
 	var target := context.resolved_target as UnitBase
 	if not target.is_inside_tree() or target.is_dead():
 		return false
-	_config = config
+	_ground_mode = config.destination_mode == ArcProjectileDeliveryConfig.DestinationMode.RANDOM_GROUND_CIRCLE
+	if _ground_mode:
+		if not Engine.is_in_physics_frame(): return false
+		_ground_points = _sample_ground_points(config, context, target.global_position)
+		if _ground_points.size() != config.shot_count: return false
+		context.target_position = target.global_position
+	_config = config.duplicate() as ArcProjectileDeliveryConfig
 	_context = context
 	_targets.clear()
-	if config.target_expansion != null:
+	if config.target_expansion != null and not _ground_mode:
 		_targets.assign(config.target_expansion.select_targets(context, target))
 	else:
 		_targets.append(target)
-	if _targets.is_empty():
+	if _targets.is_empty() and not _ground_mode:
 		return false
-	_total_shots = _targets.size() * config.shot_count
+	_total_shots = config.shot_count if _ground_mode else _targets.size() * config.shot_count
 	_origin = launch_transform.origin
 	_intended = target.global_position
 	_effects.assign(effects)
@@ -79,12 +98,22 @@ func start(
 		while _can_issue_next() and not _terminal:
 			_launch_next()
 		_check_finished()
+		if not _pending_hits.is_empty(): set_physics_process(true)
 	else:
-		set_physics_process(_issued_count < _total_shots)
+		set_physics_process(_issued_count < _total_shots or not _pending_hits.is_empty())
 	return true
 
 
 func _physics_process(delta: float) -> void:
+	if _ground_mode and not _pending_hits.is_empty(): _finish_pending_hits()
+	if _terminal or _context == null:
+		set_physics_process(false)
+		return
+	if _context != null and _context.execution_clock != null:
+		delta = _context.execution_clock.get_delta(delta)
+	if _context != null and (not is_instance_valid(_context.caster) or not _context.caster.is_inside_tree()):
+		_finish_failure(&"source_exited")
+		return
 	if _terminal or _context == null:
 		set_physics_process(false)
 		return
@@ -99,6 +128,7 @@ func _physics_process(delta: float) -> void:
 			break
 		_launch_next()
 	if _issued_count >= _total_shots:
+		_notify_emission_finished()
 		set_physics_process(false)
 	_check_finished()
 
@@ -114,9 +144,10 @@ func _can_issue_next() -> bool:
 
 
 func _launch_next() -> bool:
-	var target := _targets[floori(float(_issued_count) / float(_config.shot_count))]
+	var index := _issued_count
+	var target: UnitBase = null if _ground_mode else _targets[floori(float(_issued_count) / float(_config.shot_count))]
 	_issued_count += 1
-	if not is_instance_valid(target) or not target.is_inside_tree() or target.is_dead():
+	if not _ground_mode and (not is_instance_valid(target) or not target.is_inside_tree() or target.is_dead()):
 		return false
 	var instance: Node = _config.projectile_scene.instantiate()
 	if not instance is Node3D:
@@ -130,11 +161,16 @@ func _launch_next() -> bool:
 	_context.delivery_parent.add_child(projectile)
 	_projectiles.append(projectile)
 	_projectile_targets[projectile.get_instance_id()] = target
+	_projectile_indices[projectile.get_instance_id()] = index
+	if projectile.has_method(&"set_execution_clock"):
+		projectile.call(&"set_execution_clock", _context.execution_clock, _config.impact_radius_m if _ground_mode else 0.0)
+	if projectile.has_signal(&"impact_presentation_prepared"):
+		projectile.connect(&"impact_presentation_prepared", _on_impact_prepared)
 	projectile.connect(&"projectile_hit", _on_projectile_hit.bind(projectile))
 	projectile.tree_exiting.connect(_on_projectile_tree_exiting.bind(projectile))
 	_launched_count += 1
 	_launching = true
-	var accepted: Variant = projectile.call(&"launch", target, _origin)
+	var accepted: Variant = projectile.call(&"launch_point", _ground_points[index], _origin) if _ground_mode else projectile.call(&"launch", target, _origin)
 	_launching = false
 	if not (accepted is bool) or not bool(accepted):
 		_disconnect_projectile(projectile)
@@ -143,16 +179,21 @@ func _launch_next() -> bool:
 		_launched_count -= 1
 		projectile.queue_free()
 		return false
+	projectile_launched.emit(_context, index, _ground_points[index] if _ground_mode else target.global_position)
+	if _context == null or _terminal: return true
+	if _issued_count >= _total_shots: _notify_emission_finished()
 	if not _pending_hits.is_empty():
-		call_deferred(&"_finish_pending_hits")
+		if _ground_mode: set_physics_process(true)
+		else: call_deferred(&"_finish_pending_hits")
 	return true
 
 
 func _on_projectile_hit(target: UnitBase, position: Vector3, direction: Vector3, projectile: Node3D) -> void:
 	if _terminal or not _projectiles.has(projectile):
 		return
-	if _launching:
+	if _launching or (_ground_mode and not Engine.is_in_physics_frame()):
 		_pending_hits.append([target, position, direction, projectile])
+		if _ground_mode: set_physics_process(true)
 		return
 	_finish_hit(target, position, direction, projectile)
 
@@ -170,9 +211,14 @@ func _finish_hit(target: UnitBase, position: Vector3, direction: Vector3, projec
 		return
 	_disconnect_projectile(projectile)
 	_projectiles.erase(projectile)
+	var index: int = _projectile_indices.get(projectile.get_instance_id(), -1)
+	_projectile_indices.erase(projectile.get_instance_id())
 	var expected_target := _projectile_targets.get(projectile.get_instance_id()) as UnitBase
 	_projectile_targets.erase(projectile.get_instance_id())
 	_settled_count += 1
+	if _ground_mode:
+		_finish_ground_hit(position, direction, index)
+		return
 	if not is_instance_valid(target) or not target.is_inside_tree() or target != expected_target:
 		_check_finished()
 		return
@@ -217,7 +263,9 @@ func _check_finished() -> void:
 		return
 	if _settled_count < _launched_count:
 		return
-	if _result.hit_outcomes.is_empty():
+	_notify_emission_finished()
+	if _terminal or _context == null: return
+	if _result.hit_outcomes.is_empty() and not _ground_mode:
 		_finish_failure(&"arc_projectile_ended_without_hit")
 		return
 	_terminal = true
@@ -249,6 +297,8 @@ func _cleanup_projectiles() -> void:
 			projectile.queue_free()
 	_projectiles.clear()
 	_projectile_targets.clear()
+	_projectile_indices.clear()
+	_ground_points.clear()
 	_targets.clear()
 	_context = null
 	_config = null
@@ -269,6 +319,8 @@ func _disconnect_projectile(projectile: Node3D) -> void:
 
 
 func _has_arc_contract(projectile: Node3D) -> bool:
+	if _ground_mode:
+		return projectile.has_signal(&"projectile_hit") and projectile.has_method(&"launch_point")
 	if not projectile.has_signal(&"projectile_hit") or not projectile.has_method(&"launch"):
 		return false
 	for method: Dictionary in projectile.get_method_list():
@@ -279,6 +331,76 @@ func _has_arc_contract(projectile: Node3D) -> bool:
 		return args.size() == 2 and int(return_info.get("type", TYPE_NIL)) == TYPE_BOOL
 	return false
 
+
+## 返回本会话请求用于身份匹配；只读，不允许调用者更改运行中的目标或交付配置。
+func get_delivery_context() -> SkillContext:
+	return _context
+
+## 只终止未发项目，已发投射物仍保留独立交付；供角色硬中断使用，不回滚已结算伤害。
+func stop_pending_emission() -> void:
+	if _terminal: return
+	_total_shots = _issued_count
+	set_physics_process(false)
+	_notify_emission_finished()
+	_check_finished()
+
+func _notify_emission_finished() -> void:
+	if _emission_notified or _context == null or _issued_count < _total_shots: return
+	_emission_notified = true
+	emission_finished.emit(_context)
+
+func _on_impact_prepared(instance: Node3D) -> void:
+	if _context != null and not _terminal:
+		impact_presentation_prepared.emit(_context, instance)
+
+func _sample_ground_points(config: ArcProjectileDeliveryConfig, context: SkillContext, center: Vector3) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	var source := context.caster as Node3D
+	if not is_instance_valid(source) or source.get_world_3d() == null: return points
+	var random := RandomNumberGenerator.new()
+	if context.scatter_seed == 0: random.randomize()
+	else: random.seed = context.scatter_seed
+	for shot: int in range(config.shot_count):
+		var found := false
+		for attempt: int in range(8):
+			var angle := random.randf() * TAU
+			var radius := config.scatter_radius_m * sqrt(random.randf())
+			var point := center + Vector3(cos(angle), 0, sin(angle)) * radius
+			var ray := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 32, point + Vector3.DOWN * 64, 1)
+			var ground := source.get_world_3d().direct_space_state.intersect_ray(ray)
+			if not ground.is_empty():
+				points.append(ground.position)
+				found = true
+				break
+		if not found: return PackedVector3Array()
+	return points
+
+func _finish_ground_hit(position: Vector3, direction: Vector3, index: int) -> void:
+	if _context == null or not is_instance_valid(_context.caster) or not _context.caster.is_inside_tree() or _context.caster.is_queued_for_deletion():
+		_finish_failure(&"source_exited")
+		return
+	if not position.is_finite() or not direction.is_finite():
+		_finish_failure(&"arc_hit_invalid")
+		return
+	var targets := NearbySkillTargetQuery.select_targets((_context.caster as Node3D).get_world_3d(), _context.caster, position, _config.impact_radius_m, 2147483647, TargetResolver.TargetRelationFlag.HOSTILE, null)
+	for target: Node3D in targets:
+		if _terminal or _context == null: return
+		var hit := SkillHitOutcome.new()
+		hit.target = target
+		hit.impact_position = position
+		var status := (target as UnitBase).get_status_effect_component()
+		if is_instance_valid(status): hit.statuses_before_hit.assign(status.get_active_status_ids())
+		_result.current_hit = hit
+		_result.impact_position = position
+		_result.impact_direction = direction
+		for effect: SkillEffectBase in _effects:
+			if not is_instance_valid(effect) or not effect.apply(_context, _result, target):
+				_finish_failure(&"arc_effect_failed")
+				return
+		_result.affected_targets.append(target)
+		_result.hit_outcomes.append(hit)
+	projectile_landed.emit(_context, index, position)
+	if not _terminal: _check_finished()
 
 func _exit_tree() -> void:
 	_cleanup_projectiles()

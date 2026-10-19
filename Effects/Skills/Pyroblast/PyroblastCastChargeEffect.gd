@@ -182,8 +182,8 @@ func _set_color(mesh: GeometryInstance3D, color: Color) -> void:
 		material.albedo_color = Color(color, material.albedo_color.a)
 		material.emission = color
 
-func _on_finished(name: StringName) -> void:
-	if name != &"charge" or not _active:
+func _on_finished(animation_name: StringName) -> void:
+	if animation_name != &"charge" or not _active:
 		return
 	reset_effect()
 	effect_finished.emit()
