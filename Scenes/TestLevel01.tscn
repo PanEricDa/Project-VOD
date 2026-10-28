@@ -1589,7 +1589,7 @@ editor_description = "固定怪群容器。直接子 Pack 节点由同级 Encoun
 
 [node name="Pack_A1" type="Node3D" parent="EnemyContainer" unique_id=997248754]
 editor_description = "入口散兵：4近战；开阔地单堆及双堆合怪测试。 固定点位请编辑各 Spawn Marker；保持其 Enemy 子实例初始局部变换为单位变换。"
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.575321, 14.045785, 10.307691)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.9148378, 14.045785, 10.307691)
 
 [node name="Spawn_01_Melee" type="Marker3D" parent="EnemyContainer/Pack_A1" unique_id=1712395816]
 editor_description = "固定生成点（米）。敌人场景预摆于此，载入关卡即存在；AI 使用其初始世界位置作为归位出生点。修改点位请移动本 Marker 并贴地；保留 Enemy 的局部位置为零。"
