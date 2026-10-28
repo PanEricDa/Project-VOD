@@ -12,6 +12,7 @@
 collision_layer = 4
 script = ExtResource("2_enemy")
 targeting_radius = 6.0
+combat_targeting_radius = 0.0
 faction_id = "Enemy"
 team_id = 2
 
@@ -27,6 +28,10 @@ remove_after_seconds = 2.0
 debug_display_enabled = false
 
 [node name="BehaviorStateMachine" parent="." index="6" unique_id=1962546501 instance=ExtResource("6_behavior")]
-leash_distance = 20.0
+leash_distance = 30.0
 
 [node name="EnemyVisual" parent="Visual" parent_id_path=PackedInt32Array(1778080596) index="0" unique_id=313442081 instance=ExtResource("3_visual")]
+
+[node name="WorldHealthBar" parent="WorldUIRoot" parent_id_path=PackedInt32Array(1328125326) index="0" unique_id=1814569765]
+health_color = Color(1, 0.45733333, 0.120000005, 1)
+damage_color = Color(0.6861524, 0.09147886, 0.065243855, 1)

@@ -62,7 +62,12 @@ func _render() -> void:
 		card.get_node("VBox/Actor").text = slot.get("actor_name","未配置")
 		card.get_node("VBox/Skill").text = "终结技（接口测试）"
 		var selected: bool = _snapshot.get("selected_slot",-1) == index
-		card.theme_type_variation = &"FinisherSelected" if selected else &"FinisherOption"
+		var pressed: bool = _snapshot.get("pressed_slot",-1) == index
+		card.theme_type_variation = &"FinisherConfirmed" if selected else (&"FinisherSelected" if pressed else &"FinisherOption")
+		# 仅选中项围绕自身中心轻微放大；不改十字布局、输入或计时参数。
+		card.pivot_offset = card.size*0.5
+		var scale_percent := card.get_theme_constant("selected_scale_percent","SelectionFeedback")
+		card.scale = Vector2.ONE*(float(scale_percent)/100.0 if selected or pressed else 1.0)
 		card.modulate = Color.WHITE if slot.get("available",false) else Color(0.40,0.43,0.48)
 	cross.get_node("Countdown").value = _snapshot.get("progress_ratio",0.0)
 

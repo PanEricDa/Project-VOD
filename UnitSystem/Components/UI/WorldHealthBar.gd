@@ -12,10 +12,12 @@ enum ThreatIndicatorState {
 const DEBUFF_ROW_HEIGHT: int = 16
 const DEBUFF_DOT_SIZE: int = 12
 const BURNING_DOT_COLOR: Color = Color(1.0, 0.31, 0.12)
+const DEFENSE_DOWN_DOT_COLOR: Color = Color(0.62, 0.4, 1.0)
+const TEMPORARY_THREAT_DOT_COLOR: Color = Color(1.0, 0.25, 0.6)
 
 ## 可拆卸的世界空间头顶血条。
 ##
-## 本组件只订阅 UnitBase 的生命信号与 StatusEffectComponent 的命名状态变化。
+## 本组件只订阅 UnitBase 的生命信号与 StatusEffectComponent 的命名状态、属性修正变化。
 ## UnitBase 不持有本组件的引用，因此删除 WorldHealthBar 或整个 WorldUIRoot
 ## 都不会影响生命、状态、战斗、移动和索敌逻辑。
 
@@ -108,7 +110,7 @@ func _exit_tree() -> void:
 	unbind_health_source()
 
 
-## 绑定新的单位数据来源，同时读取生命与命名状态；重复绑定只刷新显示，不重复连接信号。
+## 绑定新的单位数据来源，同时读取生命、命名状态与属性修正；重复绑定只刷新显示，不重复连接信号。
 func bind_health_source(source: UnitBase) -> void:
 	if source == _health_source and is_instance_valid(_health_source):
 		refresh_immediately()
@@ -128,6 +130,11 @@ func bind_health_source(source: UnitBase) -> void:
 	_status_source = _health_source.get_status_effect_component() as StatusEffectComponent
 	if is_instance_valid(_status_source) and not _status_source.named_status_changed.is_connected(_on_named_status_changed):
 		_status_source.named_status_changed.connect(_on_named_status_changed)
+	if is_instance_valid(_status_source):
+		if not _status_source.modifier_changed.is_connected(_on_modifier_changed):
+			_status_source.modifier_changed.connect(_on_modifier_changed)
+		if not _status_source.modifier_removed.is_connected(_on_modifier_removed):
+			_status_source.modifier_removed.connect(_on_modifier_removed)
 	refresh_immediately()
 
 
@@ -142,6 +149,11 @@ func unbind_health_source() -> void:
 			_health_source.died.disconnect(_on_health_source_died)
 	if is_instance_valid(_status_source) and _status_source.named_status_changed.is_connected(_on_named_status_changed):
 		_status_source.named_status_changed.disconnect(_on_named_status_changed)
+	if is_instance_valid(_status_source):
+		if _status_source.modifier_changed.is_connected(_on_modifier_changed):
+			_status_source.modifier_changed.disconnect(_on_modifier_changed)
+		if _status_source.modifier_removed.is_connected(_on_modifier_removed):
+			_status_source.modifier_removed.disconnect(_on_modifier_removed)
 	_status_source = null
 	_health_source = null
 	_refresh_debuff_dots()
@@ -149,7 +161,7 @@ func unbind_health_source() -> void:
 	hide_immediately()
 
 
-## 立即从当前单位读取生命与命名状态；未满血或带有可见 Debuff 时保持显示。
+## 立即从当前单位读取生命与可见状态；未满血或带有可见 Debuff 时保持显示。
 func refresh_immediately() -> void:
 	_refresh_debuff_dots()
 	if not is_instance_valid(_health_source):
@@ -255,6 +267,20 @@ func _auto_bind_ancestor() -> void:
 
 
 func _on_named_status_changed(_status_id: StringName, _active: bool) -> void:
+	_refresh_status_display()
+
+
+func _on_modifier_changed(_source: Object, stat: StatusEffectComponent.ModifierStat, _amount: float, _remaining_duration: float) -> void:
+	if stat == StatusEffectComponent.ModifierStat.DEFENSE:
+		_refresh_status_display()
+
+
+func _on_modifier_removed(_source: Object, stat: StatusEffectComponent.ModifierStat) -> void:
+	if stat == StatusEffectComponent.ModifierStat.DEFENSE:
+		_refresh_status_display()
+
+
+func _refresh_status_display() -> void:
 	_refresh_debuff_dots()
 	if not is_instance_valid(_health_source) or _health_source.is_dead():
 		hide_immediately()
@@ -270,14 +296,23 @@ func _refresh_debuff_dots() -> void:
 	for child: Node in _debuff_dots.get_children():
 		_debuff_dots.remove_child(child)
 		child.free()
-	if not is_instance_valid(_status_source) or not _status_source.has_named_status(&"burning"):
+	if not is_instance_valid(_status_source):
 		return
+	if _status_source.has_named_status(&"burning"):
+		_add_debuff_dot(&"BurningDot", BURNING_DOT_COLOR)
+	if _status_source.has_negative_modifier(StatusEffectComponent.ModifierStat.DEFENSE):
+		_add_debuff_dot(&"DefenseDownDot", DEFENSE_DOWN_DOT_COLOR)
+	if _status_source.has_named_status(&"temporary_threat"):
+		_add_debuff_dot(&"TemporaryThreatDot", TEMPORARY_THREAT_DOT_COLOR)
+
+
+func _add_debuff_dot(dot_name: StringName, color: Color) -> void:
 	var dot := Panel.new()
-	dot.name = "BurningDot"
+	dot.name = dot_name
 	dot.custom_minimum_size = Vector2(DEBUFF_DOT_SIZE, DEBUFF_DOT_SIZE)
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = BURNING_DOT_COLOR
+	style.bg_color = color
 	_set_corner_radius(style, floori(float(DEBUFF_DOT_SIZE) * 0.5))
 	dot.add_theme_stylebox_override(&"panel", style)
 	_debuff_dots.add_child(dot)

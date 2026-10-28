@@ -15,7 +15,9 @@ static func calculate_damage(
 	var defense_multiplier: float = 1.0
 	if is_instance_valid(target):
 		defense_multiplier = 100.0 / (100.0 + target.get_defense())
-	return raw_damage * defense_multiplier * maxf(multiplier, 0.0) * _roll_damage_variance(damage_variance)
+	# 在统一结算处只乘一次输出增幅，覆盖基础值与攻击力部分；治疗入口不使用此倍率。
+	var outgoing: float = source.get_outgoing_damage_multiplier() if is_instance_valid(source) else 1.0
+	return raw_damage * defense_multiplier * maxf(multiplier, 0.0) * outgoing * _roll_damage_variance(damage_variance)
 
 
 ## 对有效且存活的目标结算伤害，并返回生命值实际减少的数值。

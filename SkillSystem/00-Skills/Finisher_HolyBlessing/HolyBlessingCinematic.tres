@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SkillCinematicProfile" format=3 uid="uid://cm0c534ffiilm"]
+
+[ext_resource type="Animation" uid="uid://c48jhxi71r0cv" path="res://SkillSystem/00-Skills/Finisher_HolyBlessing/HolyBlessingAction.tres" id="1_acypa"]
+[ext_resource type="Script" uid="uid://dk7p5liefdnao" path="res://SkillSystem/01-Core/SkillCinematicProfile.gd" id="1_tjdi3"]
+
+[resource]
+script = ExtResource("1_tjdi3")
+action_animation = ExtResource("1_acypa")

@@ -15,7 +15,7 @@
 script = ExtResource("7_5b25f")
 destination_mode = 1
 scatter_radius_m = 2.01
-impact_radius_m = 1.81
+impact_radius_m = 2.01
 projectile_scene = ExtResource("6_i0pwb")
 shot_count = 5
 shot_interval_seconds = 0.12
@@ -50,3 +50,4 @@ script = ExtResource("10_pfsvo")
 operation = 0
 base_amount = 65.0
 power_ratio = 2.0
+use_finisher_bonus = true

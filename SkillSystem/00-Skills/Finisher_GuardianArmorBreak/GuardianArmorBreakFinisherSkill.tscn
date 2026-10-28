@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://do2350764yid8"]
+
+[ext_resource type="PackedScene" uid="uid://b3qp6uulk431f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_6dlbc"]
+[ext_resource type="Resource" uid="uid://bcxkcyqvnxoux" path="res://SkillSystem/00-Skills/Finisher_GuardianArmorBreak/GuardianArmorBreakCinematic.tres" id="2_f0qx2"]
+[ext_resource type="Resource" uid="uid://d20br6ccjqn6l" path="res://Effects/Camera/Presets/GuardianArmorBreakCinematicCamera.tres" id="3_f61mm"]
+[ext_resource type="PackedScene" uid="uid://b7vgkp4u0amls" path="res://Effects/Skills/GuardianArmorBreak/GuardianArmorBreakReleaseEffect.tscn" id="4_obwhw"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="5_kjqu5"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="6_txeun"]
+[ext_resource type="Script" uid="uid://mukvvanqkcl" path="res://SkillSystem/03-Extensions/StatModifierSkillEffect.gd" id="7_q0oei"]
+
+[sub_resource type="Resource" id="Resource_6dlbc"]
+resource_local_to_scene = true
+script = ExtResource("5_kjqu5")
+target_collection_mode = 1
+effect_radius = 4.0
+
+[node name="GuardianArmorBreakFinisherSkill" unique_id=1243454382 instance=ExtResource("1_6dlbc")]
+skill_id = &"guardian_armor_break_finisher"
+display_name = "终结·震甲冲击"
+skill_type = 3
+target_relations = 1
+target_selection_mode = 1
+cast_range = 0.0
+base_cast_time = 0.6
+skill_cooldown = 0.0
+automatic_cast_enabled = false
+decision_delay_min = 0.0
+decision_delay_max = 0.0
+extra_hesitation_chance = 0.0
+cinematic_profile = ExtResource("2_f0qx2")
+camera_effect_profile = ExtResource("3_f61mm")
+release_effect_scene = ExtResource("4_obwhw")
+release_effect_anchor = 3
+delivery = SubResource("Resource_6dlbc")
+
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=103184731]
+script = ExtResource("6_txeun")
+operation = 0
+base_amount = 20.0
+power_ratio = 1.0
+use_finisher_bonus = true
+
+[node name="ArmorBreakEffect" type="Node" parent="." index="3" unique_id=1770650057]
+script = ExtResource("7_q0oei")
+target_mode = 1
+modifier_mode = 1
+amount = -25.0
+duration_seconds = 15.0
+use_finisher_bonus = true

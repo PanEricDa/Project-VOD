@@ -105,6 +105,14 @@ var _attack_motion_remaining_distance: float = 0.0
 ## 命中卡刀期间仅暂停攻击位移，不暂停重力、GCD 或其他单位。
 var _attack_motion_suspended: bool = false
 var _ai_movement_ready: bool = false
+var _skill_motion_source: WeakRef
+var _skill_motion_id: int = -1
+var _skill_motion_serial: int = -1
+var _skill_motion_active: bool = false
+var _skill_motion_pending := Vector3.ZERO
+var _skill_motion_terminal: bool = false
+var _skill_motion_blocked: bool = false
+var _skill_motion_facing := Vector3.FORWARD
 
 
 func _ready() -> void:
@@ -135,7 +143,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not _ai_movement_ready:
 		return
+	_validate_forced_movement()
 	if is_dead():
+		_clear_skill_motion()
 		# 死亡期间不再运行子类 AI，只保留水平停止、重力和碰撞。
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -144,6 +154,9 @@ func _physics_process(delta: float) -> void:
 		return
 	advance_hit_movement_lock(delta)
 	if is_hit_movement_locked():
+		# 动画可以继续推进，但受移动锁截断的帧不得积压为解锁后的突进。
+		_skill_motion_pending = Vector3.ZERO
+		if _skill_motion_terminal: _clear_skill_motion()
 		## 受击停顿只冻结本帧水平移动，不清除状态机已提交的目标、冲刺或攻击请求。
 		## 倒计时结束后 AI 会继续复用原有意图，重力与 CharacterBody3D 碰撞始终保持更新。
 		velocity.x = 0.0
@@ -154,25 +167,95 @@ func _physics_process(delta: float) -> void:
 
 	_update_ai_movement(delta)
 	_update_dash_cooldown(delta)
-	match _motion_state:
-		MotionState.ATTACK_MOVING:
-			_process_attack_motion(delta)
-		MotionState.DASHING:
-			_process_dash(delta)
-		MotionState.RECOVERING:
-			_process_recovery(delta)
-		_:
-			_process_regular_motion(delta)
+	if _skill_motion_active and (_skill_motion_source == null or not is_instance_valid(_skill_motion_source.get_ref()) or not _skill_motion_source.get_ref().is_inside_tree()):
+		_clear_skill_motion()
+	# 本帧捕获身份，末帧结束/回调替换后也不得执行普通推进扣账。
+	var forced_token: int = get_forced_movement_token()
+	if forced_token > 0:
+		_discard_overridden_horizontal_intents()
+		var forced_step := _consume_forced_movement_step(delta)
+		velocity.x = forced_step.x / delta if delta > 0.0 else 0.0
+		velocity.z = forced_step.z / delta if delta > 0.0 else 0.0
+	elif _skill_motion_active:
+		_desired_facing_direction = _skill_motion_facing
+		var step := Vector3.ZERO if _skill_motion_blocked else _skill_motion_pending
+		velocity.x = step.x / delta if delta > 0 else 0.0
+		velocity.z = step.z / delta if delta > 0 else 0.0
+	else:
+		match _motion_state:
+			MotionState.ATTACK_MOVING: _process_attack_motion(delta)
+			MotionState.DASHING: _process_dash(delta)
+			MotionState.RECOVERING: _process_recovery(delta)
+			_: _process_regular_motion(delta)
 
 	_apply_gravity(delta)
 	_update_visual_facing(delta)
 	var previous_position: Vector3 = global_position
 	move_and_slide()
+	if forced_token > 0:
+		_report_forced_movement_result(forced_token, global_position - previous_position, is_on_wall())
+		return
+	if _skill_motion_active:
+		_skill_motion_pending = Vector3.ZERO
+		if is_on_wall(): _skill_motion_blocked = true
+		if _skill_motion_terminal: _clear_skill_motion()
+		return
 	match _motion_state:
 		MotionState.ATTACK_MOVING:
 			_update_attack_motion_after_slide(previous_position)
 		MotionState.DASHING:
 			_update_dash_after_slide(previous_position)
+
+
+# 外力只替换水平输出，不取消Host动作；清掉被覆盖的旧推进，避免外力结束后追补。
+func _discard_overridden_horizontal_intents() -> void:
+	clear_movement_target()
+	cancel_attack_motion()
+	if _motion_state == MotionState.DASHING:
+		_dash_cooldown_remaining = maxf(_dash_cooldown_remaining, dash_cooldown)
+	_dash_remaining_distance = 0.0
+	_dash_direction = Vector3.ZERO
+	_recovery_remaining = 0.0
+	_motion_state = MotionState.IDLE
+	_skill_motion_pending = Vector3.ZERO
+	if _skill_motion_terminal:
+		_clear_skill_motion()
+
+
+## source为当前SkillHost；displacement是本物理帧的水平米数，不再换算游戏流速。
+## request_id+action_serial标识动作；terminal末段先消费，旧序号或无效位移拒绝。
+func submit_skill_motion_step(source: Node, request_id: int, action_serial: int, displacement: Vector3, terminal: bool) -> bool:
+	if not is_instance_valid(source) or not source.is_inside_tree() or is_dead() or request_id < 0 or action_serial < 1 or not displacement.is_finite() or absf(displacement.y) > 0.0001: return false
+	var same_source: bool = _skill_motion_source != null and _skill_motion_source.get_ref() == source
+	if same_source and (action_serial < _skill_motion_serial or (action_serial == _skill_motion_serial and (request_id != _skill_motion_id or not _skill_motion_active))): return false
+	if not same_source or action_serial > _skill_motion_serial:
+		_skill_motion_source = weakref(source)
+		_skill_motion_id = request_id
+		_skill_motion_serial = action_serial
+		_skill_motion_pending = Vector3.ZERO
+		_skill_motion_blocked = false
+		_skill_motion_active = true
+		_skill_motion_facing = -_visual_root.global_basis.z
+		clear_movement_target()
+		cancel_attack_motion()
+	_skill_motion_pending += displacement
+	_skill_motion_terminal = terminal
+	return true
+
+
+## 只有来源与完整身份匹配才硬取消；自然末帧交给物理循环，不调用本方法。
+func cancel_skill_motion(source: Node, request_id: int, action_serial: int) -> void:
+	if _skill_motion_source != null and _skill_motion_source.get_ref() == source and request_id == _skill_motion_id and action_serial == _skill_motion_serial:
+		_clear_skill_motion()
+
+
+func _clear_skill_motion() -> void:
+	if _skill_motion_active:
+		velocity.x = 0.0
+		velocity.z = 0.0
+	_skill_motion_active = false
+	_skill_motion_pending = Vector3.ZERO
+	_skill_motion_terminal = false
 
 
 ## 子类行为入口。默认 AI 没有主动行为，因此持续清空移动目标并平滑减速。
@@ -382,6 +465,7 @@ func _on_combat_state_changed(
 
 
 func _on_ai_died(_source: Node) -> void:
+	_validate_forced_movement()
 	# 只清理通用固定子节点，不依赖 AllyBase 或 EnemyBase 的具体实现。
 	clear_movement_target()
 	cancel_attack_motion()
@@ -426,6 +510,10 @@ func _process_regular_motion(delta: float) -> void:
 				if _requested_maximum_speed >= 0.0
 				else movement_speed
 			)
+			# 普通移动统一消费状态修正，包含行为层显式提交的速度；不改写基础值，不影响外力/动画位移/冲刺。
+			var status_effects := get_status_effect_component() as StatusEffectComponent
+			if status_effects != null:
+				maximum_speed = status_effects.get_modified_value(StatusEffectComponent.ModifierStat.MOVEMENT_SPEED, maximum_speed)
 			var speed_factor: float = clampf(
 				distance / maxf(slowing_distance, 0.0001),
 				0.0,

@@ -96,6 +96,13 @@ func _run() -> void:
 	_expect(not self_trigger._get_configuration_warnings().is_empty(), "direct self-reference is visible as an Inspector configuration warning")
 	_expect(self_trigger.apply(context, result, hit_target), "direct self-reference safely ends without recursion")
 	_expect(world.get_children().filter(func(node: Node) -> bool: return node is SkillBase).size() == 1, "self-reference does not instantiate another skill")
+	# 可组合完成后Effects仍属于同一个SkillBase，嵌套不应绕过自身触发循环保护。
+	var completion_parent := PullTargetSkillEffect.new()
+	parent_skill.add_child(completion_parent)
+	self_trigger.reparent(completion_parent)
+	_expect(not self_trigger._get_configuration_warnings().is_empty(), "nested self-reference remains visible in Inspector")
+	_expect(self_trigger.apply(context, result, hit_target), "nested self-reference safely skips")
+	_expect(world.get_children().filter(func(node: Node) -> bool: return node is SkillBase).size()==1, "nested effect does not bypass parent scene cycle guard")
 	parent_skill.free()
 	trigger.set("child_skill_scene", _child_skill_scene(false, false, true))
 	trigger.set("required_status_id", &"")

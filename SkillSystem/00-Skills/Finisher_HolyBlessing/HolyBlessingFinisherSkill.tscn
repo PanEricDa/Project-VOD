@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://dojjmkmebxl5p"]
+
+[ext_resource type="PackedScene" uid="uid://b3qp6uulk431f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_ly8p1"]
+[ext_resource type="PackedScene" uid="uid://deo2f3er4c4dm" path="res://Effects/Skills/HolyBlessing/HolyBlessingCastEffect.tscn" id="2_kpmgh"]
+[ext_resource type="Resource" uid="uid://cm0c534ffiilm" path="res://SkillSystem/00-Skills/Finisher_HolyBlessing/HolyBlessingCinematic.tres" id="3_8rwxd"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="4_8rwxd"]
+[ext_resource type="Resource" uid="uid://b4luh8qexdg2w" path="res://Effects/Camera/Presets/HolyBlessingCinematicCamera.tres" id="4_c6sek"]
+[ext_resource type="PackedScene" uid="uid://fntgpgsywtxh" path="res://Effects/Skills/HolyBlessing/HolyBlessingReleaseEffect.tscn" id="5_b1x2e"]
+[ext_resource type="Script" uid="uid://mukvvanqkcl" path="res://SkillSystem/03-Extensions/StatModifierSkillEffect.gd" id="7_l3e1r"]
+[ext_resource type="PackedScene" uid="uid://xpuh1vohomis" path="res://Effects/Skills/HolyBlessing/HolyBlessingBuffEffect.tscn" id="8_kpmgh"]
+
+[sub_resource type="Resource" id="Resource_8rwxd"]
+script = ExtResource("4_8rwxd")
+candidate_source = 1
+target_collection_mode = 1
+effect_radius = 8.0
+affected_relations = 3
+
+[node name="HolyBlessingFinisherSkill" unique_id=253215794 instance=ExtResource("1_ly8p1")]
+skill_id = &"holy_blessing_finisher"
+display_name = "终结·圣辉祝福"
+skill_type = 2
+target_relations = 1
+target_selection_mode = 1
+cast_range = 0.0
+base_cast_time = 1.15
+skill_cooldown = 0.0
+automatic_cast_enabled = false
+decision_delay_min = 0.0
+decision_delay_max = 0.0
+extra_hesitation_chance = 0.0
+cast_effect_scene = ExtResource("2_kpmgh")
+cast_effect_anchor = 3
+cinematic_profile = ExtResource("3_8rwxd")
+camera_effect_profile = ExtResource("4_c6sek")
+release_effect_scene = ExtResource("5_b1x2e")
+release_effect_anchor = 3
+delivery = SubResource("Resource_8rwxd")
+
+[node name="DamageBlessingEffect" type="Node" parent="." index="2" unique_id=1522149052]
+script = ExtResource("7_l3e1r")
+target_mode = 1
+modifier_stat = 3
+modifier_mode = 1
+amount = 30.0
+duration_seconds = 15.0
+status_visual_scene = ExtResource("8_kpmgh")
+use_finisher_bonus = true

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SkillCinematicCameraProfile" format=3 uid="uid://b4luh8qexdg2w"]
+
+[ext_resource type="Script" uid="uid://lxfda6ak2807" path="res://Effects/Camera/SkillCinematicCameraProfile.gd" id="1_pk221"]
+
+[resource]
+script = ExtResource("1_pk221")
+front_offset = Vector3(0.55, 1.55, -3.1)
+look_height_m = 0.85

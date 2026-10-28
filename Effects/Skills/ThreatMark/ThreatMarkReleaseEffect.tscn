@@ -1,0 +1,64 @@
+[gd_scene format=3 uid="uid://y0kluao5r8ga"]
+
+[ext_resource type="Script" path="res://Effects/Skills/ThreatMark/ThreatMarkReleaseEffect.gd" id="1_h6r63"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ghaui"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.16, 0.24, 0.42)
+
+[sub_resource type="TorusMesh" id="TorusMesh_3msm4"]
+inner_radius = 0.975
+ring_segments = 6
+
+[sub_resource type="Animation" id="Animation_aao6d"]
+length = 0.34
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/RangeRoot/PulseRing:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.34),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.05, 0.4, 0.05), Vector3(1, 0.4, 1), Vector3(1, 0.4, 1)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/RangeRoot/PulseRing:transparency")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.04, 0.18, 0.34),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.3, 1.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_vk5ct"]
+_data = {
+&"effect": SubResource("Animation_aao6d")
+}
+
+[node name="ThreatMarkReleaseEffect" type="Node3D" unique_id=1800970129]
+top_level = true
+script = ExtResource("1_h6r63")
+auto_free_on_finished = true
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1461067212]
+
+[node name="RangeRoot" type="Node3D" parent="VisualRoot" unique_id=986051704]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+
+[node name="PulseRing" type="MeshInstance3D" parent="VisualRoot/RangeRoot" unique_id=899570608]
+material_override = SubResource("StandardMaterial3D_ghaui")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_3msm4")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=884611694]
+libraries/ = SubResource("AnimationLibrary_vk5ct")

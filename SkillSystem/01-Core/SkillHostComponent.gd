@@ -4,11 +4,49 @@ extends Node
 ## Host已完成动作身份迁移后通知；request为本次根，presentation是可空只读事实。
 ## 终结动作确认开始，context为本次带正身份的根请求，不表示成功释放。
 signal finisher_action_started(context: SkillContext)
+## 已核对动作身份的水平位移意图，displacement单位米；terminal末段必须先消费。
+signal skill_motion_step_requested(request_id: int, action_serial: int, displacement: Vector3, terminal: bool)
+## 硬取消匹配动作；自然terminal不会发此通知，避免抹掉末段。
+signal skill_motion_cancel_requested(request_id: int, action_serial: int)
+var _motion_action_serial: int = -1
+var _motion_action_id: int = -1
+var _motion_component: SkillMotionComponent
+var _motion_terminal: bool = false
+
+## 接收当前驱动的动画事实；不依赖SkillState.CASTING，释放后的后摇仍有效。
+func consume_action_motion_sample(request_id: int, action_serial: int, sample: Dictionary) -> void:
+	if action_serial != _motion_action_serial or request_id != _motion_action_id: return
+	if not is_instance_valid(_motion_component) or not _motion_component.is_inside_tree() or not is_instance_valid(_active_skill) or _motion_component.get_parent() != _active_skill:
+		_clear_motion_action()
+		return
+	var result := _motion_component.sample_motion(request_id, action_serial, sample)
+	if not bool(result.get("accepted",false)): return
+	_motion_terminal = bool(result.get("terminal",false))
+	skill_motion_step_requested.emit(request_id, action_serial, result.displacement, _motion_terminal)
+
+
+func _on_motion_component_exiting() -> void:
+	_clear_motion_action()
+
+
+func _clear_motion_action(preserve_terminal: bool = false) -> void:
+	if _motion_action_serial >= 1 and not (preserve_terminal and _motion_terminal):
+		if is_instance_valid(_motion_component): _motion_component.cancel_motion(_motion_action_id, _motion_action_serial)
+		skill_motion_cancel_requested.emit(_motion_action_id, _motion_action_serial)
+	if is_instance_valid(_motion_component) and _motion_component.tree_exiting.is_connected(_on_motion_component_exiting):
+		_motion_component.tree_exiting.disconnect(_on_motion_component_exiting)
+	_motion_component = null
+	_motion_action_serial = -1
+	_motion_action_id = -1
+	_motion_terminal = false
+
 ## 终结待发项目已结束，request_id仅用于匹配当前动作门闩。
 signal finisher_emission_finished(request_id: int)
 ## 终结动作遭硬中断；已释放时只停止未发，旧在途保留。
 signal finisher_action_cancelled(context: SkillContext, reason: StringName)
 signal command_action_started(request: SkillCommandRequest, presentation: SkillPresentationContext)
+## 当前原动作达到技能自身施法提示时点；context只读，不代表成功释放/命中，不改变动作锁。
+signal cast_cue_reached(context: SkillContext)
 ## 已注册技能的纯表现实例准备事实；禁止用于更改动作/费用。
 signal release_instance_prepared(presentation: SkillPresentationContext, instance: Node)
 ## 已注册技能的成功释放表现启动事实，按快照归属转发。
@@ -543,7 +581,17 @@ func confirm_active_action_started(cast_transform: Transform3D, expected_request
 	var request := _pending_command if _pending_command != null and _active_skill == _pending_command.get_skill() else _active_command
 	if request != null and expected_request_id != request.request_id: return false
 	if request == null and expected_request_id != get_active_command_id(): return false
-	if not is_instance_valid(_active_skill) or not _active_skill.confirm_action_started(cast_transform): return false
+	var started_skill := _active_skill
+	var started_context := _active_action_context
+	if not is_instance_valid(started_skill) or not started_skill.confirm_action_started(cast_transform): return false
+	# cast_started监听器可以同步取消或切换动作；不能在旧确认栈内绑定新/空技能。
+	if _active_skill != started_skill or _active_action_context != started_context: return false
+	_motion_component = _active_skill.get_motion_component()
+	if _motion_component != null and not _motion_component.tree_exiting.is_connected(_on_motion_component_exiting):
+		_motion_component.tree_exiting.connect(_on_motion_component_exiting)
+	_motion_action_id = expected_request_id
+	_motion_action_serial = int(_action_state_provider.call("get_external_action_serial")) if is_instance_valid(_action_state_provider) and _action_state_provider.has_method("get_external_action_serial") else -1
+	_motion_terminal = false
 	if request != null:
 		if _pending_command != request or request.has_failed() or not is_instance_valid(_active_skill): return false
 		request.mark_action_started()
@@ -598,15 +646,16 @@ func finish_active_action(expected_request_id: int = 0) -> void:
 			return
 		_active_command = null
 		if is_instance_valid(_active_skill): _active_skill.finish_action()
-		_release_active_skill()
+		_release_active_skill(true)
 		request.mark_action_finished()
 		command_state_changed.emit()
 		return
 	if expected_request_id != get_active_command_id() or not is_instance_valid(_active_skill): return
 	_active_skill.finish_action()
-	_release_active_skill()
+	_release_active_skill(true)
 
 
+## 取消当前执行，reason为终态原因；监听器可同步开始新请求，旧取消栈只清理原技能及context。
 func cancel_active_skill(reason: StringName = &"cancelled") -> void:
 	var finisher := get_finisher_action_context()
 	if finisher != null:
@@ -625,8 +674,13 @@ func cancel_active_skill(reason: StringName = &"cancelled") -> void:
 	if _pending_command != null and _active_skill == _pending_command.get_skill():
 		cancel_command(_pending_command.request_id, reason)
 		return
-	if is_instance_valid(_active_skill):
-		_active_skill.cancel_skill(reason)
+	var cancelled_skill := get_active_skill()
+	var cancelled_context := _active_action_context
+	if is_instance_valid(cancelled_skill):
+		cancelled_skill.cancel_skill(reason)
+	# 普通终态也可能同步解锁并受理新动作；不能用旧取消栈覆盖新context。
+	if _active_skill != cancelled_skill or _active_action_context != cancelled_context:
+		return
 	_release_active_skill()
 
 
@@ -822,6 +876,7 @@ func _find_skill(skill_id: StringName) -> SkillBase:
 
 func _connect_skill(skill: SkillBase) -> void:
 	skill.emission_finished.connect(_on_finisher_emission_finished)
+	skill.cast_cue_reached.connect(_on_skill_cast_cue_reached)
 	skill.release_instance_prepared.connect(_on_skill_release_instance_prepared)
 	skill.release_presentation_started.connect(_on_skill_release_presentation_started)
 	skill.action_requested.connect(_on_skill_action_requested)
@@ -834,6 +889,7 @@ func _connect_skill(skill: SkillBase) -> void:
 func _disconnect_skill(skill: SkillBase) -> void:
 	var connections: Array[Array] = [
 		[skill.emission_finished, Callable(self, &"_on_finisher_emission_finished")],
+		[skill.cast_cue_reached, Callable(self, &"_on_skill_cast_cue_reached")],
 		[skill.release_instance_prepared, Callable(self, &"_on_skill_release_instance_prepared")],
 		[skill.release_presentation_started, Callable(self, &"_on_skill_release_presentation_started")],
 		[skill.action_requested, Callable(self, &"_on_skill_action_requested")],
@@ -847,6 +903,10 @@ func _disconnect_skill(skill: SkillBase) -> void:
 		var callback: Callable = connection[1] as Callable
 		if signal_value.is_connected(callback):
 			signal_value.disconnect(callback)
+
+
+func _on_skill_cast_cue_reached(context: SkillContext) -> void:
+	if _context_matches_active(context): cast_cue_reached.emit(context)
 
 
 func _on_finisher_emission_finished(context: SkillContext) -> void:
@@ -909,7 +969,8 @@ func _on_skill_terminal(
 		_release_active_skill()
 
 
-func _release_active_skill() -> void:
+func _release_active_skill(preserve_terminal: bool = false) -> void:
+	_clear_motion_action(preserve_terminal)
 	_active_skill = null
 	_pending_context = null
 	_active_action_context = null
@@ -974,6 +1035,7 @@ func _get_configuration_warnings() -> PackedStringArray:
 
 
 func _exit_tree() -> void:
+	_clear_motion_action()
 	_cancel_all_commands(&"host_exiting")
 	_action_state_provider = null
 	for skill_value: Variant in _registered_skills.duplicate():

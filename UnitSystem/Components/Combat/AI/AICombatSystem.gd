@@ -23,6 +23,16 @@ signal external_action_finished()
 signal external_action_cancelled()
 ## 转发动作原request_id和release/finish/cancel阶段；普通身份0兼容旧调用。
 signal external_action_lifecycle(request_id: int, event: StringName)
+## 原样转发驱动事实；request_id+action_serial标识动作，sample为只读动画秒数。
+signal external_action_motion_sample(request_id: int, action_serial: int, sample: Dictionary)
+
+## 返回动作内部序号；不将其作为技能参数或冷却使用。
+func get_external_action_serial() -> int:
+	return _attack_controller.get_external_action_serial() if is_instance_valid(_attack_controller) else -1
+
+func _on_external_action_motion_sample(request_id: int, action_serial: int, sample: Dictionary) -> void:
+	external_action_motion_sample.emit(request_id, action_serial, sample)
+
 
 @export_category("Weapon")
 ## 由 AIUnitBase 根节点转交的共享武器数据；不作为子节点 Inspector 配置项。
@@ -315,6 +325,7 @@ func _is_valid_target(target: UnitBase) -> bool:
 
 func _connect_controller_signals() -> void:
 	var connections: Array[Array] = [
+		[_attack_controller.external_action_motion_sample, _on_external_action_motion_sample],
 		[_attack_controller.external_action_lifecycle, _on_external_action_lifecycle],
 		[_attack_controller.weapon_equipped, _on_weapon_equipped],
 		[_attack_controller.weapon_unequipped, _on_weapon_unequipped],

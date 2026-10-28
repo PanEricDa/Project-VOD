@@ -51,7 +51,10 @@ func _run() -> void:
 	await _wait(func() -> bool: return selection.get_selection_status().phase in [1,2],5.0)
 	var selection_status := selection.get_selection_status()
 	_expect(selection_status.phase in [1,2], "actual scored chain opens selection: %s" % selection_status)
-	_expect(not selection.try_select_slot(0), "unequipped Guardian gray/unselectable")
+	var priest_host := scene.get_node("Battle/Priest/SkillHost") as SkillHostComponent
+	priest_host.set_cast_blocked(true)
+	_expect(not selection.try_select_slot(1), "blocked Priest gray/unselectable despite equipped finisher")
+	priest_host.set_cast_blocked(false)
 	_expect(selection.try_select_slot(2), "Caster selection enters real execution")
 	_expect(selection.get_selection_status().phase == 0 and Engine.time_scale <= 0.05, "selection transfers ownership without normal-speed gap")
 	await _wait(func() -> bool: return execution.get_execution_status().phase == &"idle",5.0)

@@ -94,7 +94,9 @@ func get_actor_availability(actor: AllyBase) -> StringName:
 
 ## 预览/剧情可显式提出同一真实终结请求；正式玩法由选择事件调用，不伪造资格或直接生成火球。
 ## scatter_seed为本次局部种子，0随机；preview_mode=-1保留技能模式，否则只覆盖本次私有快照。
-func begin_finisher(actor: AllyBase, scatter_seed: int = 0, preview_mode: int = -1) -> bool:
+## finisher_multiplier为原轮冻结的评分威力，默认1兼容直接预览；须有限且>=1，不重新计算或叠乘旧请求倍率。
+func begin_finisher(actor: AllyBase, scatter_seed: int = 0, preview_mode: int = -1, finisher_multiplier: float = 1.0) -> bool:
+	if not is_finite(finisher_multiplier) or finisher_multiplier < 1.0: return false
 	_refresh_binding()
 	if get_actor_availability(actor) != &"": return false
 	var host := actor.get_node("SkillHost") as SkillHostComponent
@@ -106,6 +108,7 @@ func begin_finisher(actor: AllyBase, scatter_seed: int = 0, preview_mode: int = 
 	_clock.configure(_node(_scope))
 	context.execution_clock = _clock
 	context.scatter_seed = scatter_seed
+	context.finisher_multiplier = finisher_multiplier
 	_profile = context.cinematic_profile_snapshot.duplicate() as SkillCinematicProfile
 	if preview_mode in [0,1]: _profile.cinematic_mode = preview_mode as SkillCinematicProfile.CinematicMode
 	context.cinematic_profile_snapshot = _profile
@@ -203,7 +206,8 @@ func _on_selected(selection: Dictionary) -> void:
 	if slot < 0 or slot >= command.companions.size(): return
 	var actor := command.companions[slot]
 	if not is_instance_valid(actor) or actor.get_instance_id() != selection.get("actor_instance_id", 0): return
-	begin_finisher(actor)
+	# 读取当前已验证窗口的冻结值，不信任外部可修改的选择消息或后来轮次。
+	begin_finisher(actor,0,-1,float(status.get("finisher_multiplier",1.0)))
 	if is_instance_valid(source): source.complete_execution_handoff()
 
 func _connect_execution(host: SkillHostComponent, skill: SkillBase) -> void:
@@ -252,7 +256,7 @@ func _on_action_started(context: SkillContext) -> void:
 		var skill := _node(_skill) as SkillBase
 		if skill != null:
 			var camera_profile := skill.camera_effect_profile as SkillCinematicCameraProfile
-			if camera_profile != null and camera.begin_cinematic(_request_id,pose,camera_profile,_clock) and _profile.cinematic_mode == SkillCinematicProfile.CinematicMode.HOLD_THROUGH_IMPACTS:
+			if camera_profile != null and camera.begin_cinematic(_request_id,pose,camera_profile,_clock,source) and _profile.cinematic_mode == SkillCinematicProfile.CinematicMode.HOLD_THROUGH_IMPACTS:
 				_phase = &"enter_closeup"
 				_clock.hold_action(true)
 				_begin_transition_pause()
@@ -275,7 +279,12 @@ func request_finisher_release(context: SkillContext, launch_transform: Transform
 	var radius := 0.0
 	if skill.delivery is ArcProjectileDeliveryConfig:
 		var config := skill.delivery as ArcProjectileDeliveryConfig
-		radius = config.scatter_radius_m+config.impact_radius_m
+		if config.destination_mode == ArcProjectileDeliveryConfig.DestinationMode.RANDOM_GROUND_CIRCLE:
+			radius = config.scatter_radius_m+config.impact_radius_m
+	elif skill.delivery is InstantTargetDeliveryConfig:
+		var config := skill.delivery as InstantTargetDeliveryConfig
+		if config.target_collection_mode == InstantTargetDeliveryConfig.TargetCollectionMode.CASTER_RADIUS:
+			radius = config.effect_radius
 	camera.show_cinematic_area(_request_id,context.resolved_target.global_position,radius)
 	return _begin_transition_pause()
 

@@ -44,6 +44,30 @@ var is_chain_root: bool:
 var effective_cast_time: float:
 	get: return _data["effective_cast_time"]
 
+## 本次瞬发范围的水平半径，单位米；0表示不提供范围适配，纯表现只读。
+var effect_radius: float:
+	get: return _data["effect_radius"]
+
+## 瞬发范围中心沿稳定朝向前移的米数；非范围交付为0，不改变范围或落点。
+var effect_center_forward_offset_m: float:
+	get: return _data.get("effect_center_forward_offset_m", 0.0)
+
+## 实际交付前冻结的脚下位置/水平朝向；仅释放阶段有效，不随施法者后续移动。
+var release_caster_transform: Transform3D:
+	get: return _data.get("release_caster_transform", Transform3D(Basis.IDENTITY, Vector3.INF))
+
+## 释放时冻结的技能目标世界位置；未释放或未提供时为INF，表现不得再查询活动目标。
+var release_target_position: Vector3:
+	get: return _data.get("release_target_position",Vector3.INF)
+
+## 瞬发范围的冻结世界圆心；与拉拽落点、视觉附着锚点独立，非范围或释放前为INF。
+var release_effect_center_position: Vector3:
+	get: return _data.get("release_effect_center_position",Vector3.INF)
+
+## 返回指定效果职责的独立纯值副本；未知键返回空，修改结果不影响本次表现或技能。
+func get_effect_data(effect_kind: StringName) -> Dictionary:
+	return (_data.get("effect_data", {}).get(effect_kind, {}) as Dictionary).duplicate(true)
+
 ## 当前阶段有限世界变换；释放阶段使用已解析锚点，不保存跟随目标。
 var world_transform: Transform3D:
 	get: return _data["world_transform"]
@@ -76,9 +100,17 @@ static func create(skill: SkillBase, context: SkillContext, action_transform: Tr
 		"purpose": context.purpose, "execution_mode": context.execution_mode,
 		"is_chain_root": context.purpose == SkillContext.Purpose.CHAIN and context.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION,
 		"effective_cast_time": skill.get_effective_cast_time(), "world_transform": action_transform,
+		"effect_radius": skill.delivery.effect_radius if skill.delivery is InstantTargetDeliveryConfig and skill.delivery.target_collection_mode != InstantTargetDeliveryConfig.TargetCollectionMode.SINGLE else 0.0,
 		"visual_scene": skill.release_effect_scene, "audio_stream": skill.release_audio_stream,
 		"release_effect_anchor": int(skill.release_effect_anchor),
 		"pause_duration_seconds": skill.release_accent_profile.pause_duration_seconds if skill.release_accent_profile != null else 0.0}
+	result._data["effect_center_on_target"] = skill.delivery is InstantTargetDeliveryConfig and skill.delivery.target_collection_mode == InstantTargetDeliveryConfig.TargetCollectionMode.TARGET_RADIUS
+	result._data["effect_center_forward_offset_m"] = skill.delivery.center_forward_offset_m if skill.delivery is InstantTargetDeliveryConfig and skill.delivery.target_collection_mode != InstantTargetDeliveryConfig.TargetCollectionMode.SINGLE else 0.0
+	var effect_data: Dictionary = {}
+	for child: Node in skill.get_children():
+		if child is SkillEffectBase:
+			effect_data.merge((child as SkillEffectBase).get_presentation_data().duplicate(true), true)
+	result._data["effect_data"] = effect_data
 	result._source = weakref(context.caster) if is_instance_valid(context.caster) else null
 	result._target = weakref(context.resolved_target) if is_instance_valid(context.resolved_target) else null
 	result._world = weakref(context.delivery_parent)
@@ -92,6 +124,15 @@ func for_release(context: SkillContext, anchor_transform: Transform3D) -> SkillP
 	result._data = _data.duplicate()
 	result._data.stage = Stage.RELEASE
 	result._data.world_transform = anchor_transform
+	var forward := context.release_facing_direction
+	forward.y = 0.0
+	if context.release_caster_position.is_finite() and forward.is_finite() and forward.length_squared() > 0.000001:
+		result._data["release_caster_transform"] = Transform3D(Basis(Vector3.UP, atan2(-forward.x,-forward.z)), context.release_caster_position)
+	result._data["release_target_position"] = context.target_position
+	if bool(_data.get("effect_center_on_target",false)):
+		result._data["release_effect_center_position"] = context.target_position
+	elif context.release_caster_position.is_finite() and forward.is_finite() and forward.length_squared()>0.000001:
+		result._data["release_effect_center_position"] = context.release_caster_position + forward.normalized()*effect_center_forward_offset_m
 	result._source = _source
 	result._target = weakref(context.resolved_target) if is_instance_valid(context.resolved_target) else null
 	result._world = _world

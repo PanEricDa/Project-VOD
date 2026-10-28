@@ -10,6 +10,7 @@
 [ext_resource type="Resource" uid="uid://cnrmochu3ntvo" path="res://UnitSystem/Components/Targeting/AI/Policies/GuardianProtect.tres" id="6_protect"]
 [ext_resource type="PackedScene" uid="uid://cfo5ywuu8jkn2" path="res://SkillSystem/00-Skills/GuardianTaunt/GuardianTauntSkill.tscn" id="7_taunt"]
 [ext_resource type="PackedScene" uid="uid://cgeig6u8vwmpy" path="res://SkillSystem/00-Skills/Combo_GuardianBash/ComboGuardianBashSkill.tscn" id="7_w7l1r"]
+[ext_resource type="PackedScene" uid="uid://do2350764yid8" path="res://SkillSystem/00-Skills/Finisher_GuardianArmorBreak/GuardianArmorBreakFinisherSkill.tscn" id="8_bk5fc"]
 
 [sub_resource type="Resource" id="Resource_dxu28"]
 resource_local_to_scene = true
@@ -40,8 +41,9 @@ threat_takeover_ratio = 1.05
 threat_action_suppression_at_125 = 0.0
 hit_movement_lock_duration = 0.04
 
-[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "combo_skill")]
+[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "finisher_skill", "combo_skill")]
 regular_skills = [NodePath("SkillSocket/GuardianShieldSkill"), NodePath("SkillSocket/GuardianTauntSkill")]
+finisher_skill = NodePath("SkillSocket/GuardianArmorBreakFinisherSkill")
 combo_skill = NodePath("SkillSocket/ComboGuardianBashSkill")
 
 [node name="GuardianShieldSkill" parent="SkillHost/SkillSocket" index="0" unique_id=2125788544 instance=ExtResource("5_skill")]
@@ -52,6 +54,8 @@ delivery = SubResource("Resource_bk5fc")
 
 [node name="ComboGuardianBashSkill" parent="SkillHost/SkillSocket" index="2" unique_id=1494957971 instance=ExtResource("7_w7l1r")]
 delivery = SubResource("Resource_5cnl5")
+
+[node name="GuardianArmorBreakFinisherSkill" parent="SkillHost/SkillSocket" index="3" unique_id=1243454382 instance=ExtResource("8_bk5fc")]
 
 [node name="CombatSystem" parent="." index="3" unique_id=1080413471 instance=ExtResource("4_combat")]
 debug_hitbox_enabled = true

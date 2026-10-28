@@ -18,11 +18,17 @@ signal attack_hit(
 	combo_index: int
 )
 
+
+## 玩家技能动作事实；request_id沿用Host普通请求0，action_serial唯一标识本次动作。
+## event为release/finish/cancel；订阅者必须按serial过滤迟到通知，不用它绕过SkillHost交付。
+signal external_action_lifecycle(request_id: int, action_serial: int, event: StringName)
+
 enum AttackState {
 	IDLE,
 	ATTACKING,
 	CHAIN_WAIT,
 	ROUND_WAIT,
+	EXTERNAL_ACTION,
 }
 
 const VISUAL_SLOT_PATH: NodePath = ^"Visual"
@@ -53,8 +59,19 @@ var combo_reset_duration: float = 0.7
 @export_range(0.0, 3.0, 0.05, "or_greater")
 var hold_combo_restart_delay: float = 0.3
 
+const EXTERNAL_LIBRARY: StringName = &"_player_skill_action"
+var _external_serial: int = 0
+var _external_request_id: int = 0
+var _external_animation: StringName = &""
+var _external_library: AnimationLibrary
+var _external_released: bool = false
+var _external_deadline: float = 0.0
+
 var _state: AttackState = AttackState.IDLE
 var _combo_index: int = 0
+## 技能抢占时保存下一段逻辑序号；版本隔离同步回调中的换装、取消与新动作，不保存动画名/进度。
+var _combo_resume_index: int = 0
+var _combo_resume_version: int = 0
 var _attack_animation_count: int = 0
 var _input_buffer_remaining: float = 0.0
 var _combo_reset_remaining: float = 0.0
@@ -92,6 +109,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _state == AttackState.EXTERNAL_ACTION:
+		var owner_unit := get_parent() as UnitBase
+		if not is_instance_valid(owner_unit) or owner_unit.is_dead():
+			cancel_external_action()
+			return
+		if not _hit_stop_active:
+			_external_deadline -= maxf(delta, 0.0)
+			if _external_deadline <= 0.0:
+				cancel_external_action()
+		return
 	# 冲刺优先级高于普通攻击。PlayerBase 不需要反向依赖控制器；控制器通过
 	# 可选公开接口观察冲刺状态，并统一清理动画、位移和 Hitbox 窗口。
 	if _input_enabled and InputMap.has_action(attack_action) and Input.is_action_just_pressed(
@@ -193,6 +220,10 @@ func request_attack() -> void:
 
 ## 立即中断当前攻击并恢复武器 RESET 姿势。
 func cancel_combo() -> void:
+	_clear_combo_resume()
+	if _state == AttackState.EXTERNAL_ACTION:
+		cancel_external_action()
+		return
 	var had_active_combo: bool = (
 		_state != AttackState.IDLE or _combo_index > 0
 	)
@@ -279,7 +310,7 @@ func set_hit_stop_active(active: bool) -> void:
 
 	if (
 		_animation_was_playing_before_hit_stop
-		and _state == AttackState.ATTACKING
+		and _state in [AttackState.ATTACKING, AttackState.EXTERNAL_ACTION]
 		and is_instance_valid(_animation_player)
 	):
 		# 不传动画名会从 pause() 保存的当前位置继续播放，而不是从头重播。
@@ -298,6 +329,7 @@ func _equip_starting_weapon() -> void:
 
 
 func _start_attack(combo_index: int) -> void:
+	_clear_combo_resume()
 	if combo_index < 1 or combo_index > _attack_animation_count:
 		return
 	var animation_name := StringName(
@@ -324,6 +356,10 @@ func _start_attack(combo_index: int) -> void:
 
 
 func _on_animation_finished(animation_name: StringName) -> void:
+	if _state == AttackState.EXTERNAL_ACTION:
+		if animation_name == _external_animation:
+			_end_external_action(&"cancel")
+		return
 	if (
 		_state != AttackState.ATTACKING
 		or animation_name != _current_attack_animation
@@ -331,7 +367,11 @@ func _on_animation_finished(animation_name: StringName) -> void:
 		return
 	_close_attack_hit_window()
 	var finished_index: int = _combo_index
+	var finished_version := _combo_resume_version
 	attack_finished.emit(finished_index)
+	# 监听者可能同步插入技能、取消或重启普攻；旧完成栈不得覆盖新动作。
+	if _state != AttackState.ATTACKING or _combo_resume_version != finished_version:
+		return
 	_current_attack_animation = &""
 
 	if finished_index >= _attack_animation_count:
@@ -371,6 +411,9 @@ func _finish_combo(completed_full_round: bool) -> void:
 
 
 func _play_reset_animation() -> void:
+	var owner_unit := get_parent() as UnitBase
+	if owner_unit != null and owner_unit.is_dead():
+		return
 	if not is_instance_valid(_animation_player):
 		return
 	var reset_name := StringName(
@@ -379,7 +422,8 @@ func _play_reset_animation() -> void:
 	if _animation_player.has_animation(reset_name):
 		_animation_player.play(reset_name)
 	else:
-		_animation_player.stop()
+		# 卸装后assigned_animation可能仍指向旧库；仅停止，不重新采样已移除的RESET。
+		_animation_player.stop(true)
 
 
 func _is_attack_action_pressed() -> bool:
@@ -446,6 +490,11 @@ func _resolve_visual_endpoints() -> bool:
 			&"hit_window_close_requested",
 			_on_hit_window_close_requested
 		)
+
+	if _animation_player.has_signal(&"action_release_requested") and not _animation_player.is_connected(&"action_release_requested", _on_external_release):
+		_animation_player.connect(&"action_release_requested", _on_external_release)
+	if _animation_player.has_signal(&"action_finish_requested") and not _animation_player.is_connected(&"action_finish_requested", _on_external_finish):
+		_animation_player.connect(&"action_finish_requested", _on_external_finish)
 	return is_instance_valid(_weapon_socket)
 
 
@@ -571,6 +620,8 @@ func _cancel_owner_attack_motion() -> void:
 
 
 func _exit_tree() -> void:
+	_clear_combo_resume()
+	cancel_external_action()
 	set_hit_stop_active(false)
 	_close_attack_hit_window()
 
@@ -645,3 +696,192 @@ func _report_configuration_error(message: String) -> void:
 	# 使用普通诊断输出而非 push_error/push_warning，避免一次可恢复的装备失败污染
 	# Godot Debugger；equip_weapon() 的 bool 返回值仍允许调用方明确处理失败。
 	print("PlayerAttackController: " + message)
+
+
+
+## 接收角色外部技能动作，不反向读取SkillBase/Host。
+## effective_cast_time为已经计算的战斗秒数；target仅预留目标语义，payload为只读动作资产/名称。
+## request_id非负，普通技能为0；返回true仅表示动画启动，方法帧将在后续推进时执行。
+## 动作资产及端点全部验证后才抢占普攻并保存下一段；不会抢占其他外部技能，失败不改变原普攻。
+func request_external_action(effective_cast_time: float, _target: UnitBase = null, action_payload: Dictionary = {}, request_id: int = 0) -> bool:
+	var actor := get_parent() as UnitBase
+	if request_id < 0 or not is_finite(effective_cast_time) or effective_cast_time < 0.0:
+		return false
+	if is_external_action_in_progress() or not _resolve_visual_endpoints() or not is_instance_valid(actor) or actor.is_dead():
+		return false
+	if actor.has_method("is_player_dashing") and actor.call("is_player_dashing"):
+		return false
+	var origin := _weapon_socket.get_node_or_null(^"ProjectileOrigin") as Node3D
+	if not is_instance_valid(origin) or not origin.is_inside_tree() or not origin.global_transform.is_finite():
+		return false
+	var animation := action_payload.get("action_animation") as Animation
+	var animation_name := StringName(action_payload.get("animation_name", &"basic_cast_1"))
+	if animation == null:
+		if not str(animation_name).contains("/"):
+			animation_name = StringName("weapon/" + str(animation_name))
+		if not _animation_player.has_animation(animation_name):
+			return false
+		animation = _animation_player.get_animation(animation_name)
+	var markers := _validate_external_animation(animation)
+	if markers.is_empty():
+		return false
+	var release_time: float = markers[0]
+	if effective_cast_time <= 0.0 and not is_zero_approx(release_time):
+		return false
+	var playback_speed := release_time / effective_cast_time if effective_cast_time > 0.0 else 1.0
+	if not is_finite(playback_speed) or playback_speed <= 0.0:
+		return false
+	# 验证通过才抢占；保留的是控制层段数，不依赖任何武器动画轨道。
+	_suspend_combo_for_skill()
+	_external_serial += 1
+	_external_request_id = request_id
+	_external_released = false
+	_external_deadline = animation.length / playback_speed + 1.0
+	if action_payload.get("action_animation") != null:
+		if _animation_player.has_animation_library(EXTERNAL_LIBRARY):
+			_animation_player.remove_animation_library(EXTERNAL_LIBRARY)
+		_external_library = AnimationLibrary.new()
+		var clip_name := StringName("action_" + str(_external_serial))
+		_external_library.add_animation(clip_name, animation)
+		_animation_player.add_animation_library(EXTERNAL_LIBRARY, _external_library)
+		animation_name = StringName(str(EXTERNAL_LIBRARY) + "/" + str(clip_name))
+	_external_animation = animation_name
+	_state = AttackState.EXTERNAL_ACTION
+	_animation_player.play(animation_name, -1.0, playback_speed)
+	# 不advance/seek零帧方法；返回后Controller先确认Host进入CASTING。
+	return true
+
+## 查询本地单调递增动作身份；取消不复用身份，普通request_id=0不承担身份隔离。
+func get_external_action_serial() -> int:
+	return _external_serial
+
+## 普攻正在播放或技能动作占用时为true；普攻连段/轮次等待不是不可打断动作。
+func is_action_in_progress() -> bool:
+	return _state in [AttackState.ATTACKING, AttackState.EXTERNAL_ACTION]
+
+## 返回武器挂点中ProjectileOrigin的世界变换；调用前须成功启动动作，缺失时安全返回单位变换。
+## 端点存在性在request_external_action单独验证，合法世界原点不是缺失哨兵。
+func get_action_launch_transform() -> Transform3D:
+	var origin := _weapon_socket.get_node_or_null(^"ProjectileOrigin") as Node3D if is_instance_valid(_weapon_socket) else null
+	return origin.global_transform if is_instance_valid(origin) and origin.is_inside_tree() else Transform3D()
+
+## 取消当前外部动作，未启动时无操作；不补发release、不退款，不接管其他动作。
+func cancel_external_action() -> void:
+	if _state == AttackState.EXTERNAL_ACTION:
+		_end_external_action(&"cancel")
+
+## 当前是否由外部技能动作占用动画，供玩家冲刺互斥；不将普通攻击误判为技能锁。
+func is_external_action_in_progress() -> bool:
+	return _state == AttackState.EXTERNAL_ACTION
+
+## 供Host动作执行者协议调用；取消当前模式，不要求调用者了解普攻/技能细节。
+func cancel_current_action() -> void:
+	cancel_combo()
+
+func _validate_external_animation(animation: Animation) -> Array[float]:
+	var releases: Array[float] = []
+	var finishes: Array[float] = []
+	if animation == null or animation.loop_mode != Animation.LOOP_NONE or not is_finite(animation.length) or animation.length <= 0.0:
+		return []
+	for track: int in animation.get_track_count():
+		if animation.track_get_type(track) != Animation.TYPE_METHOD or not animation.track_is_enabled(track):
+			continue
+		if str(animation.track_get_path(track)) != "CharacterAnimationPlayer":
+			return []
+		for key: int in animation.track_get_key_count(track):
+			var event: Dictionary = animation.track_get_key_value(track, key)
+			if not event.get("args", []).is_empty():
+				return []
+			var method := StringName(event.get("method", &""))
+			if method == &"release_action":
+				releases.append(animation.track_get_key_time(track, key))
+			elif method == &"finish_action":
+				finishes.append(animation.track_get_key_time(track, key))
+	if releases.size() != 1 or finishes.size() != 1:
+		return []
+	# 外部库方法帧以float32存储，动画length为double；允许末帧仅有浮点表示差异。
+	if releases[0] < 0.0 or releases[0] >= finishes[0] or (finishes[0] > animation.length and not is_equal_approx(finishes[0], animation.length)):
+		return []
+	return [releases[0], finishes[0]]
+
+func _on_external_release() -> void:
+	if _state != AttackState.EXTERNAL_ACTION or _external_released or _animation_player.current_animation != _external_animation:
+		return
+	_external_released = true
+	external_action_lifecycle.emit(_external_request_id, _external_serial, &"release")
+
+func _on_external_finish() -> void:
+	if _state != AttackState.EXTERNAL_ACTION or _animation_player.current_animation != _external_animation:
+		return
+	_end_external_action(&"finish" if _external_released else &"cancel")
+
+func _end_external_action(event: StringName) -> void:
+	var resume_version := _combo_resume_version
+	if event != &"finish":
+		_clear_combo_resume()
+	var serial := _external_serial
+	var request_id := _external_request_id
+	var library := _external_library
+	# 在回调前完全失效旧状态，避免订阅者同步启动的新动作被旧栈清理。
+	_state = AttackState.IDLE
+	_external_animation = &""
+	_external_request_id = 0
+	_external_deadline = 0.0
+	_external_released = false
+	_external_library = null
+	set_hit_stop_active(false)
+	if is_instance_valid(_animation_player):
+		_animation_player.stop()
+		_animation_player.current_animation = &""
+		_play_reset_animation()
+	if library != null:
+		call_deferred("_remove_external_library", library)
+	external_action_lifecycle.emit(request_id, serial, event)
+	# Host先完成/清理旧技能。同步回调若启动其他动作或换装/取消，旧续段不再生效。
+	if event == &"finish" and _external_serial == serial and _combo_resume_version == resume_version and _state == AttackState.IDLE:
+		_resume_combo_after_skill()
+
+func _remove_external_library(library: AnimationLibrary) -> void:
+	# AnimationPlayer方法帧推进期间不移除其库；只清理原对象，不删除新请求的同名库。
+	if is_instance_valid(_animation_player) and _animation_player.has_animation_library(EXTERNAL_LIBRARY) and _animation_player.get_animation_library(EXTERNAL_LIBRARY) == library:
+		_animation_player.remove_animation_library(EXTERNAL_LIBRARY)
+
+# 空记录表示没有被技能打断的普攻；版本只用于本地同步回调隔离，不是策划参数。
+func _clear_combo_resume() -> void:
+	_combo_resume_index = 0
+	_combo_resume_version += 1
+
+# 技能动作已通过验证；只清理普攻执行，不将暂停中的连段伪报为自然完成。
+func _suspend_combo_for_skill() -> void:
+	_clear_combo_resume()
+	if _state in [AttackState.ATTACKING, AttackState.CHAIN_WAIT] and _combo_index > 0:
+		_combo_resume_index = _combo_index + 1 if _combo_index < _attack_animation_count else 1
+	set_hit_stop_active(false)
+	_close_attack_hit_window()
+	_cancel_owner_attack_motion()
+	_state = AttackState.IDLE
+	_combo_index = 0
+	_input_buffer_remaining = 0.0
+	_combo_reset_remaining = 0.0
+	_round_restart_remaining = 0.0
+	_current_attack_animation = &""
+	_animation_player.stop()
+
+# 仅正常finish后调用；仍持有同一武器装配及有效输入时，按原自动连段开关决定是否立刻续攻。
+# 松键则进入原有CHAIN_WAIT窗口；死亡/输入禁用/离树等不遗留待补发的攻击。
+func _resume_combo_after_skill() -> void:
+	var next_index := _combo_resume_index
+	_clear_combo_resume()
+	var actor := get_parent() as UnitBase
+	if next_index <= 0 or next_index > _attack_animation_count or not is_inside_tree() or is_queued_for_deletion() or not _input_enabled or not is_instance_valid(actor) or actor.is_dead() or actor.is_queued_for_deletion() or get_tree().paused:
+		return
+	if actor.has_method("is_player_input_enabled") and not actor.call("is_player_input_enabled"):
+		return
+	if actor.has_method("is_player_dashing") and actor.call("is_player_dashing"):
+		return
+	if hold_to_auto_chain and _is_attack_action_pressed():
+		_start_attack(next_index)
+	else:
+		_state = AttackState.CHAIN_WAIT
+		_combo_index = next_index - 1
+		_combo_reset_remaining = combo_reset_duration

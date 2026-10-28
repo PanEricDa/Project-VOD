@@ -33,6 +33,8 @@ func _run() -> void:
 func _verify_stepped_zoom() -> void:
 	var rig := Node3D.new()
 	rig.set_script(load(CAMERA_CONTROLLER_SCRIPT_PATH))
+	# 本专项保留旧固定俯角模式的输入与档位契约；变俯角由CameraTerrainZoomTest覆盖。
+	rig.set("zoom_pitch_enabled", false)
 	var camera := Camera3D.new()
 	camera.name = "Camera3D"
 	camera.rotation_degrees.x = -50.0

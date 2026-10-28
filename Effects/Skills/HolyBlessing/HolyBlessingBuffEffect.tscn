@@ -1,0 +1,285 @@
+[gd_scene format=3 uid="uid://xpuh1vohomis"]
+
+[ext_resource type="Script" uid="uid://dxqwgmciw224t" path="res://Effects/Combat/StatusModifierVisualPlayer.gd" id="1_6ak2t"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_45cqn"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6ak2t"]
+size = Vector3(0.22, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ta85"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5h3is"]
+size = Vector3(0.22, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0a42u"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_j4ww4"]
+size = Vector3(0.22, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sewo1"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_d3cke"]
+size = Vector3(0.22, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4xhb2"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.48, 1, 0.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_y4w50"]
+size = Vector3(0.044, 0.044, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xiryg"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_7yfa0"]
+size = Vector3(0.035, 0.65, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wjcub"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_8m61m"]
+size = Vector3(0.035, 0.65, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yalrb"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_d60bm"]
+size = Vector3(0.035, 0.65, 0.035)
+
+[sub_resource type="Animation" id="Animation_4hnqg"]
+length = 0.4
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/BlessingMark:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.3, 0.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.05, 0.05, 0.05), Vector3(1.15, 1.15, 1.15), Vector3(1, 1, 1)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/GainRay0:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0.28, 0.15, 0), Vector3(0.28, 0.8, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("VisualRoot/GainRay0:transparency")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.2, 0.0, 1.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("VisualRoot/GainRay1:position")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(-0.14, 0.15, 0.24248712), Vector3(-0.14, 0.8, 0.24248712)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("VisualRoot/GainRay1:transparency")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.2, 0.0, 1.0]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("VisualRoot/GainRay2:position")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(-0.14, 0.15, -0.24248712), Vector3(-0.14, 0.8, -0.24248712)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("VisualRoot/GainRay2:transparency")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.2, 0.0, 1.0]
+}
+
+[sub_resource type="Animation" id="Animation_rhhog"]
+length = 2.4
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/BlessingMark:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 2.4),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 6.2831855, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/BlessingMark:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1.2, 2.4),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(1.06, 1.06, 1.06), Vector3(1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_6ta85"]
+length = 0.15
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.15),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(0.01, 0.01, 0.01)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_hhcve"]
+_data = {
+&"gain": SubResource("Animation_4hnqg"),
+&"idle": SubResource("Animation_rhhog"),
+&"out": SubResource("Animation_6ta85")
+}
+
+[node name="HolyBlessingBuffEffect" type="Node3D" unique_id=946473952]
+script = ExtResource("1_6ak2t")
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1461091085]
+
+[node name="BlessingMark" type="Node3D" parent="VisualRoot" unique_id=548234071]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, -0.05)
+
+[node name="Edge0" type="MeshInstance3D" parent="VisualRoot/BlessingMark" unique_id=98551202]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 0.11, 0, 0)
+material_override = SubResource("StandardMaterial3D_45cqn")
+transparency = 0.35
+cast_shadow = 0
+mesh = SubResource("BoxMesh_6ak2t")
+
+[node name="Edge1" type="MeshInstance3D" parent="VisualRoot/BlessingMark" unique_id=1587423]
+transform = Transform3D(-0.70710677, -0.70710677, 0, 0.70710677, -0.70710677, 0, 0, 0, 1, 6.735335e-18, 0.11, 0)
+material_override = SubResource("StandardMaterial3D_6ta85")
+transparency = 0.35
+cast_shadow = 0
+mesh = SubResource("BoxMesh_5h3is")
+
+[node name="Edge2" type="MeshInstance3D" parent="VisualRoot/BlessingMark" unique_id=1723214967]
+transform = Transform3D(-0.7071068, 0.7071067, 0, -0.7071067, -0.7071068, 0, 0, 0, 1, -0.11, 1.347067e-17, 0)
+material_override = SubResource("StandardMaterial3D_0a42u")
+transparency = 0.35
+cast_shadow = 0
+mesh = SubResource("BoxMesh_j4ww4")
+
+[node name="Edge3" type="MeshInstance3D" parent="VisualRoot/BlessingMark" unique_id=1218369183]
+transform = Transform3D(0.70710665, 0.7071069, 0, -0.7071069, 0.70710665, 0, 0, 0, 1, -2.0206004e-17, -0.11, 0)
+material_override = SubResource("StandardMaterial3D_sewo1")
+transparency = 0.35
+cast_shadow = 0
+mesh = SubResource("BoxMesh_d3cke")
+
+[node name="Core" type="MeshInstance3D" parent="VisualRoot/BlessingMark" unique_id=1630326444]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_4xhb2")
+transparency = 0.35
+cast_shadow = 0
+mesh = SubResource("BoxMesh_y4w50")
+
+[node name="GainRay0" type="MeshInstance3D" parent="VisualRoot" unique_id=1994774051]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0.35, 0)
+material_override = SubResource("StandardMaterial3D_xiryg")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_7yfa0")
+
+[node name="GainRay1" type="MeshInstance3D" parent="VisualRoot" unique_id=226325956]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.35, 0.24248712)
+material_override = SubResource("StandardMaterial3D_wjcub")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_8m61m")
+
+[node name="GainRay2" type="MeshInstance3D" parent="VisualRoot" unique_id=1071255083]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.14, 0.35, -0.24248712)
+material_override = SubResource("StandardMaterial3D_yalrb")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_d60bm")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1164100823]
+libraries/ = SubResource("AnimationLibrary_hhcve")
+autoplay = &"gain"

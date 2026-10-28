@@ -1,44 +1,7 @@
 [gd_scene format=3 uid="uid://1w1ftyj1dedn"]
 
 [ext_resource type="Script" uid="uid://cgth06culh36y" path="res://UnitSystem/Components/UI/SquadFinisherSelectionDisplay.gd" id="1_eshb7"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yegn0"]
-content_margin_left = 14.0
-content_margin_top = 10.0
-content_margin_right = 14.0
-content_margin_bottom = 10.0
-bg_color = Color(0.035, 0.065, 0.105, 0.95)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.35, 0.52, 0.66, 0.9)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wy8ai"]
-content_margin_left = 14.0
-content_margin_top = 10.0
-content_margin_right = 14.0
-content_margin_bottom = 10.0
-bg_color = Color(0.12, 0.24, 0.34, 0.98)
-border_width_left = 4
-border_width_top = 4
-border_width_right = 4
-border_width_bottom = 4
-border_color = Color(0.82, 0.95, 1, 1)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-corner_radius_bottom_right = 14
-corner_radius_bottom_left = 14
-
-[sub_resource type="Theme" id="Theme_fmlfx"]
-FinisherOption/base_type = &"PanelContainer"
-FinisherOption/styles/panel = SubResource("StyleBoxFlat_yegn0")
-FinisherSelected/base_type = &"PanelContainer"
-FinisherSelected/styles/panel = SubResource("StyleBoxFlat_wy8ai")
+[ext_resource type="Theme" uid="uid://bjglve3uoehgt" path="res://UnitSystem/Components/UI/Themes/SkillInputFeedbackTheme.tres" id="2_yegn0"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_85aur"]
 bg_color = Color(0.04, 0.075, 0.11, 0.9)
@@ -64,6 +27,8 @@ layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
 [node name="Cross" type="Control" parent="Root" unique_id=171374532]
@@ -73,7 +38,7 @@ anchor_top = 0.64
 anchor_right = 0.66
 anchor_bottom = 0.64
 mouse_filter = 2
-theme = SubResource("Theme_fmlfx")
+theme = ExtResource("2_yegn0")
 
 [node name="Title" type="Label" parent="Root/Cross" unique_id=738544004]
 layout_mode = 0
@@ -83,7 +48,7 @@ offset_right = 190.0
 offset_bottom = -248.0
 theme_override_colors/font_color = Color(0.86, 0.94, 1, 1)
 theme_override_font_sizes/font_size = 30
-text = "终结时机"
+text = "松开确认终结技"
 horizontal_alignment = 1
 
 [node name="Slot1" type="PanelContainer" parent="Root/Cross" unique_id=1183959453]

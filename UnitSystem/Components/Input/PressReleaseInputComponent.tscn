@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cuvdfwk3cji26"]
+
+[ext_resource type="Script" uid="uid://0aco142eb2ks" path="res://UnitSystem/Components/Input/PressReleaseInputComponent.gd" id="1_iofvw"]
+
+[node name="PressReleaseInputComponent" type="Node" unique_id=875623275]
+script = ExtResource("1_iofvw")

@@ -1,0 +1,153 @@
+[gd_scene format=4 uid="uid://c33gh2hjn0yk1"]
+
+[ext_resource type="Script" uid="uid://dadx8b6nxsnmt" path="res://Effects/Skills/Gather/GatherReleaseEffect.gd" id="1_q5bbt"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fvxjf"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.6, 0.85, 1, 0.34)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_q26gg"]
+_surfaces = [{
+"aabb": AABB(0.8808182, 0, 0, 0.11918181, 1e-05, 0.43837115),
+"format": 34359738369,
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 120,
+"vertex_data": PackedByteArray("SOF6PwAAAAAAAAAAAACAPwAAAAAAAAAAIu9/PwAAAADJ2rk8SOF6PwAAAAAAAAAAIu9/PwAAAADJ2rk8wNB6PwAAAAA2I7Y8wNB6PwAAAAA2I7Y8Iu9/PwAAAADJ2rk8ibx/PwAAAACKzjk9wNB6PwAAAAA2I7Y8ibx/PwAAAACKzjk9Kp96PwAAAAA2FzY9Kp96PwAAAAA2FzY9ibx/PwAAAACKzjk9PWh/PwAAAACaS4s9Kp96PwAAAAA2FzY9PWh/PwAAAACaS4s9jUx6PwAAAABpgog9jUx6PwAAAABpgog9PWh/PwAAAACaS4s9SPJ+PwAAAACTnbk9jUx6PwAAAABpgog9SPJ+PwAAAACTnbk99Nh5PwAAAAA557U99Nh5PwAAAAA557U9SPJ+PwAAAACTnbk9ulp+PwAAAAAW1+c99Nh5PwAAAAA557U9ulp+PwAAAAAW1+c9bkR5PwAAAAARNOM9bkR5PwAAAAARNOM9ulp+PwAAAAAW1+c9p6F9PwAAAAAG+Qo+bkR5PwAAAAARNOM9p6F9PwAAAAAG+Qo+D494PwAAAAB8MQg+D494PwAAAAB8MQg+p6F9PwAAAAAG+Qo+J8d8PwAAAAAw9CE+D494PwAAAAB8MQg+J8d8PwAAAAAw9CE+7rh3PwAAAAD8th4+7rh3PwAAAAD8th4+J8d8PwAAAAAw9CE+V8t7PwAAAAAD2jg+7rh3PwAAAAD8th4+V8t7PwAAAAAD2jg+J8J2PwAAAACSJzU+J8J2PwAAAACSJzU+V8t7PwAAAAAD2jg+Wa56PwAAAAB5p08+J8J2PwAAAACSJzU+Wa56PwAAAAB5p08+3Kp1PwAAAABJgEs+3Kp1PwAAAABJgEs+Wa56PwAAAAB5p08+UXB5PwAAAACSWWY+3Kp1PwAAAABJgEs+UXB5PwAAAACSWWY+MXN0PwAAAAAuvmE+MXN0PwAAAAAuvmE+UXB5PwAAAACSWWY+ahF4PwAAAABP7Xw+MXN0PwAAAAAuvmE+ahF4PwAAAABP7Xw+TxtzPwAAAABT3nc+TxtzPwAAAABT3nc+ahF4PwAAAABP7Xw+0pF2PwAAAADcr4k+TxtzPwAAAABT3nc+0pF2PwAAAADcr4k+Y6NxPwAAAADn7oY+Y6NxPwAAAADn7oY+0pF2PwAAAADcr4k+vPF0PwAAAADr1pQ+Y6NxPwAAAADn7oY+vPF0PwAAAADr1pQ+nwtwPwAAAADc3JE+nwtwPwAAAADc3JE+vPF0PwAAAADr1pQ+XjFzPwAAAABd6p8+nwtwPwAAAADc3JE+XjFzPwAAAABd6p8+OVRuPwAAAACYt5w+OVRuPwAAAACYt5w+XjFzPwAAAABd6p8+9FBxPwAAAAC86Ko+OVRuPwAAAACYt5w+9FBxPwAAAAC86Ko+an1sPwAAAACufac+an1sPwAAAACufac+9FBxPwAAAAC86Ko+vFBvPwAAAACU0LU+an1sPwAAAACufac+vFBvPwAAAACU0LU+cYdqPwAAAACwLbI+cYdqPwAAAACwLbI+vFBvPwAAAACU0LU++zBtPwAAAAB3oMA+cYdqPwAAAACwLbI++zBtPwAAAAB3oMA+kHJoPwAAAAA4xrw+kHJoPwAAAAA4xrw++zBtPwAAAAB3oMA++PFqPwAAAAD4Vss+kHJoPwAAAAA4xrw++PFqPwAAAAD4Vss+DD9mPwAAAADeRcc+DD9mPwAAAADeRcc++PFqPwAAAAD4Vss+/pNoPwAAAACs8tU+DD9mPwAAAADeRcc+/pNoPwAAAACs8tU+Me1jPwAAAABCq9E+Me1jPwAAAABCq9E+/pNoPwAAAACs8tU+XhdmPwAAAAAvcuA+Me1jPwAAAABCq9E+XhdmPwAAAAAvcuA+TX1hPwAAAAAF9ds+")
+}]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ejfa6"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.92, 1, 0.7)
+
+[sub_resource type="TorusMesh" id="TorusMesh_o2q66"]
+inner_radius = 0.91
+rings = 48
+ring_segments = 6
+
+[sub_resource type="Animation" id="Animation_olv16"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_inpcv"]
+_data = {
+&"effect": SubResource("Animation_olv16")
+}
+
+[node name="GatherReleaseEffect" type="Node3D" unique_id=1717999883]
+top_level = true
+script = ExtResource("1_q5bbt")
+auto_free_on_finished = true
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1837316076]
+
+[node name="Boundary" type="Node3D" parent="VisualRoot" unique_id=1439679382]
+
+[node name="BoundaryArc1" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=2070795242]
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc2" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=258364218]
+transform = Transform3D(0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, 0.70710677, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc3" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=2113421033]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc4" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=316658374]
+transform = Transform3D(-0.70710677, 0, 0.70710677, 0, 1, 0, -0.70710677, 0, -0.70710677, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc5" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=1903939441]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc6" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=1369066383]
+transform = Transform3D(-0.7071068, 0, -0.7071067, 0, 1, 0, 0.7071067, 0, -0.7071068, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc7" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=2104576624]
+transform = Transform3D(1.1924881e-08, 0, -1, 0, 1, 0, 1, 0, 1.1924881e-08, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="BoundaryArc8" type="MeshInstance3D" parent="VisualRoot/Boundary" unique_id=490660887]
+transform = Transform3D(0.70710665, 0, -0.7071069, 0, 1, 0, 0.7071069, 0, 0.70710665, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fvxjf")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_q26gg")
+
+[node name="Destination" type="Node3D" parent="VisualRoot" unique_id=1405205542]
+
+[node name="CollapseRing" type="MeshInstance3D" parent="VisualRoot/Destination" unique_id=494039134]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_o2q66")
+
+[node name="Ribbons" type="Node3D" parent="VisualRoot" unique_id=1663069814]
+
+[node name="WindRibbon1" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=671798506]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon2" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=241469768]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon3" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=2078436259]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon4" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=1491926159]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon5" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=1368007694]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon6" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=1529226256]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon7" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=389440081]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon8" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=1562109068]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon9" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=48720027]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon10" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=876777332]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon11" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=251927429]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="WindRibbon12" type="MeshInstance3D" parent="VisualRoot/Ribbons" unique_id=990478783]
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1658360169]
+libraries/ = SubResource("AnimationLibrary_inpcv")

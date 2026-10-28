@@ -20,7 +20,6 @@ impact_radius = 1.2
 skill_id = &"firebolt"
 display_name = "Firebolt"
 ai_priority = 10
-cast_range = 6.0
 base_cast_time = 0.75
 skill_cooldown = 3.0
 cast_effect_scene = ExtResource("2_cast")

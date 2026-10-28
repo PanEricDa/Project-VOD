@@ -2,7 +2,11 @@
 
 [ext_resource type="PackedScene" uid="uid://dvtw3m3fv0shj" path="res://UnitSystem/Player/PlayerBase.tscn" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://bnltv4w1d4jfk" path="res://UnitSystem/Visuals/Player/HeroVisual.tscn" id="2_visual"]
+[ext_resource type="PackedScene" uid="uid://c6urghxqbtkcp" path="res://SkillSystem/00-Skills/Player_TargetGather/TargetGatherSkill.tscn" id="3_m0u4e"]
 [ext_resource type="Resource" uid="uid://bu388bdhai45r" path="res://Item/Weapon/Sword/IronSwordData.tres" id="3_uxdvh"]
+[ext_resource type="PackedScene" uid="uid://cuy3fsng74l41" path="res://UnitSystem/Components/Combat/PlayerSkillInputComponent.tscn" id="4_m0u4e"]
+[ext_resource type="PackedScene" uid="uid://bdcku1jp3jacb" path="res://UnitSystem/Components/Combat/PlayerSkillController.tscn" id="6_eoym2"]
+[ext_resource type="PackedScene" uid="uid://bimpql5hlwd76" path="res://SkillSystem/00-Skills/Player_ThreatMark/ThreatMarkSkill.tscn" id="8_husa2"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_hero"]
 size = Vector3(0.6, 0.5, 0.6)
@@ -14,6 +18,16 @@ maximum_health = 300.0
 attack_power = 12.0
 defense = 8.0
 hit_movement_lock_duration = 0.04
+
+[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills")]
+regular_skills = [NodePath("SkillSocket/Gather"), NodePath("SkillSocket/ThreatMark")]
+
+[node name="Gather" parent="SkillHost/SkillSocket" index="0" unique_id=253215794 instance=ExtResource("3_m0u4e")]
+
+[node name="ThreatMark" parent="SkillHost/SkillSocket" index="1" unique_id=537632632 instance=ExtResource("8_husa2")]
+
+[node name="TargetingSystem" parent="." index="2" unique_id=1854654861]
+auto_lock_on_hit_enabled = true
 
 [node name="AttackController" parent="." index="3" unique_id=173813248]
 combo_reset_duration = 0.3
@@ -27,4 +41,9 @@ shape = SubResource("BoxShape3D_hero")
 [node name="EditorWeaponPreview" parent="." index="10"]
 visible = false
 
+[node name="PlayerSkillInputComponent" parent="." index="12" unique_id=940654996 instance=ExtResource("4_m0u4e")]
+
+[node name="PlayerSkillController" parent="." index="13" unique_id=258619820 instance=ExtResource("6_eoym2")]
+
+[editable path="SkillHost"]
 [editable path="Visual/HeroVisual"]

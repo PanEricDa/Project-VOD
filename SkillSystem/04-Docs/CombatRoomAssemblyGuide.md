@@ -1,6 +1,10 @@
+# 2026-10-23 当前玩家Q更新
+
+正式Hero的Q槽已改装Player_TargetGather/TargetGatherSkill.tscn，原身前Gather技能只卸下、保留源与预览。F/鼠标中键锁定敌人后按Q，以目标释放位置为中心聚拢5m内敌人，实际完成拉拽者减速90%持续3秒；无锁定拒绝，释放后位置固定。Q默认射程5m/CD10秒，E及其他正式数值不变；专项测试CD仍2秒。以下2026-10-22及更早内容为阶段历史，当前Q配置以本节和[目标聚拢指南](TargetGatherSkillConfigurationGuide.md)为准。
+
 # 完整战斗房间组装与操作
 
-日期：2026-10-19。
+日期：2026-10-22（玩家Q/E正式接入更新；历史阶段记录保留）。
 
 ## 正式运行入口
 
@@ -8,12 +12,22 @@
 
 本次仅组装已确认的系统，没有新增技能、改动伤害/费用/角色布局，没有向 TestScene 添加或修改单位。正式入口不挂预览脚本、不关闭普通AI；初始专注由Inspector配置，不由预览脚本额外赠送。
 
+## 玩家技能正式接入（2026-10-22）
+
+F5已直接继承Hero源的Gather/ThreatMark和唯一Input/Controller：Q聚拢，E施加2000点限时仇恨（8秒），源CD分别10/12秒，不消耗专注、不造成伤害/连携评分。Q范围半径3.5米、圆心前移3米，聚拢盘前移1.5米/半径0.6米/0.12战斗秒。范围、效果及表现都沿技能源场景维护。
+
+单位根Forced Movement / Forced Movement Enabled默认开启；不挂接收器，关闭即可拒绝外力并立即回收活动请求。正式HUD只新增根PlayerSkillBar，Skill Source指向Hero/PlayerSkillController，Panel局部偏移350,-420,574,-304放在生命列表右上。无测试Harness、范围圈或Unsupported靶。
+
+独立测试场景继承同一Hero装配，仅覆盖2秒CD。当前正式参数重新读取为initial_focus=100、focus_gain_difficulty=2、score_difficulty=2、H0=15、D0=1000.01，本轮未改动。下文较早的参数/阶段描述作为历史记录，以本节与Inspector为准。
+
+完整Q/E→普通真实伤害→专注→连携评分→B终结及输入/死亡/重建测试见阶段五验证文档；导航烘焙和旧Firebolt距离断言不在本轮修改范围。
+
 ## 操作闭环
 
 1. 普通攻击及普通技能造成真实伤害，按原公式获取专注；初始余额由Inspector配置，无自然恢复。
 2. 1/2/3/4依次指令Guardian/Priest/Caster/Archer的连携技能，仍由角色原动作流程执行。F最近锁定和鼠标中键精准锁定不变。
 3. 首次有效连携伤害开窗，每次有效连携伤害刷新当前分数对应的间隔：不超过100分保持基础2.5秒，100到150分指数缩短，150分起0.8秒；窗口结束后按原评分曲线结算。
-4. 结算达到100分才弹出3秒终结选择，世界5%慢放。当前只有Caster装备实际终结技，合法时按3选择，其他角色灰显。未操作超时自动关闭。
+4. 结算达到100分才弹出3秒终结选择，世界5%慢放。当前Guardian、Caster与Archer已装备终结技，合法时分别按1、3、4选择，Priest灰显。Archer当前为逻辑首版，暂用普通箭与弓动作占位。未操作超时自动关闭。
 5. Caster初始施法距离6米，释放复核额外容差2米；死亡、硬失能、非法目标或超距仍可能取消。
 6. B演出：进镜真暂停 → 到位后动画正常播放/世界5% → 释放帧真暂停退镜 → 到位后原管线发射 → 五颗火球及主要爆炸结束 → 正常世界速度、镜头归还玩家。
 
@@ -25,6 +39,7 @@
 
 | 节点 | 职责与配置入口 |
 | --- | --- |
+| PlayerSkillBar | 只读本地Hero/PlayerSkillController；槽位、名称、按键、冷却不复制配置 |
 | SquadFocusComponent（继承） | 专注容量、初始值、获取难度及伤害换算 |
 | SquadChainCommandController | 固定四伙伴引用及原专注源；等待超时 |
 | SquadChainCommandDisplay | 四卡、等待/施放反馈和专注信息；只引用Command |
@@ -58,7 +73,7 @@ Caster源场景 → SkillHost → Finisher Skill，引用其SkillSocket内的Fla
 
 ## 2026-10-19 达标后的自适应伤害间隔
 
-当前版沿用原评分公式和100分资格线；只缩短收尾等待，未实现终结伤害加成。
+2026-10-19版本沿用原评分公式和100分资格线，仅缩短收尾等待；2026-10-25已追加按Effect独立开关控制的终结评分威力加成，见文末更新。
 
 配置入口：CombatRoom根节点的SquadChainRoundController → Evaluation。保留Damage Interval Seconds（基础间隔，默认2.5秒），新增Minimum Damage Interval Seconds（默认0.8秒）和Minimum Interval Score（默认150分）；指数形状内部固定，不增加资源、组件或技能配置。
 
@@ -110,3 +125,8 @@ Caster的连携施法视觉由火球蓄力替换为统一银白闪光；其普�
 SquadChainRoundDisplayTest覆盖真实伤害驱动的显示、无数字评分、动态间隔、跳字重入、暂停、结果保留、换源与卸载、只读无扣费、正式及预览装配，以及关卡卸载无孤儿UI节点。
 
 本次验证：SquadChainRoundDisplayTest先因独立组件不存在而失败，接入后通过；正式CombatRoom真实连携命中时已截图核对右上布局、两条进度槽及底部技能/专注保留。全量155项中154通过，唯一失败仍为CameraFollowControllerTest的既有导航网格未烘焙检查；顺序运行的终结选择压力测试通过，ObjectDB/资源泄漏日志0，git diff --check通过。本次没有提交或推送Git。
+
+
+## 2026-10-25 终结评分效果奖励
+
+闭窗最终评分捕获一次1至1.5倍的威力快照，四终结技的主要数值效果已开启。配置入口为各Effect的Finisher Reward → Use Finisher Bonus，默认false；倍率仅增强具体Effect指定的数值，不改变范围/数量/时长。继承、上下文与子技能传递及当前五个开启节点见 FinisherScoreRewardConfigurationGuide.md。

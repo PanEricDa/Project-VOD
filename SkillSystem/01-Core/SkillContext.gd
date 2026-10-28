@@ -13,6 +13,12 @@ var requested_target: Node3D
 var resolved_target: Node3D
 var candidate_targets: Array[Node3D] = []
 var target_position: Vector3 = Vector3.INF
+## 真实交付前捕获的施法者脚下世界位置；INF表示尚未释放，Effect不得逐目标重读施法者位置。
+var release_caster_position: Vector3 = Vector3.INF
+## 同一释放批次共享的稳定水平朝向；ZERO表示尚未释放，不读取武器动画姿态。
+var release_facing_direction: Vector3 = Vector3.ZERO
+## 真实交付时冻结技能require_alive；默认true。瞬发执行器据此复查生命，不把尸体技能强改为存活目标。
+var require_alive_on_delivery: bool = true
 var delivery_parent: Node
 ## 单次伤害来源快照；空表示尚未创建。复制必须独立，衍生交付继承根归属与收益。
 var damage_context: CombatDamageContext
@@ -24,6 +30,9 @@ var cinematic_profile_snapshot: SkillCinematicProfile
 var execution_id: int = 0
 ## 本次地面采样局部随机种子；0为独立随机，预览可给固定非0值，不修改全局随机源。
 var scatter_seed: int = 0
+## 本次冻结的终结评分威力倍率；普通/直接预览默认1，须有限且>=1。正式评分曲线范围1至1.5。
+## 沿复制与触发子技能传递，不依靠purpose推断来源；由各Effect开关决定消费，不在交付层重复相乘。
+var finisher_multiplier: float = 1.0
 ## 请求用途；普通默认REGULAR，CHAIN仅用于角色动作根连携，不传给触发子技能。
 enum Purpose { REGULAR, CHAIN, FINISHER }
 var purpose: int = Purpose.REGULAR
@@ -71,6 +80,9 @@ func duplicate_context() -> RefCounted:
 		if is_instance_valid(candidate):
 			copy.candidate_targets.append(candidate)
 	copy.target_position = target_position
+	copy.release_caster_position = release_caster_position
+	copy.release_facing_direction = release_facing_direction
+	copy.require_alive_on_delivery = require_alive_on_delivery
 	copy.damage_context = damage_context.duplicate_context() if damage_context != null else null
 	copy.delivery_parent = (
 		delivery_parent if is_instance_valid(delivery_parent) else null
@@ -79,6 +91,7 @@ func duplicate_context() -> RefCounted:
 	copy.execution_clock = execution_clock
 	copy.execution_id = execution_id
 	copy.scatter_seed = scatter_seed
+	copy.finisher_multiplier = finisher_multiplier
 	copy.purpose = purpose
 	copy.preferred_target = preferred_target if is_instance_valid(preferred_target) else null
 	copy.command_request = command_request

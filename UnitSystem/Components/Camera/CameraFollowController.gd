@@ -31,9 +31,14 @@ const TARGET_RESOLUTION_RETRY_INTERVAL: float = 0.25
 const ZOOM_IN_ACTION: StringName = &"camera_zoom_in"
 ## 镜头远离一档的 InputMap 动作；脚本不判断鼠标按键编号。
 const ZOOM_OUT_ACTION: StringName = &"camera_zoom_out"
+## 只有最近两个档位降低俯角；第三近及更远档位保持常规俯角，属于内部固定规则。
+const NEAR_PITCH_STEP_COUNT: int = 2
+## 第二近档位采用近／常规俯角区间的75%；默认30°与50°时为45°，不增加Inspector配置。
+const SECOND_CLOSEST_PITCH_BLEND: float = 0.75
 
-## CameraRig 相对于跟随目标的基础世界坐标偏移，单位为米。
-## X 控制横向偏移、Y 控制高度、Z 控制后方距离；分档缩放在此基础上独立移动子相机。
+@export_category("Follow")
+## CameraRig 相对于跟随目标的基础世界坐标偏移，单位为米，默认 (0, 9, 6.8)。
+## X/Z 保留基础构图，Y 设定基础高度；启用变俯角缩放时，以此基础镜头确定观察点和基准视距，再绕观察点降低或抬高子相机。
 @export var camera_offset: Vector3 = Vector3(0.0, 9.0, 6.8)
 
 ## 摄像机追赶期望位置时的指数平滑强度。
@@ -60,20 +65,34 @@ const ZOOM_OUT_ACTION: StringName = &"camera_zoom_out"
 ## 用于传送、重生或切换区域，避免镜头从远处慢速飞越整个关卡。
 @export_range(1.0, 100.0, 0.5, "or_greater") var snap_distance: float = 12.0
 
-## 是否锁定镜头垂直跟随高度。
-## 开启后，跳跃或物理起伏不会带动镜头上下晃动；XZ 水平跟随保持正常。
-@export var lock_vertical_follow: bool = true
+## 是否锁定镜头垂直跟随高度，默认关闭，使镜头平滑跟随玩家上下坡、跨层和下落。
+## 开启后固定在绑定目标时的高度，忽略后续 Y 变化；仅影响普通位置跟随，XZ 跟随保持正常。
+@export var lock_vertical_follow: bool = false
 
 @export_category("Zoom")
-## 各档相对 Camera3D 初始位置沿镜头后方增加的距离，单位米；须为非负、有限且从小到大排列。
-## 默认 [0, 3, 6, 9] 提供四档，只移动子相机，不改变跟随、俯视角度或 FOV；空数组关闭缩放。
-@export var zoom_distances: PackedFloat32Array = PackedFloat32Array([0.0, 3.0, 6.0, 9.0])
+## 各档相对基础视距增加的距离，单位米；须为非负、有限且从小到大排列。
+## 默认 [0, 3, 6, 9] 提供四档；启用 Zoom Pitch 时仅最近两档降低俯角，第三近起保持常规俯角，FOV不变；空数组保留原始相机构图。
+@export var zoom_distances: PackedFloat32Array = [0.0, 3.0, 6.0, 9.0]
 ## 初始缩放档位，下标从 0 开始；默认 1 为标准档，越界时限制到有效档位。
 ## 仅影响本 CameraRig 的初始视距，切换跟随目标不会重置当前档位。
 @export_range(0, 16, 1, "or_greater") var initial_zoom_step: int = 1
 ## 分档切换的指数平滑强度，单位每秒；默认 15 约在 0.2 秒完成 95% 过渡。
 ## 仅影响子相机缩放；连续输入更新目标档位，不排队播放，也不受最大跟随距离限制。
 @export_range(0.1, 40.0, 0.1, "or_greater") var zoom_smoothness: float = 15.0
+
+@export_group("Zoom Pitch")
+## 是否在分档缩放时同时改变相机高度与俯角，默认开启。
+## 镜头围绕基础构图的观察点移动，仅进入最近两档时逐渐降低俯角；更远各档只改变距离。关闭后恢复原始固定角度的轴向缩放，仅影响普通玩家镜头。
+@export var zoom_pitch_enabled: bool = true
+## 最近缩放档位的下视俯角，单位度，相对世界水平面，默认 30；范围 1 至 85。
+## 越小越接近平视；从最近档向第三近档平滑恢复常规俯角，更远档位不继续改变角度；不改变 FOV 或玩家跟随高度。
+@export_range(1.0, 85.0, 0.5) var zoom_closest_pitch_degrees: float = 30.0
+## 常规远景下视俯角，单位度，默认50；范围1至85，从第三近档起所有更远档位保持此角度。
+## 字段名保留以兼容既有配置；通常应不小于最近俯角，运行时较小值按最近俯角处理。仅影响普通变俯角镜头。
+@export_range(1.0, 85.0, 0.5) var zoom_farthest_pitch_degrees: float = 50.0
+## 变俯角缩放的观察点相对玩家脚底的高度，单位米，默认 1，范围从 0 起。
+## 用于让降低后的镜头仍观察玩家躯干；仅影响普通变俯角构图，技能特写仍使用自身配置，关闭变俯角或缩放时不生效。
+@export_range(0.0, 5.0, 0.05, "or_greater") var zoom_focus_height_m: float = 1.0
 
 @export_category("Debug")
 ## 只读显示当前自动解析到的镜头焦点节点路径。
@@ -128,6 +147,8 @@ var _zoom_levels: PackedFloat32Array = PackedFloat32Array()
 var _zoom_step: int = 0
 var _zoom_distance: float = 0.0
 var _base_camera_position: Vector3 = Vector3.ZERO
+## 缓存策划初始朝向，避免连续缩放或震动反馈把已经倾斜的姿态再次当作基础而积累漂移。
+var _base_camera_basis: Basis = Basis.IDENTITY
 
 
 ## Godot 节点初始化回调。
@@ -205,8 +226,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func _initialize_zoom() -> void:
 	_zoom_camera = get_node_or_null(^"Camera3D") as Camera3D
 	if _zoom_camera == null: return
+	if not _zoom_camera.tree_exiting.is_connected(_on_cinematic_camera_exiting):
+		_zoom_camera.tree_exiting.connect(_on_cinematic_camera_exiting)
 	# 基础构图独立于缩放开关；命中反馈始终从策划原始位置合成。
 	_base_camera_position = _zoom_camera.position
+	_base_camera_basis = _zoom_camera.basis
 	if zoom_distances.is_empty(): return
 	var previous: float = -1.0
 	for distance: float in zoom_distances:
@@ -240,7 +264,43 @@ func _apply_zoom_position() -> void:
 		var offset_owner = record.owner.get_ref()
 		if not is_instance_valid(offset_owner) or not offset_owner.is_inside_tree(): _feedback_offsets.erase(id)
 		else: feedback += record.offset
-	_zoom_camera.position = _base_camera_position + _zoom_camera.basis.z.normalized() * _zoom_distance + feedback
+	_zoom_camera.transform = _normal_zoom_transform()
+	_zoom_camera.position += feedback
+
+
+## 返回当前平滑视距对应的普通镜头局部姿态，不包含震动或技能特写。
+## 观察点沿用初始镜头的水平构图并取配置的世界高度；始终从原始姿态计算，避免往返缩放时漂移。
+func _normal_zoom_transform() -> Transform3D:
+	var base_back: Vector3 = _base_camera_basis.z.normalized()
+	if not zoom_pitch_enabled or _zoom_levels.is_empty():
+		return Transform3D(_base_camera_basis, _base_camera_position + base_back * _zoom_distance)
+	var near_pitch: float = clampf(zoom_closest_pitch_degrees, 1.0, 85.0)
+	var far_pitch: float = clampf(zoom_farthest_pitch_degrees, near_pitch, 85.0)
+	var normal_pitch_step: int = mini(NEAR_PITCH_STEP_COUNT, _zoom_levels.size() - 1)
+	var span: float = _zoom_levels[normal_pitch_step] - _zoom_levels[0]
+	var progress: float = clampf((_zoom_distance - _zoom_levels[0]) / span, 0.0, 1.0) if span > 0.001 else 0.0
+	if normal_pitch_step > 1 and span > 0.001:
+		var middle_progress: float = (_zoom_levels[1] - _zoom_levels[0]) / span
+		if middle_progress > 0.001 and middle_progress < 0.999:
+			if progress <= middle_progress:
+				progress = SECOND_CLOSEST_PITCH_BLEND * progress / middle_progress
+			else:
+				progress = lerpf(SECOND_CLOSEST_PITCH_BLEND, 1.0, (progress - middle_progress) / (1.0 - middle_progress))
+	var pitch: float = deg_to_rad(lerpf(near_pitch, far_pitch, progress))
+	var world_back: Vector3 = (global_basis * base_back).normalized()
+	var base_world_offset: Vector3 = camera_offset + global_basis * _base_camera_position
+	var view_height: float = base_world_offset.y - zoom_focus_height_m
+	var base_radius: float = view_height / world_back.y if world_back.y > 0.01 and view_height > 0.05 else maxf((base_world_offset - Vector3.UP * zoom_focus_height_m).length(), 0.1)
+	var focus_offset: Vector3 = base_world_offset - world_back * base_radius
+	focus_offset.y = zoom_focus_height_m
+	var pivot: Vector3 = global_basis.inverse() * (focus_offset - camera_offset)
+	var horizontal_back := Vector3(world_back.x, 0.0, world_back.z)
+	if horizontal_back.length_squared() < 0.0001:
+		horizontal_back = Vector3.BACK
+	var orbit_back: Vector3 = horizontal_back.normalized() * cos(pitch) + Vector3.UP * sin(pitch)
+	var orbit_basis: Basis = global_basis.inverse() * Basis.looking_at(-orbit_back, Vector3.UP)
+	var position_on_orbit: Vector3 = pivot + global_basis.inverse() * orbit_back * maxf(base_radius + _zoom_distance, 0.1)
+	return Transform3D(orbit_basis, position_on_orbit)
 
 
 ## 根据 CharacterBody3D 的水平速度计算移动方向预留偏移。
@@ -417,6 +477,9 @@ func get_resolved_target() -> UnitBase:
 		return null
 	return target
 
+const CINEMATIC_OCCLUSION_FILTER = preload("res://UnitSystem/Components/Camera/CinematicOcclusionFilter.gd")
+var _cinematic_occlusion: CinematicOcclusionFilter = CINEMATIC_OCCLUSION_FILTER.new()
+var _cinematic_occlusion_active: bool = false
 var _cinematic_id: int = 0
 var _cinematic_phase: StringName = &""
 var _cinematic_transition_done: bool = false
@@ -436,7 +499,8 @@ var _cinematic_radius: float = 0.0
 ## 同世界正身份接管专属构图；source_pose为动作开始视觉朝向快照，clock负责真实活动秒数。
 ## 开始时保留当前画面，按镜头资源时长推进至正面；等待/暂停由外部协调器持有，到位时通知。
 ## 只由本控制器写活动Camera3D；不改正常target、玩家缩放档位、世界速度或单位动作。
-func begin_cinematic(request_id: int, source_pose: Transform3D, profile: SkillCinematicCameraProfile, clock: SkillExecutionClock) -> bool:
+## caster为同世界施放者，供排除本人及附属特效；旧四参数调用可留空，此时仅播放镜头、不隐藏对象。
+func begin_cinematic(request_id: int, source_pose: Transform3D, profile: SkillCinematicCameraProfile, clock: SkillExecutionClock, caster: Node3D = null) -> bool:
 	if request_id <= 0 or not source_pose.is_finite() or profile == null or clock == null or not is_instance_valid(_zoom_camera): return false
 	var scope := clock.get_bound_scope()
 	if scope == null or not scope.is_ancestor_of(self): return false
@@ -461,6 +525,9 @@ func begin_cinematic(request_id: int, source_pose: Transform3D, profile: SkillCi
 	_cinematic_from = origin
 	_zoom_camera.global_transform = origin
 	_cinematic_destination = front
+	if caster != null and _cinematic_profile.hide_closeup_occluders:
+		_cinematic_occlusion.begin(scope,caster,front.origin,source_pose.origin+Vector3.UP*_cinematic_profile.look_height_m,_cinematic_profile.get_occlusion_corridor_width())
+		_cinematic_occlusion_active = _cinematic_occlusion.is_valid()
 	return true
 
 ## request_id须匹配当前演出；pause/token为同世界暂停协调器授予的镜头过渡凭证，菜单仍有优先权。
@@ -474,6 +541,7 @@ func bind_cinematic_transition_pause(request_id: int, pause: GamePauseCoordinato
 ## radius_m为需容纳的水平半径；Arc取散布+爆炸半径，0表示沿普通战斗镜头距离构图，不重复策划配置。
 func show_cinematic_area(request_id: int, center: Vector3, radius_m: float) -> void:
 	if request_id != _cinematic_id or _cinematic_phase != &"close" or not center.is_finite() or not is_finite(radius_m) or radius_m < 0: return
+	_restore_cinematic_occlusion()
 	_cinematic_phase = &"area"
 	_cinematic_transition_done = false
 	_cinematic_center = center
@@ -487,6 +555,7 @@ func show_cinematic_area(request_id: int, center: Vector3, radius_m: float) -> v
 ## 仅匹配本次身份可交回玩家；immediate为A首发或异常退出，B正常结束按镜头资源的RETURN时长返回当前位置，默认0.2活动秒。
 func end_cinematic(request_id: int, immediate: bool = false) -> void:
 	if request_id != _cinematic_id or _cinematic_id == 0: return
+	_restore_cinematic_occlusion()
 	if immediate:
 		_restore_cinematic()
 		return
@@ -505,7 +574,12 @@ func _cinematic_normal_pose() -> Transform3D:
 
 func _update_cinematic(delta: float) -> void:
 	if _cinematic_clock == null: return
-	if _cinematic_clock.get_bound_scope() == null or not is_instance_valid(_zoom_camera):
+	if _cinematic_occlusion_active:
+		if not _cinematic_occlusion.is_valid():
+			_restore_cinematic()
+			return
+		_cinematic_occlusion.refresh()
+	if _cinematic_clock.get_bound_scope() == null or not is_instance_valid(_zoom_camera) or not _zoom_camera.is_inside_tree():
 		_restore_cinematic()
 		return
 	if not _has_valid_target():
@@ -539,7 +613,22 @@ func _update_cinematic(delta: float) -> void:
 		_cinematic_transition_done = true
 		cinematic_transition_finished.emit(_cinematic_id,&"area")
 
+func _on_cinematic_camera_exiting() -> void:
+	if _cinematic_id > 0: _restore_cinematic()
+	else: _restore_cinematic_occlusion()
+
+
+func _restore_cinematic_occlusion() -> void:
+	_cinematic_occlusion_active = false
+	_cinematic_occlusion.restore()
+
+
+func _exit_tree() -> void:
+	_restore_cinematic_occlusion()
+
+
 func _restore_cinematic() -> void:
+	_restore_cinematic_occlusion()
 	process_mode = _cinematic_original_process_mode
 	_cinematic_pause = null
 	_cinematic_pause_token = 0

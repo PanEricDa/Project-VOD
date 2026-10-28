@@ -67,6 +67,7 @@ func apply(context: SkillContext, result: SkillDeliveryResult, target: Node3D) -
 		child_context.caster = context.caster
 		child_context.execution_clock = context.execution_clock
 		child_context.execution_id = context.execution_id
+		child_context.finisher_multiplier = context.finisher_multiplier
 		child_context.command_request = context.command_request
 		child_context.purpose = SkillContext.Purpose.REGULAR
 		child_context.delivery_token_id = 0
@@ -85,8 +86,13 @@ func apply(context: SkillContext, result: SkillDeliveryResult, target: Node3D) -
 
 
 func _parent_skill_scene_path() -> String:
-	var parent := get_parent()
-	return parent.scene_file_path if parent is SkillBase else ""
+	# Effect可直接挂技能根，也可组合在Pull等效果下；始终以最近的SkillBase识别循环祖先。
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor is SkillBase:
+			return ancestor.scene_file_path
+		ancestor = ancestor.get_parent()
+	return ""
 
 
 func _release_child(_context: SkillContext, _result: SkillDeliveryResult, child: SkillBase) -> void:

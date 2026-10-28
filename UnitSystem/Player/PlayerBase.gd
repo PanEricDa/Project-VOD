@@ -81,6 +81,11 @@ var _attack_motion_suspended: bool = false
 ## 由 GameRunController 在房间结算时维护的运行时输入许可。
 ## false 时仅屏蔽新的移动和冲刺输入；重力、碰撞、相机跟随与已开始的动作仍按原流程更新。
 var _player_input_enabled: bool = true
+var _input_blocks: Dictionary = {}
+var _next_input_block: int = 1
+## 仅由可选玩家技能适配器维护；无组件时默认兼容原移动和转向。
+var _skill_can_move: bool = true
+var _skill_can_turn: bool = true
 
 
 func _ready() -> void:
@@ -97,6 +102,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_validate_forced_movement()
 	if is_dead():
 		# 死亡单位仍保留 CharacterBody3D 的重力和碰撞，只停止水平行动。
 		velocity.x = 0.0
@@ -115,8 +121,9 @@ func _physics_process(delta: float) -> void:
 		_apply_gravity(delta)
 		move_and_slide()
 		return
+	var forced_token := get_forced_movement_token()
 	var input_vector := Vector2.ZERO
-	if _player_input_enabled:
+	if forced_token == 0 and is_player_input_enabled() and _skill_can_move:
 		input_vector = Input.get_vector(
 			MOVE_LEFT_ACTION,
 			MOVE_RIGHT_ACTION,
@@ -128,17 +135,26 @@ func _physics_process(delta: float) -> void:
 		last_movement_direction = movement_direction.normalized()
 
 	if (
-		_player_input_enabled
+		forced_token == 0 and is_player_input_enabled()
 		and Input.is_action_just_pressed(DASH_ACTION)
 		and _can_start_dash()
 	):
 		_start_dash(movement_direction)
 
-	if is_player_dashing():
+	if forced_token > 0:
+		_discard_forced_movement_intents()
+		var step := _consume_forced_movement_step(delta)
+		velocity.x = step.x / delta if delta > 0.0 else 0.0
+		velocity.z = step.z / delta if delta > 0.0 else 0.0
+	elif is_player_dashing():
 		_process_dash(delta)
-	else:
+	elif _skill_can_move:
 		_process_regular_movement(delta, movement_direction)
 		_apply_attack_motion_velocity(delta)
+	else:
+		_regular_horizontal_velocity = Vector2.ZERO
+		velocity.x = 0.0
+		velocity.z = 0.0
 	_apply_gravity(delta)
 
 	# 锁定目标只覆盖视觉朝向，不修改本帧移动速度或冲刺方向。组件缺失或没有有效
@@ -154,14 +170,24 @@ func _physics_process(delta: float) -> void:
 		facing_direction = (
 			_dash_direction if is_player_dashing() else movement_direction
 		)
-	if facing_direction.length_squared() > 0.0001:
+	if _skill_can_turn and facing_direction.length_squared() > 0.0001:
 		_rotate_visual_toward(facing_direction, delta)
 
 	var previous_position: Vector3 = global_position
 	move_and_slide()
-	if is_player_dashing():
+	if forced_token > 0:
+		_report_forced_movement_result(forced_token, global_position - previous_position, is_on_wall())
+	elif is_player_dashing():
 		_update_dash_distance(previous_position, movement_direction)
 
+
+## 外力覆盖水平输出，不取消动作或退还冲刺次数；避免结束后追补旧推进。
+func _discard_forced_movement_intents() -> void:
+	_regular_horizontal_velocity = Vector2.ZERO
+	cancel_attack_motion()
+	_dash_remaining_distance = 0.0
+	_dash_invulnerability_end_distance = 0.0
+	_dash_direction = Vector3.ZERO
 
 func is_player_dashing() -> bool:
 	return _dash_remaining_distance > 0.001
@@ -198,17 +224,54 @@ func apply_damage(
 ## 此接口由上层游戏流程调用，不作为 Inspector 参数暴露，避免运行时结算状态被手动覆盖。
 func set_player_input_enabled(enabled: bool) -> void:
 	_player_input_enabled = enabled
+	_sync_input_permission()
+
+func _sync_input_permission() -> void:
+	var enabled := is_player_input_enabled()
 	var attack_controller := get_node_or_null(^"AttackController")
 	if attack_controller != null and attack_controller.has_method(&"set_input_enabled"):
 		attack_controller.call("set_input_enabled", enabled)
+	# 技能预选需要同步获知短暂禁用，不能等下一帧轮询后才清除旧按下。
+	var skill_input := get_node_or_null(^"PlayerSkillInputComponent")
+	if skill_input != null and skill_input.has_method(&"set_input_enabled"):
+		skill_input.call("set_input_enabled", enabled)
 	if _targeting_component != null and _targeting_component.has_method(&"set_input_enabled"):
 		_targeting_component.call("set_input_enabled", enabled)
 
 
-## 返回当前是否允许玩家发起新的移动、攻击、冲刺和锁定输入。
-## 仅用于 GameRunController 与 Inspector 外的调试查询；返回 false 不代表单位死亡或世界暂停。
+## 返回基础许可与所有输入持有者合成后的新输入许可；不代表死亡/暂停，不取消已经开始动作。
 func is_player_input_enabled() -> bool:
-	return _player_input_enabled
+	return _player_input_enabled and _input_blocks.is_empty()
+
+## owner须同树有效节点，reason为诊断用途；返回正token，0失败。
+## 暂停新的移动/攻击/锁定/技能输入，不修改基础开关，不取消已开始行动；owner离树自动释放。
+@warning_ignore("shadowed_variable_base_class")
+func acquire_input_block(owner: Node, reason: StringName) -> int:
+	if not is_inside_tree() or not is_instance_valid(owner) or not owner.is_inside_tree() or owner.is_queued_for_deletion() or owner.get_tree() != get_tree(): return 0
+	var token := _next_input_block
+	_next_input_block += 1
+	var exiting := func() -> void: release_input_block(token)
+	_input_blocks[token] = {"owner":weakref(owner),"reason":reason,"exiting":exiting}
+	owner.tree_exiting.connect(exiting,CONNECT_ONE_SHOT)
+	_sync_input_permission()
+	return token
+
+## 只释放本token；重复/未知无害，多来源持有与set_player_input_enabled(false)仍保留。
+func release_input_block(token: int) -> void:
+	if not _input_blocks.has(token): return
+	var record: Dictionary = _input_blocks[token]
+	_input_blocks.erase(token)
+	var owner_node = record.owner.get_ref()
+	if is_instance_valid(owner_node) and owner_node.tree_exiting.is_connected(record.exiting):
+		owner_node.tree_exiting.disconnect(record.exiting)
+	_sync_input_permission()
+
+
+## 维护当前技能动作的移动/转向许可；两值默认true，取消/完成必须恢复true/true。
+## 只限制主动水平移动和视觉转向，不停止重力、碰撞、世界时间或其他组件。
+func set_skill_action_permissions(can_move: bool, can_turn: bool) -> void:
+	_skill_can_move = can_move
+	_skill_can_turn = can_turn
 
 
 func get_available_dash_count() -> int:
@@ -492,10 +555,13 @@ func _ensure_dash_recharge_started() -> void:
 
 
 func _can_start_dash() -> bool:
+	var action_driver := get_node_or_null(^"AttackController") as PlayerAttackController
 	return (
 		not is_dead()
 		and not is_player_dashing()
 		and _available_dash_count > 0
+		and _skill_can_move
+		and (action_driver == null or not action_driver.is_external_action_in_progress())
 	)
 
 

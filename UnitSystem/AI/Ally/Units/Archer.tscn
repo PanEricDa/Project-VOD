@@ -7,24 +7,25 @@
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIRangedCombatSystem.tscn" id="4_combat"]
 [ext_resource type="PackedScene" uid="uid://bva8v76qriccx" path="res://Item/Projectiles/ExplosiveArrow.tscn" id="5_d3tvf"]
 [ext_resource type="PackedScene" uid="uid://ch04cnxwc7jgg" path="res://SkillSystem/00-Skills/ExplosiveArrow/ExplosiveArrowSkill.tscn" id="5_explosive_arrow"]
-[ext_resource type="PackedScene" path="res://SkillSystem/00-Skills/RapidShot/RapidShotSkill.tscn" id="5_rapid_shot"]
+[ext_resource type="PackedScene" uid="uid://bge7wn8phr643" path="res://SkillSystem/00-Skills/RapidShot/RapidShotSkill.tscn" id="5_rapid_shot"]
 [ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="6_jf4mf"]
 [ext_resource type="PackedScene" uid="uid://cbecfr3g8svqm" path="res://Item/Projectiles/Arrow.tscn" id="8_mw3a0"]
 [ext_resource type="PackedScene" uid="uid://d227vrywu5n4j" path="res://SkillSystem/00-Skills/Combo_RapidShot/ComboRapidShotSkill.tscn" id="9_woshl"]
+[ext_resource type="PackedScene" uid="uid://bone50jek16h7" path="res://SkillSystem/00-Skills/Finisher_ArcherPowerShot/ArcherPowerShotFinisherSkill.tscn" id="10_q3cog"]
 
-[sub_resource type="Resource" id="Resource_4es10"]
+[sub_resource type="Resource" id="Resource_5smln"]
 resource_local_to_scene = true
 script = ExtResource("6_jf4mf")
 projectile_scene = ExtResource("5_d3tvf")
 
-[sub_resource type="Resource" id="Resource_q3cog"]
+[sub_resource type="Resource" id="Resource_7ml06"]
 resource_local_to_scene = true
 script = ExtResource("6_jf4mf")
 projectile_scene = ExtResource("8_mw3a0")
 shot_count = 3
 shot_interval_seconds = 0.14
 
-[sub_resource type="Resource" id="Resource_5smln"]
+[sub_resource type="Resource" id="Resource_woshl"]
 resource_local_to_scene = true
 script = ExtResource("6_jf4mf")
 projectile_scene = ExtResource("8_mw3a0")
@@ -48,19 +49,22 @@ defense = 3.0
 threat_action_suppression_at_125 = 0.5
 hit_movement_lock_duration = 0.1
 
-[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "combo_skill")]
+[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "finisher_skill", "combo_skill")]
 regular_skills = [NodePath("SkillSocket/ExplosiveArrowSkill"), NodePath("SkillSocket/RapidShotSkill")]
+finisher_skill = NodePath("SkillSocket/ArcherPowerShotFinisherSkill")
 combo_skill = NodePath("SkillSocket/ComboRapidShotSkill")
 
 [node name="ExplosiveArrowSkill" parent="SkillHost/SkillSocket" index="0" unique_id=1956322953 instance=ExtResource("5_explosive_arrow")]
 base_cast_time = 0.1
-delivery = SubResource("Resource_4es10")
+delivery = SubResource("Resource_5smln")
 
 [node name="RapidShotSkill" parent="SkillHost/SkillSocket" index="1" unique_id=1606068855 instance=ExtResource("5_rapid_shot")]
-delivery = SubResource("Resource_q3cog")
+delivery = SubResource("Resource_7ml06")
 
 [node name="ComboRapidShotSkill" parent="SkillHost/SkillSocket" index="2" unique_id=1190405242 instance=ExtResource("9_woshl")]
-delivery = SubResource("Resource_5smln")
+delivery = SubResource("Resource_woshl")
+
+[node name="ArcherPowerShotFinisherSkill" parent="SkillHost/SkillSocket" index="3" unique_id=285028944 instance=ExtResource("10_q3cog")]
 
 [node name="CombatSystem" parent="." index="3" unique_id=1570772978 instance=ExtResource("4_combat")]
 

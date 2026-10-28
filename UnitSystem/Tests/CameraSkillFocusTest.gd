@@ -11,6 +11,8 @@ func _run() -> void:
 	await physics_frame
 	var rig := Node3D.new()
 	rig.set_script(load("res://UnitSystem/Components/Camera/CameraFollowController.gd"))
+	# 保留固定角度下反馈处理顺序的精确断言；变俯角合成另由CameraTerrainZoomTest覆盖。
+	rig.set("zoom_pitch_enabled",false)
 	var camera := Camera3D.new()
 	camera.name = "Camera3D"
 	camera.rotation_degrees.x = -50

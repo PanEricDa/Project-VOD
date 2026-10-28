@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://c6urghxqbtkcp"]
+
+[ext_resource type="PackedScene" uid="uid://b3qp6uulk431f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_mdoea"]
+[ext_resource type="PackedScene" uid="uid://bxesh4ir0m83j" path="res://Effects/Skills/Gather/GatherCastEffect.tscn" id="2_1rroq"]
+[ext_resource type="PackedScene" uid="uid://c33gh2hjn0yk1" path="res://Effects/Skills/Gather/GatherReleaseEffect.tscn" id="3_pbmfb"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="4_rbvba"]
+[ext_resource type="Script" uid="uid://mukvvanqkcl" path="res://SkillSystem/03-Extensions/StatModifierSkillEffect.gd" id="6_hrptb"]
+[ext_resource type="Script" uid="uid://ctxqorpjwkdaa" path="res://SkillSystem/03-Extensions/PullTargetSkillEffect.gd" id="7_0xf3w"]
+
+[sub_resource type="Resource" id="Resource_mdoea"]
+script = ExtResource("4_rbvba")
+candidate_source = 1
+target_collection_mode = 2
+
+[node name="TargetGatherSkill" unique_id=253215794 instance=ExtResource("1_mdoea")]
+skill_id = &"player_target_gather"
+display_name = "Target Gather"
+skill_type = 3
+base_cast_time = 0.2
+can_move_while_casting = true
+skill_cooldown = 10.0
+automatic_cast_enabled = false
+cast_effect_scene = ExtResource("2_1rroq")
+release_effect_scene = ExtResource("3_pbmfb")
+release_effect_anchor = 2
+delivery = SubResource("Resource_mdoea")
+
+[node name="PullTargetSkillEffect" type="Node" parent="." index="2" unique_id=1263680487]
+script = ExtResource("7_0xf3w")
+center_mode = 1
+gather_radius_m = 0.0
+duration_seconds = 0.12
+
+[node name="StatModifierSkillEffect" type="Node" parent="PullTargetSkillEffect" index="0" unique_id=1790410559]
+script = ExtResource("6_hrptb")
+target_mode = 1
+modifier_stat = 2
+modifier_mode = 1
+amount = -90.0
+duration_seconds = 3.0

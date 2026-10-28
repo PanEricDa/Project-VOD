@@ -1,0 +1,246 @@
+[gd_scene format=4 uid="uid://bxesh4ir0m83j"]
+
+[ext_resource type="Script" uid="uid://dd4puoecp4xlx" path="res://Effects/Skills/FlameBarrage/FlameBarrageEffectPlayer.gd" id="1_iuy3d"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ejfa6"]
+transparency = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.92, 1, 0.7)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_iuy3d"]
+_surfaces = [{
+"aabb": AABB(0.62229145, 0, 0, 0.37770855, 1e-05, 0.7431448),
+"format": 34359738369,
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 144,
+"vertex_data": PackedByteArray("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")
+}]
+
+[sub_resource type="Animation" id="Animation_k263b"]
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/Focus/PalmWind1:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.65, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.65, 0.65, 0.65), Vector3(0.33, 0.33, 0.33), Vector3(0.06, 0.06, 0.06)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/Focus/PalmWind1:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0.5, 0, 0.3), Vector3(0.5, 1.3, 0.3)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("VisualRoot/Focus/PalmWind1:transparency")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.8, 0.0, 0.0, 1.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("VisualRoot/Focus/PalmWind2:scale")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.65, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.65, 0.65, 0.65), Vector3(0.33, 0.33, 0.33), Vector3(0.06, 0.06, 0.06)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("VisualRoot/Focus/PalmWind2:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0.75, 1.2566371, 0.3), Vector3(0.75, 2.556637, 0.3)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("VisualRoot/Focus/PalmWind2:transparency")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.8, 0.0, 0.0, 1.0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("VisualRoot/Focus/PalmWind3:scale")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.65, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.65, 0.65, 0.65), Vector3(0.33, 0.33, 0.33), Vector3(0.06, 0.06, 0.06)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("VisualRoot/Focus/PalmWind3:rotation")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1, 2.5132742, 0.3), Vector3(1, 3.8132741, 0.3)]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("VisualRoot/Focus/PalmWind3:transparency")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.8, 0.0, 0.0, 1.0]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("VisualRoot/Focus/PalmWind4:scale")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.65, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.65, 0.65, 0.65), Vector3(0.33, 0.33, 0.33), Vector3(0.06, 0.06, 0.06)]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("VisualRoot/Focus/PalmWind4:rotation")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1.25, 3.7699113, 0.3), Vector3(1.25, 5.069911, 0.3)]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("VisualRoot/Focus/PalmWind4:transparency")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.8, 0.0, 0.0, 1.0]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("VisualRoot/Focus/PalmWind5:scale")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.65, 1),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.65, 0.65, 0.65), Vector3(0.33, 0.33, 0.33), Vector3(0.06, 0.06, 0.06)]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("VisualRoot/Focus/PalmWind5:rotation")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1.5, 5.0265484, 0.3), Vector3(1.5, 6.3265486, 0.3)]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("VisualRoot/Focus/PalmWind5:transparency")
+tracks/14/interp = 1
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.9, 1),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [0.8, 0.0, 0.0, 1.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_5r2w5"]
+_data = {
+&"effect": SubResource("Animation_k263b")
+}
+
+[node name="GatherCastEffect" type="Node3D" unique_id=497740588]
+script = ExtResource("1_iuy3d")
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1114816290]
+
+[node name="Focus" type="Node3D" parent="VisualRoot" unique_id=1643262732]
+
+[node name="PalmWind1" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1544104200]
+transform = Transform3D(0.9553365, -0.29552022, 0, 0.2593434, 0.83838665, -0.47942555, 0.14167994, 0.45801273, 0.87758255, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_iuy3d")
+
+[node name="PalmWind2" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1864872203]
+transform = Transform3D(0.48679417, 0.52800196, 0.6958775, 0.21622884, 0.69900906, -0.6816388, -0.8463313, 0.48228657, 0.22610427, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_iuy3d")
+
+[node name="PalmWind3" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1537517931]
+transform = Transform3D(-0.626718, 0.71159434, 0.31758168, 0.15967025, 0.5161705, -0.84147096, -0.7627123, -0.47665668, -0.43711376, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_iuy3d")
+
+[node name="PalmWind4" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1768398380]
+transform = Transform3D(-0.93772435, -0.29380518, -0.18534188, 0.093184136, 0.30123898, -0.9489846, 0.33464873, -0.907157, -0.25510114, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_iuy3d")
+
+[node name="PalmWind5" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1356005328]
+transform = Transform3D(0.014862955, -0.9976238, -0.06727507, 0.020904273, 0.06757783, -0.997495, 0.99967104, 0.0134194195, 0.021859005, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_ejfa6")
+cast_shadow = 0
+mesh = SubResource("ArrayMesh_iuy3d")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=2058141537]
+libraries/ = SubResource("AnimationLibrary_5r2w5")

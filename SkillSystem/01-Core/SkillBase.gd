@@ -14,6 +14,9 @@ signal action_requested(
 )
 signal cast_range_required(context: SkillContext, cast_range: float)
 signal cast_started(context: SkillContext)
+## 本次施法达到cast_effect_start_ratio提示时点；context为原动作身份，每次至多一次。
+## 与施法视觉共用有效施法时间和战斗时钟；缺少视觉资产仍通知，不表示释放或命中。
+signal cast_cue_reached(context: SkillContext)
 signal release_started(context: SkillContext)
 signal delivery_started(context: SkillContext)
 ## 成功释放时请求镜头表现；profile只读，source/target可空或随后失效，world_transform为有限世界快照。
@@ -98,6 +101,11 @@ var cast_range: float = 5.0
 ## 仅在validate_target_on_release开启时生效，不扩大选取、启动或接近距离，也不绕过死亡与其他目标合法性检查。
 @export_range(0.0, 100.0, 0.1, "or_greater") var release_range_tolerance_m: float = 0.0
 
+@export_category("Action")
+## 可选普通技能动作Animation；默认空沿用角色武器的默认施法动作。只影响CHARACTER_ACTION，触发交付不等待动画。
+## 与终结镜头配置独立；配置后动作仍按本次有效施法时间缩放，现有近战和位移数据保持共用。
+@export var action_animation: Animation
+
 @export_category("Casting")
 @export_range(0.0, 30.0, 0.05, "or_greater")
 ## 基础施法时间，单位为秒；角色动作会按此值与施法速度倍率同步缩放，0 表示 release_action 必须在动画起点。
@@ -153,8 +161,9 @@ var extra_hesitation_max: float = 5.0
 ## 施法特效锚点，默认动作发射点以兼容旧技能；脚下/目标锚点附着相应单位，目标位置锚点固定在世界。
 ## 仅影响Cast视觉的位置与跟随，不改变施法目标、施法时间或Release通道。
 @export var cast_effect_anchor: PresentationAnchor = PresentationAnchor.ACTION_ORIGIN
-## 施法视觉开始的归一化进度，0为开始即播放（兼容旧内容），0.5为本次实际施法时间的一半，1为释放时刻。
-## 以战斗时钟和施法速度换算后的本次时长计时；暂停不推进，取消不补播；仅影响Cast视觉，不移动音效、镜头或释放时停。
+## 施法视觉和cast_cue_reached提示的归一化进度；0为开始、0.5为本次有效施法时间一半、1为释放时刻。
+## 默认0兼容旧内容；缺少视觉资产仍发提示，仅影响本技能表现时点及订阅它的连携输入节奏，不改变释放/命中。
+## 以战斗时钟和施法速度换算后的本次时长计时；暂停不推进，取消不补发；不移动音效、镜头或释放时停。
 @export_range(0.0, 1.0, 0.05) var cast_effect_start_ratio: float = 0.0
 @export_subgroup("Cinematic")
 ## 可选专属动作与A/B演出配置；默认空保持普通技能，终结用途由请求入口而非此资源决定。
@@ -420,6 +429,15 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 
 	_stop_cast_presentation(true)
 	release_started.emit(_current_context)
+	# 公开通知可同步取消/重入或移除施法者；旧释放只能退自己的成本，不能消耗/清理新请求。
+	if _current_context != context:
+		for cost: SkillCostBase in committed_costs:
+			if is_instance_valid(cost): cost.refund(context)
+		return false
+	if not is_instance_valid(context.caster) or not context.caster.is_inside_tree() or context.caster.is_queued_for_deletion() or (context.caster is UnitBase and (context.caster as UnitBase).is_dead()):
+		_refund_costs(committed_costs)
+		_fail_active(&"owner_invalid_on_release", false)
+		return false
 	# 普通成本/释放前通知可能改变世界或承诺；交付接受前再次核对自己的真实预留。
 	if _is_chain_root(context) and not context.command_request.authorize_release():
 		_refund_costs(committed_costs)
@@ -432,6 +450,15 @@ func _commit_release(context: SkillContext, launch_transform: Transform3D) -> bo
 			_fail_active(&"command_lifetime_closed", false)
 			return false
 		_inflight_command_contexts[context.delivery_token_id] = context
+	# 成本与释放通知完成后、Runner通知前冻结整批原点/朝向；每次释放均重新捕获。
+	context.require_alive_on_delivery = require_alive
+	context.release_caster_position = context.caster.global_position
+	if context.caster is UnitBase:
+		context.release_facing_direction = (context.caster as UnitBase).get_facing_direction()
+	else:
+		var horizontal := -context.caster.global_basis.z
+		horizontal.y = 0.0
+		context.release_facing_direction = horizontal.normalized() if horizontal.length_squared() > 0.000001 else Vector3.FORWARD
 	var effects := _collect_effects()
 	_release_accepted = false
 	if not _delivery_runner.execute(
@@ -534,8 +561,18 @@ func get_post_release_hesitation_remaining() -> float:
 	return _post_release_hesitation_remaining
 
 
-## 返回角色动作层需要的只读负载快照；无近战动作组件时返回空字典。
-## 行为层只能消费此公开结果，不需知道技能场景内部的组件名称或节点路径。
+## 返回直接挂载的唯一动画位移组件；重复组件配置无效，不按节点名猜测。
+func get_motion_component() -> SkillMotionComponent:
+	var found: SkillMotionComponent = null
+	for child: Node in get_children():
+		if child is SkillMotionComponent:
+			if found != null: return null
+			found = child
+	return found
+
+
+## 返回动作层只读负载；位移事实由组件自动附加，无组件/无专属动作时保留旧空字典。
+## 行为层不需要知道技能内部节点名；参数与时钟由本次请求提供。
 func get_action_payload() -> Dictionary:
 	if cinematic_profile != null and _current_context != null and _current_context.execution_mode == SkillContext.ExecutionMode.CHARACTER_ACTION:
 		var profile := _current_context.cinematic_profile_snapshot if _current_context.cinematic_profile_snapshot != null else cinematic_profile
@@ -546,14 +583,20 @@ func get_action_payload() -> Dictionary:
 			if config.destination_mode == ArcProjectileDeliveryConfig.DestinationMode.UNIT_TARGET and config.target_expansion != null:
 				count *= maxi(1, config.target_expansion.select_targets(_current_context, _current_context.resolved_target as UnitBase).size())
 			budget = maxf(budget, get_effective_cast_time() + (count - 1) * config.shot_interval_seconds + 1.0)
-		return {"action_animation":profile.action_animation, "execution_clock":_current_context.execution_clock, "wait_for_emission":delivery is ArcProjectileDeliveryConfig, "action_budget_seconds":budget}
+		return {"action_animation":profile.action_animation, "execution_clock":_current_context.execution_clock, "wait_for_emission":delivery is ArcProjectileDeliveryConfig, "action_budget_seconds":budget, "skill_motion_enabled":get_motion_component() != null}
 	for child: Node in get_children():
 		if child is MeleeSkillAction:
 			var payload := (child as MeleeSkillAction).get_action_payload(threat_multiplier)
 			if _current_context != null and _current_context.damage_context != null:
 				payload[&"damage_context"] = _current_context.damage_context.duplicate_context()
+			payload["skill_motion_enabled"] = get_motion_component() != null
+			if action_animation != null:
+				payload["action_animation"] = action_animation
 			return payload
-	return {}
+	var ordinary_payload: Dictionary = {"skill_motion_enabled":true} if get_motion_component() != null else {}
+	if action_animation != null:
+		ordinary_payload["action_animation"] = action_animation
+	return ordinary_payload
 
 
 func get_effective_cast_time() -> float:
@@ -766,6 +809,8 @@ func _spawn_presentation(
 			instance.free()
 		return null
 	var effect := instance as Node3D
+	# 纯表现归属：世界锚点下的蓄力/特效也以弱引用标记施放者，供镜头排除本人表现；无战斗权限。
+	if is_instance_valid(_skill_owner): effect.set_meta(&"presentation_source_ref",weakref(_skill_owner))
 	if effect.has_method(&"configure_cast"):
 		effect.set("autoplay", false)
 	_current_context.delivery_parent.add_child(effect)
@@ -779,7 +824,6 @@ func _spawn_presentation(
 ## 旧特效仍沿用自身自动播放，不要求实现此接口。
 func _schedule_cast_presentation(origin: Transform3D) -> void:
 	_stop_cast_presentation()
-	if cast_effect_scene == null: return
 	var ratio := clampf(cast_effect_start_ratio, 0.0, 1.0) if is_finite(cast_effect_start_ratio) else 0.0
 	_cast_effect_delay_remaining = maxf(get_effective_cast_time(), 0.0) * ratio
 	_cast_effect_pending = true
@@ -793,7 +837,10 @@ func _advance_cast_presentation(delta: float) -> void:
 	_cast_effect_delay_remaining = maxf(_cast_effect_delay_remaining - maxf(delta, 0.0), 0.0)
 	if _cast_effect_delay_remaining > 0.000001: return
 	_cast_effect_pending = false
+	var cue_context := _current_context
 	_spawn_cast_presentation(_last_action_transform)
+	if cue_context != null and _current_context == cue_context and _state == SkillState.CASTING:
+		cast_cue_reached.emit(cue_context)
 
 
 func _spawn_cast_presentation(origin: Transform3D) -> void:
@@ -965,6 +1012,12 @@ func _clear_runtime_effect_references() -> void:
 
 func _get_configuration_warnings() -> PackedStringArray:
 	var warnings := PackedStringArray()
+	var motion_count := 0
+	for child: Node in get_children():
+		if child is SkillMotionComponent:
+			motion_count += 1
+			warnings.append_array(child.validate_configuration())
+	if motion_count > 1: warnings.append("每个技能只允许一个SkillMotionComponent。")
 	if skill_id.is_empty():
 		warnings.append("Skill ID cannot be empty.")
 	if delivery == null:

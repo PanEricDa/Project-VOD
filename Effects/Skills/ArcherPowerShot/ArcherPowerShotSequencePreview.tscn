@@ -1,0 +1,99 @@
+[gd_scene format=3 uid="uid://c70cltxsqpm8d"]
+
+[ext_resource type="Script" uid="uid://b6qwfoupfm2rj" path="res://Effects/Skills/ArcherPowerShot/ArcherPowerShotEffectPreview.gd" id="1_xpd5r"]
+[ext_resource type="PackedScene" uid="uid://bnltv4w1d4jfk" path="res://UnitSystem/Visuals/Player/HeroVisual.tscn" id="2_rdv86"]
+[ext_resource type="PackedScene" path="res://Item/Weapon/Bow/BowVisual.tscn" id="3_otcym"]
+[ext_resource type="Animation" uid="uid://x2jgtqva75rr" path="res://SkillSystem/00-Skills/Finisher_ArcherPowerShot/ArcherPowerShotAction.tres" id="4_mlw12"]
+
+[sub_resource type="Environment" id="Environment_68kps"]
+background_mode = 1
+background_color = Color(0.018, 0.028, 0.045, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.65, 0.75, 0.85, 1)
+ambient_light_energy = 0.7
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s6hlr"]
+albedo_color = Color(0.035, 0.055, 0.075, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_xtix2"]
+size = Vector2(20, 20)
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_1el3w"]
+_data = {
+&"action": ExtResource("4_mlw12")
+}
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ei2w6"]
+albedo_color = Color(0.2, 0.26, 0.33, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_gktbq"]
+size = Vector3(0.45, 0.65, 0.45)
+
+[node name="ArcherPowerShotSequencePreview" type="Node3D" unique_id=1747738801]
+script = ExtResource("1_xpd5r")
+preview_mode = 3
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1033770453]
+environment = SubResource("Environment_68kps")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=909814807]
+transform = Transform3D(0.84481907, -0.21113205, 0.49163398, 0, 0.91885257, 0.39460096, -0.53505206, -0.33336642, 0.7762642, 3.8, 3.6, 6)
+projection = 1
+current = true
+size = 4.6
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=863310744]
+transform = Transform3D(0.8660254, 0.35355338, -0.35355338, 0, 0.70710677, 0.70710677, 0.5, -0.6123724, 0.6123724, 0, 0, 0)
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1143474333]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0)
+material_override = SubResource("StandardMaterial3D_s6hlr")
+mesh = SubResource("PlaneMesh_xtix2")
+
+[node name="Actor" type="Node3D" parent="." unique_id=1362415730]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 0, 0)
+
+[node name="HeroVisual" parent="Actor" unique_id=84883702 instance=ExtResource("2_rdv86")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0, 0)
+
+[node name="BowVisual" parent="Actor/HeroVisual/CharacterRoot/WeaponSocket" parent_id_path=PackedInt32Array(84883702, 2021864902) index="1" unique_id=984435750 instance=ExtResource("3_otcym")]
+
+[node name="CharacterAnimationPlayer" parent="Actor/HeroVisual" index="1" unique_id=634680723]
+libraries/Finisher = SubResource("AnimationLibrary_1el3w")
+
+[node name="Target" type="MeshInstance3D" parent="." unique_id=1751364389]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.325, 0)
+material_override = SubResource("StandardMaterial3D_ei2w6")
+mesh = SubResource("BoxMesh_gktbq")
+
+[node name="TargetPoint" type="Marker3D" parent="." unique_id=1500171313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.4, 0)
+
+[node name="Transient" type="Node3D" parent="." unique_id=728941491]
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1362221941]
+
+[node name="Panel" type="PanelContainer" parent="UI" unique_id=1522309701]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 20.0
+offset_bottom = 20.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/Panel" unique_id=813222335]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/Panel/VBox" unique_id=463121274]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "终结·蓄力重箭"
+
+[node name="Caption" type="Label" parent="UI/Panel/VBox" unique_id=2023018014]
+layout_mode = 2
+text = "绿色主色 / 蓝色辅色 · 纯视觉预览
+散射无伤害；正式飞行0.14秒"
+
+[node name="Replay" type="Button" parent="UI/Panel/VBox" unique_id=935527540]
+layout_mode = 2
+text = "重播"
+
+[editable path="Actor/HeroVisual"]

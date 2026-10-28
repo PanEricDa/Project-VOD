@@ -1,0 +1,113 @@
+[gd_resource type="Theme" format=3 uid="uid://bjglve3uoehgt"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i4uf6"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.12, 0.62, 0.28, 0.9)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.25, 0.95, 0.48, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gshg6"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.035, 0.065, 0.105, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.52, 0.66, 0.9)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_odip1"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.035, 0.065, 0.105, 0.95)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.25, 0.95, 0.48, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2w0ha"]
+bg_color = Color(0.12, 0.62, 0.28, 0.9)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.25, 0.95, 0.48, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+expand_margin_left = 4.0
+expand_margin_top = 4.0
+expand_margin_right = 4.0
+expand_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jix6i"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(1, 0.24, 0.24, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+expand_margin_left = 4.0
+expand_margin_top = 4.0
+expand_margin_right = 4.0
+expand_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tc532"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.25, 0.95, 0.48, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+expand_margin_left = 4.0
+expand_margin_top = 4.0
+expand_margin_right = 4.0
+expand_margin_bottom = 4.0
+
+[resource]
+resource_name = "Skill Input Feedback"
+FinisherConfirmed/base_type = &"PanelContainer"
+FinisherConfirmed/styles/panel = SubResource("StyleBoxFlat_i4uf6")
+FinisherOption/base_type = &"PanelContainer"
+FinisherOption/styles/panel = SubResource("StyleBoxFlat_gshg6")
+FinisherSelected/base_type = &"PanelContainer"
+FinisherSelected/styles/panel = SubResource("StyleBoxFlat_odip1")
+PlayerSkillCasting/base_type = &"Panel"
+PlayerSkillCasting/styles/panel = SubResource("StyleBoxFlat_2w0ha")
+PlayerSkillFailed/base_type = &"Panel"
+PlayerSkillFailed/styles/panel = SubResource("StyleBoxFlat_jix6i")
+PlayerSkillSelected/base_type = &"Panel"
+PlayerSkillSelected/styles/panel = SubResource("StyleBoxFlat_tc532")
+SelectionFeedback/constants/selected_scale_percent = 106

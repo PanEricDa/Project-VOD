@@ -1,0 +1,621 @@
+[gd_scene format=3 uid="uid://bswkqd17j1vuu"]
+
+[ext_resource type="Script" uid="uid://b82gp3681x5go" path="res://Effects/Skills/ArcherPowerShot/ArcherPowerShotCastEffect.gd" id="1_rt0gp"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ubcft"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.52, 1, 0.68, 0.95)
+
+[sub_resource type="SphereMesh" id="SphereMesh_rt0gp"]
+radius = 0.065
+height = 0.13
+radial_segments = 12
+rings = 6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i6bvt"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.06, 0.35, 1, 0.65)
+
+[sub_resource type="TorusMesh" id="TorusMesh_ubcft"]
+inner_radius = 0.2665
+outer_radius = 0.286
+rings = 20
+ring_segments = 6
+
+[sub_resource type="BoxMesh" id="BoxMesh_qfrnr"]
+size = Vector3(0.0156, 0.0156, 0.351)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fg5vn"]
+resource_local_to_scene = true
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.06, 0.9, 0.24, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_i6bvt"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_85shk"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_556un"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fg5vn"]
+size = Vector3(0.0156, 0.0156, 0.351)
+
+[sub_resource type="BoxMesh" id="BoxMesh_olugd"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_7vbt4"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_084ai"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_h4t2d"]
+size = Vector3(0.0156, 0.0156, 0.351)
+
+[sub_resource type="BoxMesh" id="BoxMesh_l2dds"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ch8je"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1rt2b"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_86x5a"]
+size = Vector3(0.0156, 0.0156, 0.351)
+
+[sub_resource type="BoxMesh" id="BoxMesh_w6rew"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_q5f5n"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="BoxMesh" id="BoxMesh_rfnuk"]
+size = Vector3(0.0156, 0.0156, 0.26)
+
+[sub_resource type="Animation" id="Animation_0m1ha"]
+resource_name = "effect"
+length = 0.76
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/Focus/Core:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = false
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.6, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.25, 0.25, 0.25), Vector3(1, 1, 1), Vector3(1.35, 1.35, 1.35)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/Focus/ConvergingRing:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = false
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.76),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(1.5, 1.5, 1.5), Vector3(0.55, 0.55, 0.55)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("VisualRoot/Focus/Ray00:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = false
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.34, 0.36, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.1439999, 0, 0), Vector3(1.1439999, 0, 0), Vector3(0.077999994, 0, 0), Vector3(1.1439999, 0, 0), Vector3(0.025999999, 0, 0), Vector3(0.025999999, 0, 0)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("VisualRoot/Focus/Ray00:transparency")
+tracks/3/interp = 1
+tracks/3/loop_wrap = false
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.31, 0.34, 0.36, 0.42, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("VisualRoot/Focus/Ray01:position")
+tracks/4/interp = 1
+tracks/4/loop_wrap = false
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.155, 0.375, 0.395, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.0185206, 0.42188507, 0.30555624), Vector3(1.0185206, 0.42188507, 0.30555624), Vector3(0.06944459, 0.028764892, 0.020833377), Vector3(1.0185206, 0.42188507, 0.30555624), Vector3(0.023148196, 0.0095882965, 0.0069444594), Vector3(0.023148196, 0.0095882965, 0.0069444594)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("VisualRoot/Focus/Ray01:transparency")
+tracks/5/interp = 1
+tracks/5/loop_wrap = false
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.135, 0.345, 0.375, 0.395, 0.455, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("VisualRoot/Focus/Ray02:position")
+tracks/6/interp = 1
+tracks/6/loop_wrap = false
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.19, 0.41, 0.43, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.7913213, 0.7913213, 0.23739639), Vector3(0.7913213, 0.7913213, 0.23739639), Vector3(0.05395372, 0.05395372, 0.016186118), Vector3(0.7913213, 0.7913213, 0.23739639), Vector3(0.017984573, 0.017984573, 0.005395372), Vector3(0.017984573, 0.017984573, 0.005395372)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("VisualRoot/Focus/Ray02:transparency")
+tracks/7/interp = 1
+tracks/7/loop_wrap = false
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.17, 0.38, 0.41, 0.43, 0.49, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("VisualRoot/Focus/Ray03:position")
+tracks/8/interp = 1
+tracks/8/loop_wrap = false
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.225, 0.445, 0.465, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.43493292, 1.050021, -0.13047989), Vector3(0.43493292, 1.050021, -0.13047989), Vector3(0.029654518, 0.07159234, -0.0088963555), Vector3(0.43493292, 1.050021, -0.13047989), Vector3(0.009884839, 0.023864113, -0.002965452), Vector3(0.009884839, 0.023864113, -0.002965452)]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("VisualRoot/Focus/Ray03:transparency")
+tracks/9/interp = 1
+tracks/9/loop_wrap = false
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.205, 0.415, 0.445, 0.465, 0.525, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("VisualRoot/Focus/Ray04:position")
+tracks/10/interp = 1
+tracks/10/loop_wrap = false
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.34, 0.36, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(6.7093314e-17, 1.0957532, -0.328726), Vector3(6.7093314e-17, 1.0957532, -0.328726), Vector3(4.574544e-18, 0.07471044, -0.022413133), Vector3(6.7093314e-17, 1.0957532, -0.328726), Vector3(1.5248481e-18, 0.024903482, -0.0074710445), Vector3(1.5248481e-18, 0.024903482, -0.0074710445)]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("VisualRoot/Focus/Ray04:transparency")
+tracks/11/interp = 1
+tracks/11/loop_wrap = false
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.31, 0.34, 0.36, 0.42, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("VisualRoot/Focus/Ray05:position")
+tracks/12/interp = 1
+tracks/12/loop_wrap = false
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.155, 0.375, 0.395, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.43493292, 1.050021, -0.13047989), Vector3(-0.43493292, 1.050021, -0.13047989), Vector3(-0.029654518, 0.07159234, -0.0088963555), Vector3(-0.43493292, 1.050021, -0.13047989), Vector3(-0.009884839, 0.023864113, -0.002965452), Vector3(-0.009884839, 0.023864113, -0.002965452)]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("VisualRoot/Focus/Ray05:transparency")
+tracks/13/interp = 1
+tracks/13/loop_wrap = false
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.135, 0.345, 0.375, 0.395, 0.455, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("VisualRoot/Focus/Ray06:position")
+tracks/14/interp = 1
+tracks/14/loop_wrap = false
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.19, 0.41, 0.43, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.7913213, 0.7913213, 0.23739639), Vector3(-0.7913213, 0.7913213, 0.23739639), Vector3(-0.05395372, 0.05395372, 0.016186118), Vector3(-0.7913213, 0.7913213, 0.23739639), Vector3(-0.017984573, 0.017984573, 0.005395372), Vector3(-0.017984573, 0.017984573, 0.005395372)]
+}
+tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
+tracks/15/path = NodePath("VisualRoot/Focus/Ray06:transparency")
+tracks/15/interp = 1
+tracks/15/loop_wrap = false
+tracks/15/keys = {
+"times": PackedFloat32Array(0, 0.17, 0.38, 0.41, 0.43, 0.49, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
+tracks/16/path = NodePath("VisualRoot/Focus/Ray07:position")
+tracks/16/interp = 1
+tracks/16/loop_wrap = false
+tracks/16/keys = {
+"times": PackedFloat32Array(0, 0.225, 0.445, 0.465, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-1.0185206, 0.42188507, 0.30555624), Vector3(-1.0185206, 0.42188507, 0.30555624), Vector3(-0.06944459, 0.028764892, 0.020833377), Vector3(-1.0185206, 0.42188507, 0.30555624), Vector3(-0.023148196, 0.0095882965, 0.0069444594), Vector3(-0.023148196, 0.0095882965, 0.0069444594)]
+}
+tracks/17/type = "value"
+tracks/17/imported = false
+tracks/17/enabled = true
+tracks/17/path = NodePath("VisualRoot/Focus/Ray07:transparency")
+tracks/17/interp = 1
+tracks/17/loop_wrap = false
+tracks/17/keys = {
+"times": PackedFloat32Array(0, 0.205, 0.415, 0.445, 0.465, 0.525, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/18/type = "value"
+tracks/18/imported = false
+tracks/18/enabled = true
+tracks/18/path = NodePath("VisualRoot/Focus/Ray08:position")
+tracks/18/interp = 1
+tracks/18/loop_wrap = false
+tracks/18/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.34, 0.36, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-1.1439999, 1.4009496e-16, 1.2608546e-16), Vector3(-1.1439999, 1.4009496e-16, 1.2608546e-16), Vector3(-0.077999994, 9.5519285e-18, 8.596736e-18), Vector3(-1.1439999, 1.4009496e-16, 1.2608546e-16), Vector3(-0.025999999, 3.1839764e-18, 2.8655786e-18), Vector3(-0.025999999, 3.1839764e-18, 2.8655786e-18)]
+}
+tracks/19/type = "value"
+tracks/19/imported = false
+tracks/19/enabled = true
+tracks/19/path = NodePath("VisualRoot/Focus/Ray08:transparency")
+tracks/19/interp = 1
+tracks/19/loop_wrap = false
+tracks/19/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.31, 0.34, 0.36, 0.42, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/20/type = "value"
+tracks/20/imported = false
+tracks/20/enabled = true
+tracks/20/path = NodePath("VisualRoot/Focus/Ray09:position")
+tracks/20/interp = 1
+tracks/20/loop_wrap = false
+tracks/20/keys = {
+"times": PackedFloat32Array(0, 0.155, 0.375, 0.395, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-1.0185206, -0.42188507, -0.30555624), Vector3(-1.0185206, -0.42188507, -0.30555624), Vector3(-0.06944459, -0.028764892, -0.020833377), Vector3(-1.0185206, -0.42188507, -0.30555624), Vector3(-0.023148196, -0.0095882965, -0.0069444594), Vector3(-0.023148196, -0.0095882965, -0.0069444594)]
+}
+tracks/21/type = "value"
+tracks/21/imported = false
+tracks/21/enabled = true
+tracks/21/path = NodePath("VisualRoot/Focus/Ray09:transparency")
+tracks/21/interp = 1
+tracks/21/loop_wrap = false
+tracks/21/keys = {
+"times": PackedFloat32Array(0, 0.135, 0.345, 0.375, 0.395, 0.455, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/22/type = "value"
+tracks/22/imported = false
+tracks/22/enabled = true
+tracks/22/path = NodePath("VisualRoot/Focus/Ray10:position")
+tracks/22/interp = 1
+tracks/22/loop_wrap = false
+tracks/22/keys = {
+"times": PackedFloat32Array(0, 0.19, 0.41, 0.43, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.7913213, -0.7913213, -0.23739639), Vector3(-0.7913213, -0.7913213, -0.23739639), Vector3(-0.05395372, -0.05395372, -0.016186118), Vector3(-0.7913213, -0.7913213, -0.23739639), Vector3(-0.017984573, -0.017984573, -0.005395372), Vector3(-0.017984573, -0.017984573, -0.005395372)]
+}
+tracks/23/type = "value"
+tracks/23/imported = false
+tracks/23/enabled = true
+tracks/23/path = NodePath("VisualRoot/Focus/Ray10:transparency")
+tracks/23/interp = 1
+tracks/23/loop_wrap = false
+tracks/23/keys = {
+"times": PackedFloat32Array(0, 0.17, 0.38, 0.41, 0.43, 0.49, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/24/type = "value"
+tracks/24/imported = false
+tracks/24/enabled = true
+tracks/24/path = NodePath("VisualRoot/Focus/Ray11:position")
+tracks/24/interp = 1
+tracks/24/loop_wrap = false
+tracks/24/keys = {
+"times": PackedFloat32Array(0, 0.225, 0.445, 0.465, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.43493292, -1.050021, 0.13047989), Vector3(-0.43493292, -1.050021, 0.13047989), Vector3(-0.029654518, -0.07159234, 0.0088963555), Vector3(-0.43493292, -1.050021, 0.13047989), Vector3(-0.009884839, -0.023864113, 0.002965452), Vector3(-0.009884839, -0.023864113, 0.002965452)]
+}
+tracks/25/type = "value"
+tracks/25/imported = false
+tracks/25/enabled = true
+tracks/25/path = NodePath("VisualRoot/Focus/Ray11:transparency")
+tracks/25/interp = 1
+tracks/25/loop_wrap = false
+tracks/25/keys = {
+"times": PackedFloat32Array(0, 0.205, 0.415, 0.445, 0.465, 0.525, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/26/type = "value"
+tracks/26/imported = false
+tracks/26/enabled = true
+tracks/26/path = NodePath("VisualRoot/Focus/Ray12:position")
+tracks/26/interp = 1
+tracks/26/loop_wrap = false
+tracks/26/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.34, 0.36, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-2.0127994e-16, -1.0957532, 0.328726), Vector3(-2.0127994e-16, -1.0957532, 0.328726), Vector3(-1.3723633e-17, -0.07471044, 0.022413133), Vector3(-2.0127994e-16, -1.0957532, 0.328726), Vector3(-4.574544e-18, -0.024903482, 0.0074710445), Vector3(-4.574544e-18, -0.024903482, 0.0074710445)]
+}
+tracks/27/type = "value"
+tracks/27/imported = false
+tracks/27/enabled = true
+tracks/27/path = NodePath("VisualRoot/Focus/Ray12:transparency")
+tracks/27/interp = 1
+tracks/27/loop_wrap = false
+tracks/27/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.31, 0.34, 0.36, 0.42, 0.7, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/28/type = "value"
+tracks/28/imported = false
+tracks/28/enabled = true
+tracks/28/path = NodePath("VisualRoot/Focus/Ray13:position")
+tracks/28/interp = 1
+tracks/28/loop_wrap = false
+tracks/28/keys = {
+"times": PackedFloat32Array(0, 0.155, 0.375, 0.395, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.43493292, -1.050021, 0.13047989), Vector3(0.43493292, -1.050021, 0.13047989), Vector3(0.029654518, -0.07159234, 0.0088963555), Vector3(0.43493292, -1.050021, 0.13047989), Vector3(0.009884839, -0.023864113, 0.002965452), Vector3(0.009884839, -0.023864113, 0.002965452)]
+}
+tracks/29/type = "value"
+tracks/29/imported = false
+tracks/29/enabled = true
+tracks/29/path = NodePath("VisualRoot/Focus/Ray13:transparency")
+tracks/29/interp = 1
+tracks/29/loop_wrap = false
+tracks/29/keys = {
+"times": PackedFloat32Array(0, 0.135, 0.345, 0.375, 0.395, 0.455, 0.714, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/30/type = "value"
+tracks/30/imported = false
+tracks/30/enabled = true
+tracks/30/path = NodePath("VisualRoot/Focus/Ray14:position")
+tracks/30/interp = 1
+tracks/30/loop_wrap = false
+tracks/30/keys = {
+"times": PackedFloat32Array(0, 0.19, 0.41, 0.43, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.7913213, -0.7913213, -0.23739639), Vector3(0.7913213, -0.7913213, -0.23739639), Vector3(0.05395372, -0.05395372, -0.016186118), Vector3(0.7913213, -0.7913213, -0.23739639), Vector3(0.017984573, -0.017984573, -0.005395372), Vector3(0.017984573, -0.017984573, -0.005395372)]
+}
+tracks/31/type = "value"
+tracks/31/imported = false
+tracks/31/enabled = true
+tracks/31/path = NodePath("VisualRoot/Focus/Ray14:transparency")
+tracks/31/interp = 1
+tracks/31/loop_wrap = false
+tracks/31/keys = {
+"times": PackedFloat32Array(0, 0.17, 0.38, 0.41, 0.43, 0.49, 0.728, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+tracks/32/type = "value"
+tracks/32/imported = false
+tracks/32/enabled = true
+tracks/32/path = NodePath("VisualRoot/Focus/Ray15:position")
+tracks/32/interp = 1
+tracks/32/loop_wrap = false
+tracks/32/keys = {
+"times": PackedFloat32Array(0, 0.225, 0.445, 0.465, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.0185206, -0.42188507, -0.30555624), Vector3(1.0185206, -0.42188507, -0.30555624), Vector3(0.06944459, -0.028764892, -0.020833377), Vector3(1.0185206, -0.42188507, -0.30555624), Vector3(0.023148196, -0.0095882965, -0.0069444594), Vector3(0.023148196, -0.0095882965, -0.0069444594)]
+}
+tracks/33/type = "value"
+tracks/33/imported = false
+tracks/33/enabled = true
+tracks/33/path = NodePath("VisualRoot/Focus/Ray15:transparency")
+tracks/33/interp = 1
+tracks/33/loop_wrap = false
+tracks/33/keys = {
+"times": PackedFloat32Array(0, 0.205, 0.415, 0.445, 0.465, 0.525, 0.742, 0.76),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [1.0, 0.15, 0.0, 1.0, 1.0, 0.1, 0.0, 1.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_qkcf1"]
+_data = {
+&"effect": SubResource("Animation_0m1ha")
+}
+
+[node name="ArcherPowerShotCastEffect" type="Node3D" unique_id=652282302]
+script = ExtResource("1_rt0gp")
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1308242488]
+
+[node name="Focus" type="Node3D" parent="VisualRoot" unique_id=877916480]
+
+[node name="Core" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=395277050]
+material_override = SubResource("StandardMaterial3D_ubcft")
+cast_shadow = 0
+mesh = SubResource("SphereMesh_rt0gp")
+
+[node name="ConvergingRing" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1662938245]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_i6bvt")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_ubcft")
+
+[node name="Ray00" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1016052349]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_i6bvt")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_qfrnr")
+
+[node name="Ray01" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1861492182]
+transform = Transform3D(0.2873479, -0.35322782, 0.8903153, 0, 0.9295165, 0.36878067, -0.9578263, -0.105968356, 0.2670946, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_i6bvt")
+
+[node name="Ray02" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1809739448]
+transform = Transform3D(0.2873479, -0.6625423, 0.69171447, 0, 0.7221711, 0.69171447, -0.95782626, -0.19876271, 0.20751436, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_85shk")
+
+[node name="Ray03" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1761700631]
+transform = Transform3D(-0.2873479, -0.8791414, 0.38018617, 0, 0.396926, 0.9178506, -0.95782626, 0.26374245, -0.11405586, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_556un")
+
+[node name="Ray04" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1701623023]
+transform = Transform3D(1, -1.7594405e-17, 5.864801e-17, -6.123032e-17, -0.2873479, 0.9578263, 0, -0.9578263, -0.2873479, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_i6bvt")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_fg5vn")
+
+[node name="Ray05" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1899787949]
+transform = Transform3D(-0.2873479, 0.8791414, -0.38018617, 0, 0.396926, 0.9178506, 0.95782626, 0.26374245, -0.11405586, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_olugd")
+
+[node name="Ray06" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=708866560]
+transform = Transform3D(0.2873479, 0.6625423, -0.69171447, 0, 0.7221711, 0.69171447, 0.95782626, -0.19876271, 0.20751436, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_7vbt4")
+
+[node name="Ray07" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1048945118]
+transform = Transform3D(0.2873479, 0.35322782, -0.8903153, 0, 0.9295165, 0.36878067, 0.9578263, -0.105968356, 0.2670946, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_084ai")
+
+[node name="Ray08" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=360029215]
+transform = Transform3D(1.1021457e-16, 1.2246064e-16, -1, 0, 1, 1.2246064e-16, 1, -1.3496947e-32, 1.1021457e-16, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_i6bvt")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_h4t2d")
+
+[node name="Ray09" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1757039329]
+transform = Transform3D(-0.2873479, -0.35322782, -0.8903153, 0, 0.9295165, -0.36878067, 0.9578263, -0.105968356, -0.2670946, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_l2dds")
+
+[node name="Ray10" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1126498224]
+transform = Transform3D(-0.2873479, -0.6625423, -0.69171447, 0, 0.7221711, -0.69171447, 0.95782626, -0.19876271, -0.20751436, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_ch8je")
+
+[node name="Ray11" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=559090909]
+transform = Transform3D(0.2873479, -0.8791414, -0.38018617, 0, 0.396926, -0.9178506, 0.95782626, 0.26374245, 0.11405586, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_1rt2b")
+
+[node name="Ray12" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1449385431]
+transform = Transform3D(-1, -5.2783212e-17, -1.7594403e-16, 1.8369095e-16, -0.2873479, -0.9578263, 0, -0.9578263, 0.2873479, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_i6bvt")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_86x5a")
+
+[node name="Ray13" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1506531997]
+transform = Transform3D(0.2873479, 0.8791414, 0.38018617, 0, 0.396926, -0.9178506, -0.95782626, 0.26374245, 0.11405586, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_w6rew")
+
+[node name="Ray14" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=1074828642]
+transform = Transform3D(-0.2873479, 0.6625423, 0.69171447, 0, 0.7221711, -0.69171447, -0.95782626, -0.19876271, -0.20751436, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_q5f5n")
+
+[node name="Ray15" type="MeshInstance3D" parent="VisualRoot/Focus" unique_id=67569719]
+transform = Transform3D(-0.2873479, 0.35322782, 0.8903153, 0, 0.9295165, -0.36878067, -0.9578263, -0.105968356, -0.2670946, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_fg5vn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_rfnuk")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1150110652]
+libraries/ = SubResource("AnimationLibrary_qkcf1")

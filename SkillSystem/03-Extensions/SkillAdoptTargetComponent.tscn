@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://d1ref7bdjr4fm"]
+
+[ext_resource type="Script" uid="uid://b2b16xqrnqpwb" path="res://SkillSystem/03-Extensions/SkillAdoptTargetComponent.gd" id="1_teplb"]
+
+[node name="AdoptSkillTarget" type="Node" unique_id=1781083797]
+script = ExtResource("1_teplb")

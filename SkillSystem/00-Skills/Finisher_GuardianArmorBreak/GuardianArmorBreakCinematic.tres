@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SkillCinematicProfile" format=3 uid="uid://bcxkcyqvnxoux"]
+
+[ext_resource type="Animation" uid="uid://caub0xwt3omek" path="res://SkillSystem/00-Skills/Finisher_GuardianArmorBreak/GuardianArmorBreakAction.tres" id="1_70tpx"]
+[ext_resource type="Script" uid="uid://dk7p5liefdnao" path="res://SkillSystem/01-Core/SkillCinematicProfile.gd" id="1_dpnam"]
+
+[resource]
+script = ExtResource("1_dpnam")
+action_animation = ExtResource("1_70tpx")

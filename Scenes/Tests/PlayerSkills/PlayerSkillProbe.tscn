@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://dypbeevkejn0l"]
+
+[ext_resource type="PackedScene" uid="uid://b3qp6uulk431f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_erciv"]
+[ext_resource type="Animation" uid="uid://5quhlhatfqlw" path="res://Scenes/Tests/PlayerSkills/PlayerSkillProbeAction.tres" id="2_6tsit"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="3_exa3n"]
+[ext_resource type="Script" uid="uid://b5v5885pm8dsj" path="res://Scenes/Tests/PlayerSkills/PlayerSkillProbeEffect.gd" id="6_kiuf6"]
+
+[sub_resource type="Resource" id="Resource_30qxc"]
+script = ExtResource("3_exa3n")
+
+[node name="PlayerSkillProbe" unique_id=253215794 instance=ExtResource("1_erciv")]
+skill_id = &"player_probe"
+display_name = "Player Probe"
+target_relations = 1
+action_animation = ExtResource("2_6tsit")
+base_cast_time = 0.2
+can_move_while_casting = true
+skill_cooldown = 10.0
+automatic_cast_enabled = false
+delivery = SubResource("Resource_30qxc")
+
+[node name="ProbeEffect" type="Node" parent="." index="2" unique_id=434435927]
+script = ExtResource("6_kiuf6")

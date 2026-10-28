@@ -21,6 +21,8 @@ signal projectile_release_requested()
 signal action_release_requested()
 ## 通用角色动作完成其逻辑占用时间点时发出。
 signal action_finish_requested()
+## 技能动画位移边界；begin为true表示进入、false表示离开，仅广播不执行物理。
+signal skill_motion_marker_requested(begin: bool)
 signal death_animation_finished_requested()
 
 
@@ -63,6 +65,16 @@ func release_action() -> void:
 ## 供技能/动作动画的方法轨道调用，标记控制器可以释放当前动作占用。
 func finish_action() -> void:
 	action_finish_requested.emit()
+
+
+## 可选方法帧：开始当前技能的唯一水平位移区间。
+func begin_skill_motion() -> void:
+	skill_motion_marker_requested.emit(true)
+
+
+## 可选方法帧：结束当前技能位移区间；距离由技能组件配置。
+func end_skill_motion() -> void:
+	skill_motion_marker_requested.emit(false)
 
 
 func play_named_animation(library_name: StringName, animation_name: StringName) -> bool:

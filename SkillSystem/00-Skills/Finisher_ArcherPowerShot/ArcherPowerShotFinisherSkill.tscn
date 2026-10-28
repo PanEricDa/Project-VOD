@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://bone50jek16h7"]
+
+[ext_resource type="PackedScene" uid="uid://b3qp6uulk431f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_6ehgy"]
+[ext_resource type="PackedScene" uid="uid://bswkqd17j1vuu" path="res://Effects/Skills/ArcherPowerShot/ArcherPowerShotCastEffect.tscn" id="2_71apv"]
+[ext_resource type="Resource" uid="uid://bcg1ylgdjeyvy" path="res://SkillSystem/00-Skills/Finisher_ArcherPowerShot/ArcherPowerShotCinematic.tres" id="2_ksxa8"]
+[ext_resource type="Resource" uid="uid://dx2obkbd37ree" path="res://Effects/Camera/Presets/ArcherPowerShotCinematicCamera.tres" id="3_71apv"]
+[ext_resource type="Script" uid="uid://c7mk6851hj0ld" path="res://SkillSystem/02-Delivery/ArcProjectileDeliveryConfig.gd" id="5_0dt2c"]
+[ext_resource type="PackedScene" uid="uid://bo3monvkoaac5" path="res://Item/Projectiles/ArcherPowerShotProjectile.tscn" id="5_2ih1d"]
+[ext_resource type="Script" uid="uid://c6soknwxl76r3" path="res://SkillSystem/03-Extensions/HealthChangeSkillEffect.gd" id="6_nreip"]
+[ext_resource type="PackedScene" uid="uid://bj53adl5l6lve" path="res://SkillSystem/03-Extensions/SkillMotionComponent.tscn" id="8_2ih1d"]
+
+[sub_resource type="Resource" id="Resource_71apv"]
+resource_local_to_scene = true
+script = ExtResource("5_0dt2c")
+projectile_scene = ExtResource("5_2ih1d")
+
+[node name="ArcherPowerShotFinisherSkill" unique_id=285028944 instance=ExtResource("1_6ehgy")]
+skill_id = &"archer_power_shot_finisher"
+display_name = "终结·蓄力重箭"
+cast_range = 9.0
+release_range_tolerance_m = 2.0
+base_cast_time = 0.76666665077209
+skill_cooldown = 0.0
+automatic_cast_enabled = false
+decision_delay_min = 0.0
+decision_delay_max = 0.0
+extra_hesitation_chance = 0.0
+cast_effect_scene = ExtResource("2_71apv")
+cinematic_profile = ExtResource("2_ksxa8")
+camera_effect_profile = ExtResource("3_71apv")
+delivery = SubResource("Resource_71apv")
+
+[node name="DamageEffect" type="Node" parent="." index="2" unique_id=1736604057]
+script = ExtResource("6_nreip")
+operation = 0
+base_amount = 240.0
+power_ratio = 8.0
+use_finisher_bonus = true
+
+[node name="SkillMotionComponent" parent="." index="3" unique_id=1289369726 instance=ExtResource("8_2ih1d")]

@@ -19,6 +19,7 @@ var base_amount: float = 10.0
 ## 施法者攻击力的数值转化倍率。
 ## 最终数值 = 基础数值 + 施法者攻击力 × 本倍率；1.0 表示附加 100% 攻击力，
 ## 1.2 表示附加 120% 攻击力，0 表示仅使用基础数值。
+## 开启继承的use_finisher_bonus时，上式完整结果再乘本次终结评分倍率，静态字段不会改写。
 ## 适用于本效果产生的伤害或治疗，不影响技能冷却、目标选择或其他效果组件。
 @export_range(0.0, 100.0, 0.05, "or_greater")
 var power_ratio: float = 0.0
@@ -33,6 +34,8 @@ func apply(
 		return false
 	var caster := context.caster as UnitBase
 	var unit_target := target as UnitBase
+	# 原结算器的multiplier作用于完整基础值与攻击力部分，保证每笔仅增强一次。
+	var effect_multiplier := scale_effect_value(1.0, context)
 	match operation:
 		Operation.DAMAGE:
 			var provenance := context.damage_context
@@ -44,7 +47,7 @@ func apply(
 				unit_target,
 				base_amount,
 				power_ratio,
-				1.0,
+				effect_multiplier,
 				maxf(context.threat_multiplier, 0.0),
 				0.0,
 				provenance.for_hit(hit_id)
@@ -57,7 +60,8 @@ func apply(
 				caster,
 				unit_target,
 				base_amount,
-				power_ratio
+				power_ratio,
+				effect_multiplier
 			)
 			if result != null and result.current_hit != null and result.current_hit.target == target:
 				result.current_hit.actual_healing += applied

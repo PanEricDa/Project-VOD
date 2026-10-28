@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bdcku1jp3jacb"]
+
+[ext_resource type="Script" uid="uid://d4iud07ajdqx1" path="res://UnitSystem/Components/Combat/PlayerSkillController.gd" id="1_a11wj"]
+
+[node name="PlayerSkillController" type="Node" unique_id=258619820]
+script = ExtResource("1_a11wj")

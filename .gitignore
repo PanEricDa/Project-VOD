@@ -1,3 +1,9 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Local exported builds (source and export settings remain versioned)
+/Export/*.exe
+/Export/*.pck
+/Export/*.rar
+/Export/*.zip

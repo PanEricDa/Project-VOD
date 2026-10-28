@@ -94,3 +94,8 @@ SquadChainRoundWindowTest、SquadChainRoundDisplayTest与SquadChainRoundIntegrat
 按TDD新增正式源场景默认值驱动的真实伤害测试：旧2秒配置先出现3项预期失败，改为2.6后通过。验证首击开启2.6秒、2.1秒仍可衔接、恰在2.6秒命中可续窗并刷新完整2.6秒、超过2.6秒正常闭窗。既有时钟算法用例显式配置2秒夹具，避免试玩调参耦合核心契约；新增UI预览装配断言单独验证正式预览为2.6秒。
 
 窗口、UI及交付集成定向测试通过；完整回归137/137退出0、有PASS，无SCRIPT ERROR、ERROR或超时，负向测试保留预期警告。结果记录：.superpowers/archives/2026-10-16-score-display/window-extension-suite.json。
+
+
+## 2026-10-25：COMBO界面结算后自动隐藏
+
+右侧独立 SquadChainRoundDisplay 在连携有效伤害开始时显示；连携结算后保留约2个真实秒，然后隐藏整组COMBO、评分条与间隔条。新一轮有效伤害立即重新显示；仅受理／释放、尚未造成伤害的请求不会重开显示。保留现有暂停／演出反馈挂起逻辑；不清除评价器的last_result，不影响评分、终结资格或后台调试数据。2秒是显示组件内部常量，无新增Inspector参数或资源。SquadChainRoundDisplayTest已验证延迟隐藏、闲置刷新不复现旧结果和新轮重新显示。

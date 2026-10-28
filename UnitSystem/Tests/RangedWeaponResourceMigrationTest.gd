@@ -117,11 +117,12 @@ func _validate_definition(definition: Dictionary) -> void:
 		&"basic_attack_1",
 		&"basic_cast_1",
 	]
-	_expect(
-		animation_names == expected_names,
-		"%s library must contain RESET, basic_attack_1 and basic_cast_1"
-		% weapon_name
-	)
+	# 基础迁移契约要求保留原有动作，不应禁止在同一武器库继续制作终结动作。
+	for expected_name: StringName in expected_names:
+		_expect(
+			animation_names.has(expected_name),
+			"%s library must retain %s" % [weapon_name, expected_name]
+		)
 	var reset: Animation = library.get_animation(&"RESET")
 	var attack: Animation = library.get_animation(&"basic_attack_1")
 	if reset == null or attack == null:

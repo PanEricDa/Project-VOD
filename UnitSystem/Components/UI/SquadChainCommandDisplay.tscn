@@ -3,50 +3,76 @@
 [ext_resource type="Script" uid="uid://wvyxvue3njoj" path="res://UnitSystem/Components/UI/SquadChainCommandDisplay.gd" id="1_i78jb"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i78jb"]
-bg_color = Color(0, 0, 0, 0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j6nkc"]
+bg_color = Color(0.12, 0.62, 0.28, 0.72)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
 border_color = Color(0.25, 0.95, 0.48, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
+expand_margin_left = 8.0
+expand_margin_top = 8.0
+expand_margin_right = 8.0
+expand_margin_bottom = 8.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j6nkc"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8ysup"]
 bg_color = Color(0, 0, 0, 0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
 border_color = Color(1, 0.25, 0.25, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
+expand_margin_left = 8.0
+expand_margin_top = 8.0
+expand_margin_right = 8.0
+expand_margin_bottom = 8.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8ysup"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eaocv"]
 bg_color = Color(0, 0, 0, 0)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.82, 0.22, 1)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.25, 0.95, 0.48, 1)
 corner_radius_top_left = 5
 corner_radius_top_right = 5
 corner_radius_bottom_right = 5
 corner_radius_bottom_left = 5
+expand_margin_left = 8.0
+expand_margin_top = 8.0
+expand_margin_right = 8.0
+expand_margin_bottom = 8.0
 
-[sub_resource type="Theme" id="Theme_xk0lp"]
+[sub_resource type="Theme" id="Theme_2m47q"]
+ChainCard/base_type = &"PanelContainer"
+ChainCard/styles/panel = SubResource("StyleBoxFlat_i78jb")
 ChainCasting/base_type = &"Panel"
-ChainCasting/styles/panel = SubResource("StyleBoxFlat_i78jb")
+ChainCasting/styles/panel = SubResource("StyleBoxFlat_j6nkc")
 ChainFailed/base_type = &"Panel"
-ChainFailed/styles/panel = SubResource("StyleBoxFlat_j6nkc")
+ChainFailed/styles/panel = SubResource("StyleBoxFlat_8ysup")
 ChainPendingConfirmation/base_type = &"Label"
-ChainPendingConfirmation/colors/font_color = Color(1, 0.82, 0.22, 1)
+ChainPendingConfirmation/colors/font_color = Color(0.25, 0.95, 0.48, 1)
 ChainWaiting/base_type = &"Panel"
-ChainWaiting/styles/panel = SubResource("StyleBoxFlat_8ysup")
+ChainWaiting/styles/panel = SubResource("StyleBoxFlat_eaocv")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_f3hlx"]
 content_margin_left = 12.0
@@ -89,7 +115,7 @@ offset_right = 390.0
 offset_bottom = -55.0
 grow_vertical = 0
 mouse_filter = 2
-theme = SubResource("Theme_xk0lp")
+theme = SubResource("Theme_2m47q")
 theme_override_styles/panel = SubResource("StyleBoxFlat_f3hlx")
 
 [node name="VBox" type="VBoxContainer" parent="Panel" unique_id=1139878419]
@@ -142,6 +168,12 @@ theme_override_constants/separation = 10
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
+theme_type_variation = &"ChainCard"
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card1" unique_id=589543810]
+visible = false
+layout_mode = 2
+mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card1" unique_id=1745075001]
 layout_mode = 2
@@ -182,14 +214,15 @@ theme_type_variation = &"ChainPendingConfirmation"
 text = "已缓存"
 horizontal_alignment = 1
 
-[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card1" unique_id=589543810]
-visible = false
-layout_mode = 2
-mouse_filter = 2
-
 [node name="Card2" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=1973670819]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ChainCard"
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card2" unique_id=1176786013]
+visible = false
+layout_mode = 2
 mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card2" unique_id=946854506]
@@ -231,14 +264,15 @@ theme_type_variation = &"ChainPendingConfirmation"
 text = "已缓存"
 horizontal_alignment = 1
 
-[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card2" unique_id=1176786013]
-visible = false
-layout_mode = 2
-mouse_filter = 2
-
 [node name="Card3" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=375687618]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ChainCard"
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card3" unique_id=1203803575]
+visible = false
+layout_mode = 2
 mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card3" unique_id=1117036173]
@@ -280,14 +314,15 @@ theme_type_variation = &"ChainPendingConfirmation"
 text = "已缓存"
 horizontal_alignment = 1
 
-[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card3" unique_id=1203803575]
-visible = false
-layout_mode = 2
-mouse_filter = 2
-
 [node name="Card4" type="PanelContainer" parent="Panel/VBox/Cards" unique_id=2048797342]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
+theme_type_variation = &"ChainCard"
+
+[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card4" unique_id=2107814388]
+visible = false
+layout_mode = 2
 mouse_filter = 2
 
 [node name="VBox" type="VBoxContainer" parent="Panel/VBox/Cards/Card4" unique_id=1949068991]
@@ -328,8 +363,3 @@ layout_mode = 2
 theme_type_variation = &"ChainPendingConfirmation"
 text = "已缓存"
 horizontal_alignment = 1
-
-[node name="StateBorder" type="Panel" parent="Panel/VBox/Cards/Card4" unique_id=2107814388]
-visible = false
-layout_mode = 2
-mouse_filter = 2

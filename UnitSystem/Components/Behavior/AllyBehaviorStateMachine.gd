@@ -134,6 +134,8 @@ var _owner_body: AIUnitBase
 var _targeting_component: AITargetingComponent
 var _combat_system: AICombatSystem
 var _skill_host: SkillHostComponent
+var _motion_route_id: int = -1
+var _motion_route_serial: int = -1
 var _player: CharacterBody3D
 var _explicit_follow_target: CharacterBody3D
 var _player_facing_node: Node3D
@@ -224,6 +226,7 @@ func configure(
 	combat_system: AICombatSystem = null,
 	skill_host: SkillHostComponent = null
 ) -> bool:
+	_disconnect_motion_routes()
 	_owner_body = owner_body
 	_targeting_component = targeting_component
 	_combat_system = combat_system
@@ -726,6 +729,13 @@ func _update_combat_attack(target: UnitBase, delta: float) -> void:
 
 
 func _configure_action_executors() -> void:
+	if is_instance_valid(_combat_system) and not _combat_system.external_action_motion_sample.is_connected(_on_action_motion_sample):
+		_combat_system.external_action_motion_sample.connect(_on_action_motion_sample)
+	if is_instance_valid(_skill_host):
+		if not _skill_host.skill_motion_step_requested.is_connected(_on_skill_motion_step):
+			_skill_host.skill_motion_step_requested.connect(_on_skill_motion_step)
+		if not _skill_host.skill_motion_cancel_requested.is_connected(_on_skill_motion_cancel):
+			_skill_host.skill_motion_cancel_requested.connect(_on_skill_motion_cancel)
 	if is_instance_valid(_combat_system):
 		_combat_system.set_use_external_global_cooldown(true)
 		if not _combat_system.attack_started.is_connected(_on_basic_attack_started):
@@ -894,9 +904,13 @@ func _on_skill_action_requested(
 		_skill_host.cancel_active_skill(&"action_driver_rejected")
 		return
 	var launch_transform := _combat_system.get_action_launch_transform()
+	var action_serial := _combat_system.get_external_action_serial()
 	if not _skill_host.confirm_active_action_started(launch_transform, request_id):
+		# 确认监听器可能同步取消A并启动B；失败清理只属于原动作，不覆盖新序号。
+		if _combat_system.get_external_action_serial() != action_serial: return
 		_combat_system.cancel_external_action()
-		_skill_host.cancel_active_skill(&"action_confirmation_failed")
+		if _skill_host.get_active_skill() == _skill and _skill.get_current_context() == context:
+			_skill_host.cancel_active_skill(&"action_confirmation_failed")
 
 
 ## 范围外技能继续复用既有 COMBAT_APPROACH，不建立第二套移动算法。
@@ -922,6 +936,32 @@ func _on_skill_approach_requested(
 	_skill_approach_range = next_range
 	if is_in_combat():
 		_transition_to(BehaviorState.COMBAT_APPROACH)
+
+
+func _on_action_motion_sample(request_id: int, action_serial: int, sample: Dictionary) -> void:
+	if is_instance_valid(_skill_host): _skill_host.consume_action_motion_sample(request_id, action_serial, sample)
+
+
+func _on_skill_motion_step(request_id: int, action_serial: int, displacement: Vector3, terminal: bool) -> void:
+	_motion_route_id = request_id
+	_motion_route_serial = action_serial
+	if is_instance_valid(_owner_body): _owner_body.submit_skill_motion_step(_skill_host, request_id, action_serial, displacement, terminal)
+
+
+func _on_skill_motion_cancel(request_id: int, action_serial: int) -> void:
+	if is_instance_valid(_owner_body): _owner_body.cancel_skill_motion(_skill_host, request_id, action_serial)
+
+
+func _disconnect_motion_routes() -> void:
+	if is_instance_valid(_owner_body) and is_instance_valid(_skill_host) and _motion_route_serial >= 1:
+		_owner_body.cancel_skill_motion(_skill_host, _motion_route_id, _motion_route_serial)
+	_motion_route_id = -1
+	_motion_route_serial = -1
+	if is_instance_valid(_combat_system) and _combat_system.external_action_motion_sample.is_connected(_on_action_motion_sample):
+		_combat_system.external_action_motion_sample.disconnect(_on_action_motion_sample)
+	if is_instance_valid(_skill_host):
+		if _skill_host.skill_motion_step_requested.is_connected(_on_skill_motion_step): _skill_host.skill_motion_step_requested.disconnect(_on_skill_motion_step)
+		if _skill_host.skill_motion_cancel_requested.is_connected(_on_skill_motion_cancel): _skill_host.skill_motion_cancel_requested.disconnect(_on_skill_motion_cancel)
 
 
 func _on_external_action_lifecycle(request_id: int, event: StringName) -> void:
@@ -1111,9 +1151,7 @@ func _submit_combat_orbit_movement(
 		not _combat_wander_target_valid
 		or (
 			_wander_timer <= 0.0
-			and _owner_body.global_position.distance_to(
-				_combat_wander_target
-			) <= _owner_body.slowing_distance
+			and _has_reached_wander_target(_combat_wander_target)
 		)
 	):
 		_select_new_combat_wander_target(target, outward)
@@ -1472,11 +1510,18 @@ func _is_wander_target_refresh_due(delta: float) -> bool:
 	_wander_timer -= delta
 	return (
 		_wander_timer <= 0.0
-		and _horizontal_distance(
-			_owner_body.global_position,
-			_movement_target
-		) <= _owner_body.slowing_distance
+		and _has_reached_wander_target(_movement_target)
 	)
+
+
+## target_position为本轮游荡的世界目标；编队与战斗共用水平到达判定。
+## 保留原减速圈的刷新节奏，但必须覆盖运动层arrival_distance的停止范围，避免停在两圈之间永久等待。
+func _has_reached_wander_target(target_position: Vector3) -> bool:
+	var refresh_distance: float = maxf(
+		maxf(_owner_body.slowing_distance, _owner_body.arrival_distance),
+		0.0
+	)
+	return _horizontal_distance(_owner_body.global_position, target_position) <= refresh_distance
 
 
 func _reset_wander_timer() -> void:
@@ -1861,6 +1906,10 @@ func _refresh_formation_center_immediately() -> void:
 func _constrain_target(target_position: Vector3) -> Vector3:
 	target_position.y = _player.global_position.y
 	return target_position
+
+
+func _exit_tree() -> void:
+	_disconnect_motion_routes()
 
 
 func _horizontal_distance(first: Vector3, second: Vector3) -> float:

@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://cwpyyh1ndybl1"]
+
+[ext_resource type="PackedScene" uid="uid://b3qp6uulk431f" path="res://SkillSystem/01-Core/SkillBase.tscn" id="1_qryv0"]
+[ext_resource type="PackedScene" uid="uid://bxesh4ir0m83j" path="res://Effects/Skills/Gather/GatherCastEffect.tscn" id="2_afyfh"]
+[ext_resource type="Script" uid="uid://cgy2rpe2cepu1" path="res://SkillSystem/02-Delivery/InstantTargetDeliveryConfig.gd" id="2_oi5o0"]
+[ext_resource type="Script" uid="uid://ctxqorpjwkdaa" path="res://SkillSystem/03-Extensions/PullTargetSkillEffect.gd" id="3_afyfh"]
+[ext_resource type="PackedScene" uid="uid://c33gh2hjn0yk1" path="res://Effects/Skills/Gather/GatherReleaseEffect.tscn" id="3_dlnu7"]
+
+[sub_resource type="Resource" id="Resource_dlnu7"]
+script = ExtResource("2_oi5o0")
+candidate_source = 1
+target_collection_mode = 1
+effect_radius = 3.5
+center_forward_offset_m = 3.0
+
+[node name="GatherSkill" unique_id=253215794 instance=ExtResource("1_qryv0")]
+skill_id = &"player_gather"
+display_name = "Gather"
+skill_type = 3
+target_relations = 1
+base_cast_time = 0.2
+can_move_while_casting = true
+skill_cooldown = 10.0
+automatic_cast_enabled = false
+cast_effect_scene = ExtResource("2_afyfh")
+release_effect_scene = ExtResource("3_dlnu7")
+delivery = SubResource("Resource_dlnu7")
+
+[node name="PullTargetSkillEffect" type="Node" parent="." index="2" unique_id=865789003]
+script = ExtResource("3_afyfh")
+duration_seconds = 0.12

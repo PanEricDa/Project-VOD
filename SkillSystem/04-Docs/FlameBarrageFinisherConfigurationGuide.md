@@ -2,7 +2,7 @@
 
 ## 运行入口
 
-- 正式完整战斗：F5启动 `res://Scenes/CombatRoom.tscn`（或打开它按F6），具体组装见同目录CombatRoomAssemblyGuide.md。沿用1—4连携与原评分，结算达分后选择窗口中按3使用Caster终结技。其余伙伴尚未装备终结技，灰显。
+- 正式完整战斗：F5启动 `res://Scenes/CombatRoom.tscn`（或打开它按F6），具体组装见同目录CombatRoomAssemblyGuide.md。沿用1—4连携与原评分，结算达分后选择窗口中按3使用Caster终结技。Guardian也已装备震甲冲击终结技，合法时按1选择；Archer也已装备蓄力重箭逻辑首版，合法时按4选择；Priest暂未装备，灰显。
 - 对照体验：打开 `res://Scenes/Previews/SquadFinisherComparisonPreview.tscn`，F6。右侧选择A/B，再点击“试放”；可重置、真暂停。这里冻结普通AI以隔离演出差异，但仍可用原1—4做真实连携。
 - 单纯美术：`res://Effects/Skills/FlameBarrage/FlameBarrageVisualSequencePreview.tscn`，仍只展示视觉，不实施伤害。
 

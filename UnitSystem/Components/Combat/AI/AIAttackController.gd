@@ -1,6 +1,48 @@
 class_name AIAttackController
 extends Node
 
+## 返回最近接受动作的内部序号；空闲仍保留，以便末帧与清理匹配。
+func get_external_action_serial() -> int:
+	return _action_serial
+
+
+func _resolve_motion_interval(animation: Animation, cinematic: bool) -> Vector2:
+	var begins := _motion_marker_times(animation, &"begin_skill_motion")
+	var ends := _motion_marker_times(animation, &"end_skill_motion")
+	if begins.size() != 1 or ends.size() != 1: return Vector2(-1, -1)
+	var a := begins[0]
+	var b := ends[0]
+	if not is_finite(a) or not is_finite(b) or a < 0 or b <= a or b > animation.length: return Vector2(-1, -1)
+	if not cinematic:
+		for t: float in _find_method_marker_times(animation, &"finish_action"):
+			if t < b: return Vector2(-1, -1)
+	return Vector2(a, b)
+
+
+func _motion_marker_times(animation: Animation, method: StringName) -> Array[float]:
+	var times: Array[float] = []
+	for t: int in range(animation.get_track_count()):
+		if animation.track_get_type(t) != Animation.TYPE_METHOD or not animation.track_is_enabled(t): continue
+		if str(animation.track_get_path(t)) != "CharacterAnimationPlayer": continue
+		for k: int in range(animation.track_get_key_count(t)):
+			var value: Dictionary = animation.track_get_key_value(t,k)
+			if StringName(value.get("method",&"")) == method and (value.get("args",[]) as Array).is_empty():
+				times.append(animation.track_get_key_time(t,k))
+	return times
+
+
+func _emit_motion_sample(previous: float, position: float) -> void:
+	if not _motion_enabled or _motion_terminal_sent or position <= previous or position < _motion_interval.x: return
+	if _motion_forward == Vector3.ZERO: _motion_forward = _read_visual_forward()
+	# Vector2区间采用real_t精度；片尾double游标与其float边界可相差数个ULP。
+	_motion_terminal_sent = position >= _motion_interval.y or is_equal_approx(position, _motion_interval.y)
+	external_action_motion_sample.emit(_external_request_id, _action_serial, {
+		"interval": _motion_interval, "previous_position": previous, "position": position,
+		"forward": _motion_forward, "terminal": _motion_terminal_sent,
+	})
+
+
+
 ## AI 武器普通攻击的执行器。
 ##
 ## 本组件不读取 InputMap、不搜索目标、不导航，也不维护公共冷却。它只接收一个已经
@@ -41,6 +83,19 @@ signal external_action_finished()
 signal external_action_cancelled()
 ## 外部动作通知携带本次request_id（普通为0）；event为release/finish/cancel，复位不改变通知身份。
 signal external_action_lifecycle(request_id: int, event: StringName)
+
+## 当前动作游标事实；身份由request_id与单调递增action_serial共同确定，sample单位为动画秒。
+signal external_action_motion_sample(request_id: int, action_serial: int, sample: Dictionary)
+
+var _action_serial: int = 0
+var _motion_enabled: bool = false
+var _motion_interval := Vector2(-1, -1)
+var _motion_forward := Vector3.ZERO
+var _motion_terminal_sent: bool = false
+var _motion_manual_driver: bool = false
+var _motion_previous_priority: int = 0
+var _advancing_action: bool = false
+var _finish_after_advance: bool = false
 
 enum AttackState {
 	IDLE,
@@ -218,6 +273,25 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 		0.0
 	)
 
+	_motion_enabled = bool(action_payload.get("skill_motion_enabled", false))
+	if _motion_enabled:
+		_motion_interval = _resolve_motion_interval(_animation_player.get_animation(animation_name), _cinematic_library != null)
+		if _motion_interval.x < 0:
+			_motion_enabled = false
+			return _reject_external_action("expected one ordered begin/end skill motion interval before action completion")
+		_motion_forward = Vector3.ZERO
+		_motion_terminal_sent = false
+		_motion_previous_priority = process_physics_priority
+		process_physics_priority = _owner_body.process_physics_priority - 1
+		if _cinematic_library == null:
+			_motion_manual_driver = true
+			_cinematic_original_callback = _animation_player.callback_mode_process
+			_cinematic_original_method_callback = _animation_player.callback_mode_method
+			_animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+			_animation_player.callback_mode_method = AnimationMixer.ANIMATION_CALLBACK_MODE_METHOD_IMMEDIATE
+			_cinematic_clock = action_payload.get("execution_clock") as SkillExecutionClock
+			_cinematic_release_time = _find_method_marker_times(_animation_player.get_animation(animation_name), &"release_action")[0]
+	_action_serial += 1
 	_current_external_action_animation = animation_name
 	_external_request_id = request_id
 	_external_release_reported = false
@@ -235,7 +309,7 @@ func request_external_action(effective_cast_time: float, target: UnitBase = null
 		-1.0,
 		playback_speed
 	)
-	if _cinematic_library != null:
+	if _cinematic_library != null or _motion_manual_driver:
 		# 只求值起始姿态，不提前调用零帧方法；Host确认开始后由协调器进入等待。
 		_animation_player.seek(0.0,true,true)
 	return true
@@ -363,7 +437,7 @@ func get_external_request_id() -> int:
 
 
 func _process(delta: float) -> void:
-	if _cinematic_library != null: return
+	if _cinematic_library != null or _motion_manual_driver: return
 	if _state != AttackState.EXTERNAL_ACTION or _hit_stop_active: return
 	_external_action_deadline -= maxf(delta, 0.0)
 	if _external_action_deadline <= 0.0: cancel_external_action()
@@ -673,7 +747,7 @@ func _on_animation_finished(animation_name: StringName) -> void:
 			_cinematic_animation_complete = true
 			_try_finish_cinematic_action()
 			return
-		_finish_external_action()
+		_request_external_finish()
 		return
 	if (
 		_state != AttackState.ATTACKING
@@ -707,6 +781,13 @@ func _on_external_action_finish_requested() -> void:
 	# 专属动作保持用户finish标记，不改写资产；动作门闩还须等片段自然完成与待发项目结束。
 	if _cinematic_library != null: return
 	if _state == AttackState.EXTERNAL_ACTION:
+		_request_external_finish()
+
+
+func _request_external_finish() -> void:
+	if _advancing_action:
+		_finish_after_advance = true
+	else:
 		_finish_external_action()
 
 
@@ -749,7 +830,7 @@ func _prepare_cinematic_action(animation: Animation, payload: Dictionary) -> boo
 	return true
 
 func _physics_process(delta: float) -> void:
-	if _cinematic_library == null or _state != AttackState.EXTERNAL_ACTION or _hit_stop_active: return
+	if (_cinematic_library == null and not _motion_manual_driver) or _state != AttackState.EXTERNAL_ACTION or _hit_stop_active: return
 	if _cinematic_clock != null: delta = _cinematic_clock.get_action_delta(delta)
 	if delta <= 0: return
 	if not _external_release_reported:
@@ -758,7 +839,19 @@ func _physics_process(delta: float) -> void:
 		var remaining := maxf(_cinematic_release_time-_animation_player.current_animation_position,0.0)/speed
 		delta = minf(delta,remaining)
 	_external_action_deadline -= delta
+	var previous := _animation_player.current_animation_position
+	var current_serial := _action_serial
+	_advancing_action = true
 	if delta > 0: _animation_player.advance(delta)
+	_advancing_action = false
+	if _state != AttackState.EXTERNAL_ACTION or current_serial != _action_serial:
+		_finish_after_advance = false
+		return
+	_emit_motion_sample(previous, _animation_player.current_animation_position)
+	if _finish_after_advance:
+		_finish_after_advance = false
+		_finish_external_action()
+		return
 	if _state == AttackState.EXTERNAL_ACTION and not _external_release_reported and _animation_player.current_animation_position >= _cinematic_release_time-0.000001:
 		_on_external_action_release_requested()
 	if _state == AttackState.EXTERNAL_ACTION and _external_action_deadline <= 0:
@@ -766,9 +859,20 @@ func _physics_process(delta: float) -> void:
 
 func _try_finish_cinematic_action() -> void:
 	if _cinematic_animation_complete and _cinematic_emission_complete and _state == AttackState.EXTERNAL_ACTION:
-		_finish_external_action()
+		_request_external_finish()
 
 func _release_cinematic_driver() -> void:
+	if _motion_enabled:
+		process_physics_priority = _motion_previous_priority
+	_motion_enabled = false
+	_motion_forward = Vector3.ZERO
+	_finish_after_advance = false
+	if _motion_manual_driver:
+		_motion_manual_driver = false
+		_cinematic_clock = null
+		if is_instance_valid(_animation_player):
+			_animation_player.callback_mode_process = _cinematic_original_callback as AnimationMixer.AnimationCallbackModeProcess
+			_animation_player.callback_mode_method = _cinematic_original_method_callback as AnimationMixer.AnimationCallbackModeMethod
 	if _cinematic_library == null: return
 	var old_library := _cinematic_library
 	_cinematic_library = null
@@ -867,10 +971,12 @@ func _remove_equipped_assets(clear_weapon_data: bool) -> void:
 
 
 func _exit_tree() -> void:
-	if _cinematic_library != null:
-		var library := _cinematic_library
+	var library := _cinematic_library
+	if _state == AttackState.EXTERNAL_ACTION:
 		cancel_external_action()
-		_remove_cinematic_library(library)
+	else:
+		_release_cinematic_driver()
+	if library != null: _remove_cinematic_library(library)
 	set_hit_stop_active(false)
 	_close_attack_hit_window()
 	if is_instance_valid(_owner_body):

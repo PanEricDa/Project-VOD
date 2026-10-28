@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://bo3monvkoaac5"]
+
+[ext_resource type="Script" uid="uid://bu0pxpairgi7s" path="res://Item/Projectiles/TrackingArcProjectile.gd" id="1_y12rh"]
+[ext_resource type="PackedScene" uid="uid://clswpidvhxyja" path="res://Effects/Skills/ArcherPowerShot/ArcherPowerShotImpactEffect.tscn" id="2_qdrc3"]
+[ext_resource type="PackedScene" uid="uid://bn2gbpxc7tr3s" path="res://Effects/Skills/ArcherPowerShot/ArcherPowerShotFlightEffect.tscn" id="3_l0xsh"]
+
+[node name="ArcherPowerShotProjectile" type="Node3D" unique_id=684022320]
+script = ExtResource("1_y12rh")
+flight_duration = 0.14
+arc_height = 0.0
+maximum_lifetime = 1.0
+impact_effect_scene = ExtResource("2_qdrc3")
+
+[node name="ArcherPowerShotFlightEffect" parent="." unique_id=1029555967 instance=ExtResource("3_l0xsh")]

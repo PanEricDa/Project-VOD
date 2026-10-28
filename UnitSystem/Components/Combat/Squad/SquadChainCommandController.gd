@@ -9,6 +9,14 @@ extends Node
 ## 本世界唯一专注组件，默认空；世界/队伍从该组件读取，不配置第二份玩家引用。
 @export var focus_source: SquadFocusComponent
 @export_category("Commands")
+## 全队连携输入等待上一条命令的施法提示；默认关闭以兼容旧场景，正式战斗开启。
+## 提示时点复用技能cast_effect_start_ratio；仅限制新连携输入，不影响Q/E、AI、评分或已受理动作。
+@export var wait_for_cast_cue: bool = false:
+	set(value):
+		if wait_for_cast_cue == value: return
+		wait_for_cast_cue = value
+		_awaiting_cast_cue_request_id = 0
+		if is_inside_tree() and not Engine.is_editor_hint(): _notify_slots()
 ## 从受理到动画真正开始的最长等待秒数，默认8；有限正数，含旧动作/接近，换目标不重置。
 @export_range(0.1, 60.0, 0.1, "or_greater") var command_wait_timeout_seconds: float = 8.0
 ## 根请求受理通知；尚未开始动作，订阅者不能据此认为已经扣费/命中。
@@ -35,6 +43,8 @@ signal command_release_presentation_started(slot_index: int, presentation: Skill
 ## 世界解绑先通知null，绑定完成后通知新世界，消费者不得改变指令归属。
 signal scope_changed(scope_root: Node)
 
+# 0开放、-1受理事务进行中、正数为等待提示的原请求身份；不导出内部状态。
+var _awaiting_cast_cue_request_id: int = 0
 var _ledger := ComboCostLedger.new()
 var _records: Dictionary = {}
 var _generation: int = 0
@@ -80,20 +90,25 @@ func set_input_enabled(enabled: bool) -> void:
 	_input_enabled = enabled
 	_notify_slots()
 
-## 同绑定世界owner申请新指令输入阻断，reason为诊断键；失败返回0。不撤销已受理请求。
+## 同绑定世界owner申请新战斗输入阻断，reason为诊断键；失败返回0。不撤销已受理请求。
+## 同步持有玩家通用输入许可，供选择/演出隔离新Q/E、移动、攻击和锁定；不修改原基础开关。
 @warning_ignore("shadowed_variable_base_class")
 func acquire_input_block(owner: Node, reason: StringName) -> int:
 	if not _valid_input_owner(owner): return 0
 	var token := _next_input_block
 	_next_input_block += 1
-	_input_blocks[token] = {"owner":weakref(owner),"reason":reason}
+	var player_token := _player.acquire_input_block(owner,reason) if is_instance_valid(_player) else 0
+	_input_blocks[token] = {"owner":weakref(owner),"reason":reason,"player":weakref(_player) if is_instance_valid(_player) else null,"player_token":player_token}
 	_notify_slots()
 	return token
 
 ## 幂等释放本方输入token；不修改set_input_enabled原开关，不影响其他持有者。
 func release_input_block(token: int) -> void:
 	if not _input_blocks.has(token): return
+	var record: Dictionary = _input_blocks[token]
 	_input_blocks.erase(token)
+	var player = record.player.get_ref() if record.player != null else null
+	if is_instance_valid(player): player.release_input_block(record.player_token)
 	_notify_slots()
 
 @warning_ignore("shadowed_variable_base_class")
@@ -102,7 +117,7 @@ func _valid_input_owner(owner: Node) -> bool:
 
 func _has_input_block() -> bool:
 	for token in _input_blocks.keys():
-		if not _valid_input_owner(_input_blocks[token].owner.get_ref()): _input_blocks.erase(token)
+		if not _valid_input_owner(_input_blocks[token].owner.get_ref()): release_input_block(token)
 	return not _input_blocks.is_empty()
 
 ## 注入轮次所有者的无参数int回调；peek仅查询（0=尚无批次），acquire用于真实受理且返回正单调身份。
@@ -140,6 +155,14 @@ func submit_slot(slot_index: int) -> bool:
 	var world := _scope
 	var status := get_slot_status(slot_index)
 	if not status.can_submit: return _reject(slot_index, status.reason)
+	# 先关闭输入再进入会同步发通知的费用事务，避免同帧/同步监听器重入预约。
+	if wait_for_cast_cue: _awaiting_cast_cue_request_id = -1
+	var accepted := _submit_ready_slot(slot_index, admission_generation, pool, owner_ledger, world)
+	if not accepted and _awaiting_cast_cue_request_id == -1:
+		_release_cast_cue_gate(-1)
+	return accepted
+
+func _submit_ready_slot(slot_index: int, admission_generation: int, pool: SquadFocusComponent, owner_ledger: ComboCostLedger, world: Node) -> bool:
 	if not _admission_is_current(admission_generation, pool, owner_ledger, world): return _reject(slot_index, &"admission_invalidated")
 	var actor := companions[slot_index]
 	var host := actor.get_node_or_null(^"SkillHost") as SkillHostComponent
@@ -173,6 +196,7 @@ func submit_slot(slot_index: int) -> bool:
 		return _reject(slot_index, &"request_invalid")
 	_records[id] = {"request": request, "host": weakref(host), "slot": slot_index, "reserved": amount, "released": false, "failed": false}
 	request.lifetime_finished.connect(_on_lifetime_finished.bind(admission_generation))
+	if wait_for_cast_cue and _awaiting_cast_cue_request_id == -1: _awaiting_cast_cue_request_id = id
 	if not host.enqueue_command(request):
 		_fail_record(id, &"host_rejected")
 		return _reject(slot_index, &"host_rejected")
@@ -180,7 +204,7 @@ func submit_slot(slot_index: int) -> bool:
 		return _reject(slot_index, &"admission_invalidated")
 	command_accepted.emit(request)
 	_notify_activity(batch)
-	slot_status_changed.emit(slot_index)
+	_notify_slots()
 	return true
 
 # 外部同步回调后仍属于原会话，不能把旧受理移入新世界/新账本。
@@ -224,6 +248,9 @@ func get_slot_status(slot_index: int) -> Dictionary:
 	var input_reason := _input_reason()
 	if input_reason != &"":
 		status.reason = input_reason
+		return status
+	if wait_for_cast_cue and _awaiting_cast_cue_request_id != 0:
+		status.reason = &"chain_cue_pending"
 		return status
 	if companions.count(actor) > 1 or not focus_source.is_party_member(actor) or actor.team_id != _player.team_id:
 		status.reason = &"companion_binding_invalid"
@@ -286,6 +313,9 @@ func _on_host_released(context: SkillContext, slot: int, generation: int) -> voi
 		return
 	context.command_request.mark_released()
 	if generation != _generation or not _records.has(id): return
+	# 真实释放是短施法/缺失表现的最终兜底；旧请求不能解除新请求的等待。
+	_release_cast_cue_gate(id)
+	if generation != _generation or not _records.has(id): return
 	command_released.emit(id, fee)
 	slot_status_changed.emit(slot)
 
@@ -306,6 +336,8 @@ func _fail_record(id: int, reason: StringName) -> void:
 	record.request.mark_failed(reason)
 	if _records.has(id): _notify_activity(record.request.round_id)
 	if failed_generation == _generation and not _clearing:
+		_release_cast_cue_gate(id)
+		if failed_generation != _generation or _clearing: return
 		command_failed.emit(failed_slot, id, reason)
 		slot_status_changed.emit(failed_slot)
 
@@ -316,6 +348,8 @@ func _on_lifetime_finished(id: int, batch: int, generation: int) -> void:
 	if focus != null: focus.release_request(id)
 	_ledger.release_request(id)
 	_records.erase(id)
+	_release_cast_cue_gate(id)
+	if generation != _generation: return
 	command_lifetime_finished.emit(id, batch)
 	_notify_activity(batch)
 	slot_status_changed.emit(slot)
@@ -362,6 +396,8 @@ func _on_scope_changed(scope_root: Node) -> void:
 			var started := _on_host_started.bind(slot, _generation)
 			var prepared := _on_host_prepared.bind(slot, _generation)
 			var presented := _on_host_presented.bind(slot, _generation)
+			var cue := _on_host_cast_cue.bind(slot, _generation)
+			host.cast_cue_reached.connect(cue)
 			host.command_action_started.connect(started)
 			host.release_instance_prepared.connect(prepared)
 			host.release_presentation_started.connect(presented)
@@ -371,7 +407,7 @@ func _on_scope_changed(scope_root: Node) -> void:
 			host.skill_released.connect(released)
 			host.command_failed.connect(failed)
 			host.command_state_changed.connect(changed)
-			_host_connections.append({"host": weakref(host), "released": released, "failed": failed, "changed": changed, "started": started, "prepared": prepared, "presented": presented})
+			_host_connections.append({"host": weakref(host), "released": released, "failed": failed, "changed": changed, "started": started, "prepared": prepared, "presented": presented, "cue": cue})
 	scope_changed.emit(_scope)
 	_notify_slots()
 
@@ -382,8 +418,9 @@ func _collect_players(node: Node, players: Array[PlayerBase]) -> void:
 func _clear_scope() -> void:
 	if _clearing: return
 	_clearing = true
-	_input_blocks.clear()
+	for token in _input_blocks.keys(): release_input_block(token)
 	_generation += 1
+	_awaiting_cast_cue_request_id = 0
 	_scope = null
 	_player = null
 	scope_changed.emit(null)
@@ -405,6 +442,7 @@ func _clear_scope() -> void:
 	for connection in _host_connections:
 		var host = connection.host.get_ref()
 		if not is_instance_valid(host): continue
+		if host.cast_cue_reached.is_connected(connection.cue): host.cast_cue_reached.disconnect(connection.cue)
 		if host.command_action_started.is_connected(connection.started): host.command_action_started.disconnect(connection.started)
 		if host.release_instance_prepared.is_connected(connection.prepared): host.release_instance_prepared.disconnect(connection.prepared)
 		if host.release_presentation_started.is_connected(connection.presented): host.release_presentation_started.disconnect(connection.presented)
@@ -454,6 +492,19 @@ func _valid_presentation(presentation: SkillPresentationContext, slot: int, gene
 	if generation != _generation or _clearing or presentation == null or not presentation.is_chain_root or presentation.get_world() != _scope: return false
 	var id := presentation.command_request_id
 	return _records.has(id) and not _records[id].failed and _records[id].slot == slot and _records[id].request.caster_instance_id == (presentation.get_source().get_instance_id() if presentation.get_source() != null else 0)
+
+func _release_cast_cue_gate(request_id: int) -> void:
+	if _awaiting_cast_cue_request_id != request_id: return
+	_awaiting_cast_cue_request_id = 0
+	_notify_slots()
+
+func _on_host_cast_cue(context: SkillContext, slot: int, generation: int) -> void:
+	if generation != _generation or _clearing or context == null or context.command_request == null: return
+	var id := context.command_request.request_id
+	if not _records.has(id): return
+	var record: Dictionary = _records[id]
+	if record.failed or record.request != context.command_request or record.slot != slot: return
+	_release_cast_cue_gate(id)
 
 func _on_host_started(request: SkillCommandRequest, presentation: SkillPresentationContext, slot: int, generation: int) -> void:
 	if _valid_presentation(presentation, slot, generation) and _records[presentation.command_request_id].request == request:

@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://cuy3fsng74l41"]
+
+[ext_resource type="Script" uid="uid://b4x255ufbg6i5" path="res://UnitSystem/Components/Combat/PlayerSkillInputComponent.gd" id="1_ei3v6"]
+[ext_resource type="PackedScene" uid="uid://cuvdfwk3cji26" path="res://UnitSystem/Components/Input/PressReleaseInputComponent.tscn" id="2_mn27i"]
+
+[node name="PlayerSkillInputComponent" type="Node" unique_id=940654996]
+script = ExtResource("1_ei3v6")
+
+[node name="PressReleaseInputComponent" parent="." unique_id=875623275 instance=ExtResource("2_mn27i")]

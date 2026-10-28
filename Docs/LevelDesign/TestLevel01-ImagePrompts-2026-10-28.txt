@@ -1,0 +1,76 @@
+Image editing tool: built-in imagegen
+Edit target: G:/Godot/ProjectVOD-Backups/Layer 1.png
+
+=== Initial prompt ===
+Edit the attached image as a professional Chinese-language GAME LEVEL DESIGN ANNOTATION SHEET. Input image is the EDIT TARGET, not aesthetic inspiration. Preserve the exact existing terrain silhouette, terrain elevations, shapes, camera angle, layout, colors, checkerboard perimeter blocks, and the tiny cyan player cube at lower left. Do NOT repaint the terrain, do NOT change the map geography, do NOT make a new fantasy illustration. Only add precise clean flat diagram overlays. You may cover the cropped gray editor UI rectangle in the top-left empty background with a legend card. Keep the full original map and its near-square aspect. High-resolution legible infographic, sober professional white cards, dark typography, restrained bright color-coding, excellent visual hierarchy.
+
+This map has THREE fixed regions: 区域1 开阔地 at LOWER LEFT, 区域2 遗迹坡地 on RIGHT, 区域3 神殿盆地 at UPPER CENTER. The tiny original cyan cube is S 玩家起点, at normalized image coordinates (x=.227,y=.862). All following coordinates are normalized fractions of the ORIGINAL full image, x from left, y from top; register overlays to the unaltered map. Each item appears ONCE and at the designated position. Preserve all original terrain details underneath. Don't rotate or remap the map.
+
+TITLE upper-left empty background: “TestLevel01｜怪群·路线·遗迹机制”
+Subtitle: “布局提案 v1 · 2026-10-28”
+Small footer: “固定怪群，主动合波；不是定时刷怪。新增机制待灰盒验证。”
+
+ENEMY PACK BADGES: 8 magenta circles with white halo, clear short label and roster, small enemy role glyphs nearby. M=近战, R=远程, C=施法, E=精英. Optional challenge packs A3 and B3 use a second dashed outer border, not a different position.
+A1 at (.250,.765): “A1 · 4” and small “M4”.
+A2 at (.360,.680): “A2 · 4” and “M3 R1”.
+A3 at (.310,.530): “A3 · 5” and “M3 R2”.
+B1 at (.630,.670): “B1 · 4” and “M2 R2”.
+B2 at (.840,.585): “B2 · 5” and “M3 R1 C1”.
+B3 at (.710,.420): “B3 · 4” and “M2 R1 E1”.
+C1 at (.340,.360): “C1 · 3” and “M2 C1”.
+C2 at (.580,.230): “C2 · 3” and “M1 R2”.
+One large crimson diamond B0 at (.450,.250) labelled “B0 遗迹守卫”. Keep boss center free of walls.
+A very light thin crimson dotted ellipse centered (.450,.275), radii about (.080,.075), caption “Boss 主战场 · 约20m直径”, not a physical fence.
+
+GATHER ANCHORS: pale cyan dashed open circles with a small cyan diamond and labels. K1 (.265,.670) “K1 区域1集火”, circle radii (.050,.055); K2 (.735,.580) “K2 区域2集火”, radii (.050,.055). Smaller cyan diamond-only anchors KS (.430,.350) “KS 南侧接怪” and KE (.570,.310) “KE 东侧接怪”. Keep KS distinct from C1 and T1, KE distinct from C2 and T4. No full circle clutter near boss.
+
+PROPOSED INNER RUIN WALLS: distinct slate-blue SOLID thick short bars, modest isometric extruded caps if helpful, clearly different from the original checkered edge blocks. Label W1-W4. Keep ALL pathways open at both sides; never draw a closed arena ring.
+W1 at (.315,.660): a small broken L, “W1 教学残墙”, footprint around 4x3m.
+W2 at (.790,.590): two OFFSET short parallel bars with a broad walk-through gap, “W2 错位双墙”.
+W3 at (.730,.470): one short L-shaped bar to the east of the walk route, “W3 北坡短墙”.
+W4 at (.450,.160): two separated broken temple wall sections, “W4 神殿断墙”; open west, south, east.
+
+MECHANICS: yellow numbered hexagons, subtle amber hatched footprint. These are NEW PROPOSALS, not pre-existing implemented systems. T1 is an existing geographic opportunity.
+T1 at (.350,.480): “T1 单向落差捷径”, a clear ORANGE DASHED ONE-WAY arrow toward (.400,.415) inside region3; add small “落地留空”. NEVER draw an uphill return arrow.
+T2 (.280,.600): “T2 孢子减速”, a small optional side-route patch, keep bypass.
+T3 (.820,.540): “T3 倒塌石柱”, small hatched landing rectangle, not spanning entire region2, keep bypass.
+T4 (.480,.310): “T4 地脉扇区”, small localized amber wedge; don't fill the boss arena, leave safe areas at KS and KE.
+
+ROUTES: readable thin flowing arrows, don't overwhelm terrain or cross wall footprints. These are OPTIONS, not mandatory trigger rails.
+Cyan SOLID main exploration route: S -> A1 -> K1 -> A2 -> the EXISTING LOWER CENTRAL ramp from region1 to region2 via (.440,.700), (.530,.735), (.600,.700) -> B1 -> K2. Then continue up the RIGHT SIDE CONNECTING RAMP, bend around W3 via (.690,.500) -> B3 -> (.735,.350) -> (.700,.245) -> C2 -> KE -> B0. Use sparse arrows with visible direction, avoid drawing through sheer cliffs.
+Magenta short dashed pull arrows: A1/A2/A3 to K1, and B1/B2/B3 to K2. Caption near K1 “8 / 13” and near K2 “9 / 13”. The numbers are group size choices, not wave timers.
+Orange dashed shortcut: A3 toward T1 -> safe landing (.400,.415) -> KS -> boss approach. No line from A2 or the map spawn directly into boss.
+A short orange dashed alternative from B3 up the existing right ramp into KE. Clearly keep cross-zone carried enemies at KS or KE rather than all the way at arena center.
+
+LEGENDS in blank background only:
+Top-left card x .01-.20, y .04-.34, comfortably readable:
+“读图”
+“粉圈 怪群编号与数量”
+“青圈 集火空地”
+“蓝灰条 新增遗迹墙”
+“黄标 地形机制”
+“青实线 常规推进”
+“橙虚线 跨区捷径”
+“M 近战  R 远程”
+“C 施法  E 精英”
+“M/R已有原型；C/E/Boss待制作”
+Upper-right blank-background card x .80-.985 y .025-.30:
+“合波选择”
+“A1+A2 = 8”
+“A1+A2+A3 = 13”
+“B1+B2 = 9”
+“B1+B2+B3 = 13”
+“带怪进Boss：”
+“A3+C1 -> KS = 8”
+“B3+C2 -> KE = 7”
+“Boss另计，勿用其凑档”
+“当前归位半径 30m”
+“只带入口附近怪进Boss”
+Bottom-right blank margin note: “墙体两侧留路；坡道中段不设怪堆。”
+Use accurate readable Simplified Chinese. Do not invent extra enemy packs, duplicate labels, redraw terrain, replace start cube, or close any passage.
+
+=== Revision prompt ===
+Edit this already annotated level-design image with EXACTLY these corrections; preserve every other pixel as closely as possible, including terrain layout, monster labels, tables, all pack counts, wall placements and typography.
+1. The T1 drop shortcut must be ONE WAY only, from A3 (lower plateau) UP ON THE PAGE through T1 to KS (upper-on-page basin), then toward B0. Delete the small redundant orange dashed RETURN arrow that currently curls from just below the T1 label downward-left toward A3. Do not leave ANY arrowhead pointing back to A3. Keep the existing continuous orange dashed forward route A3 -> T1 -> KS -> B0. No double-headed arrows on this shortcut.
+2. Add three discreet dark text region labels in free floor space without covering any existing markers or paths: '区域1｜开阔地' in lower-left plateau at normalized (.30,.90); '区域2｜遗迹坡地' on right plateau at (.82,.78); '区域3｜神殿盆地' in upper basin left of B0 at (.35,.21). Use modest small caption-sized white-backed labels, no large banners.
+Everything else must remain the same. Do not add monsters or new gameplay content; do not change any numbers or route choices.

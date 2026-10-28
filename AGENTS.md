@@ -38,3 +38,11 @@
   Inspector 的 `Quick Load` 按对应类型检索。
 - 如果测试中创建了新的资源类型或正式资源样例，应把“有效 UID”加入该资源的契约测试，
   防止后续文本迁移、复制或重命名再次破坏 Inspector 索引。
+
+## 动画工作台制作流程
+
+- 制作或修改角色／武器动作前，必须先阅读并遵循 `Docs/AnimationWorkbenchWorkflow.md`，以用户确认的 Workbench 工作流为准；优先 Godot MCP Pro，必要时使用 Computer Use。
+- 默认在 `UnitSystem/Visuals/Workbench/HeroAnimationWorkbench.tscn` 中装载配对的武器 Visual 与已有武器 AnimationLibrary，在正确的外部武器库内创建／编辑片段；不以未经制作的占位副本冒充新动画。
+- 姿态关键帧原则上仅编辑 CharacterRoot 与 CharacterRoot/WeaponSocket；保留 ProjectileOrigin、基础 unit 库和非目标动画，方法事件沿用现有接口。
+- 保存工作台及外部动画库并重新读取，验证轨道、方法帧、非循环要求与有效 UID；不得覆盖未获授权编辑的同名片段或用户未保存修改。
+- 动画制作与正式技能接入分开验收；任务包含接入时，同步正式 Action 资源与 Cinematic Profile，并验证释放时序；不包含时明确说明未切换正式技能。

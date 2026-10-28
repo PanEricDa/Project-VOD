@@ -122,12 +122,13 @@ func _finish_with_hit(hit_position: Vector3, flight_direction: Vector3) -> void:
 	var safe_direction := flight_direction.normalized()
 	if safe_direction.length_squared() <= 0.000001:
 		safe_direction = Vector3.FORWARD
-	_spawn_impact_presentation(hit_position)
+	_spawn_impact_presentation(hit_position, safe_direction)
 	projectile_hit.emit(tracked_target, hit_position, safe_direction)
 	queue_free()
 
 
-func _spawn_impact_presentation(hit_position: Vector3) -> void:
+## hit_direction为世界入射方向；只传给支持定向的视觉，不改变命中或伤害。
+func _spawn_impact_presentation(hit_position: Vector3, hit_direction: Vector3) -> void:
 	if impact_effect_scene == null or (not _fixed_destination.is_finite() and (not is_instance_valid(tracked_target) or tracked_target.is_dead())):
 		return
 	var instance: Node = impact_effect_scene.instantiate()
@@ -138,6 +139,8 @@ func _spawn_impact_presentation(hit_position: Vector3) -> void:
 	effect.transform = Transform3D(Basis.IDENTITY, hit_position)
 	if get_parent() is Node3D:
 		effect.transform = (get_parent() as Node3D).global_transform.affine_inverse() * effect.transform
+	if effect.has_method(&"configure_impact_direction"):
+		effect.call(&"configure_impact_direction", hit_direction)
 	if effect.has_method(&"set_execution_clock"):
 		effect.call(&"set_execution_clock", _execution_clock)
 	if _impact_radius > 0 and effect.has_method(&"configure_impact_radius"):

@@ -9,16 +9,17 @@
 [ext_resource type="PackedScene" uid="uid://bfrmf0gu1txn5" path="res://SkillSystem/00-Skills/GreaterHeal/GreaterHealSkill.tscn" id="5_greater_heal"]
 [ext_resource type="PackedScene" path="res://UnitSystem/Components/Combat/AI/AIMeleeCombatSystem.tscn" id="5_oond8"]
 [ext_resource type="PackedScene" uid="uid://cfr7lb2gr8yo" path="res://SkillSystem/00-Skills/Combo_GreaterHeal/ComboGreaterHealSkill.tscn" id="7_ql2cl"]
-
-[sub_resource type="Resource" id="Resource_oond8"]
-resource_local_to_scene = true
-script = ExtResource("5_f7dx7")
+[ext_resource type="PackedScene" uid="uid://dojjmkmebxl5p" path="res://SkillSystem/00-Skills/Finisher_HolyBlessing/HolyBlessingFinisherSkill.tscn" id="8_ql2cl"]
 
 [sub_resource type="Resource" id="Resource_f7dx7"]
 resource_local_to_scene = true
 script = ExtResource("5_f7dx7")
 
 [sub_resource type="Resource" id="Resource_mli7d"]
+resource_local_to_scene = true
+script = ExtResource("5_f7dx7")
+
+[sub_resource type="Resource" id="Resource_2rc7f"]
 resource_local_to_scene = true
 script = ExtResource("5_f7dx7")
 
@@ -30,7 +31,6 @@ shared_action_cooldown_duration = 1.0
 starting_weapon = ExtResource("3_k3ry1")
 movement_speed = 3.8
 movement_acceleration = 16.0
-slowing_distance = 0.1
 dash_speed = 5.0
 dash_max_distance = 2.0
 dash_cooldown = 3.0
@@ -43,18 +43,21 @@ attack_power = 11.0
 defense = 5.0
 hit_movement_lock_duration = 0.1
 
-[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "combo_skill")]
+[node name="SkillHost" parent="." index="0" unique_id=2089143983 node_paths=PackedStringArray("regular_skills", "finisher_skill", "combo_skill")]
 regular_skills = [NodePath("SkillSocket/HolyLightSkill"), NodePath("SkillSocket/GreaterHealSkill")]
+finisher_skill = NodePath("SkillSocket/HolyBlessingFinisherSkill")
 combo_skill = NodePath("SkillSocket/ComboGreaterHealSkill")
 
 [node name="HolyLightSkill" parent="SkillHost/SkillSocket" index="0" unique_id=75927867 instance=ExtResource("4_njum3")]
-delivery = SubResource("Resource_oond8")
-
-[node name="GreaterHealSkill" parent="SkillHost/SkillSocket" index="1" unique_id=2125516029 instance=ExtResource("5_greater_heal")]
 delivery = SubResource("Resource_f7dx7")
 
-[node name="ComboGreaterHealSkill" parent="SkillHost/SkillSocket" index="2" unique_id=1373932239 instance=ExtResource("7_ql2cl")]
+[node name="GreaterHealSkill" parent="SkillHost/SkillSocket" index="1" unique_id=2125516029 instance=ExtResource("5_greater_heal")]
 delivery = SubResource("Resource_mli7d")
+
+[node name="ComboGreaterHealSkill" parent="SkillHost/SkillSocket" index="2" unique_id=1373932239 instance=ExtResource("7_ql2cl")]
+delivery = SubResource("Resource_2rc7f")
+
+[node name="HolyBlessingFinisherSkill" parent="SkillHost/SkillSocket" index="3" unique_id=253215794 instance=ExtResource("8_ql2cl")]
 
 [node name="CombatSystem" parent="." index="6" unique_id=1762750344 instance=ExtResource("5_oond8")]
 debug_hitbox_enabled = true

@@ -88,6 +88,8 @@ func _play_visual(snapshot: Dictionary) -> void:
 		push_warning("Release visual must have a Node3D root; other channels remain enabled.")
 		return
 	var visual := node as Node3D
+	# 与施法表现共用弱归属标记；世界锚点不代表无主，镜头不能误隐藏本人效果。
+	if snapshot.get("source_ref") != null: visual.set_meta(&"presentation_source_ref",snapshot.get("source_ref"))
 	if visual.has_method(&"set_execution_clock"):
 		visual.call(&"set_execution_clock", snapshot.get("execution_clock"))
 	var pose: Transform3D = snapshot["world_transform"]
@@ -100,11 +102,19 @@ func _play_visual(snapshot: Dictionary) -> void:
 	if visual is CPUParticles3D and visual.one_shot:
 		visual.finished.connect(visual.queue_free)
 	_arm_watchdog(visual, SAFETY_SECONDS)
+	# 可选纯表现接口：入树前消费独立快照，不再查询技能节点或可变施法者。
+	var release_fact := snapshot.get("presentation") as SkillPresentationContext
+	if release_fact != null and visual.has_method(&"configure_release"):
+		visual.call(&"configure_release", release_fact)
 	release_instance_prepared.emit(snapshot.get("presentation") as SkillPresentationContext, visual)
 	if not is_instance_valid(visual): return
 	if not _live(parent) or _from_ref(snapshot.get("world_parent_ref")) == null:
 		visual.free()
 		return
+	# 可选纯视觉范围接口；不支持者保持原状，不改交付、命中或共享资产。
+	var presentation := snapshot.get("presentation") as SkillPresentationContext
+	if presentation != null and presentation.effect_radius > 0.0 and visual.has_method(&"configure_effect_radius"):
+		visual.call(&"configure_effect_radius", presentation.effect_radius)
 	parent.add_child(visual)
 	if not _live(visual):
 		return

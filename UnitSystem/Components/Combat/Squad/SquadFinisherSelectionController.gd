@@ -15,11 +15,14 @@ enum Phase { CLOSED, OPENING, SELECTING, CONFIRMED, CLOSING }
 @export_range(0.001,1.0,0.001) var selection_time_scale: float = 0.05
 ## snapshot为深复制纯值状态；显示只读，不包含单位或技能实例。
 signal selection_state_changed(snapshot: Dictionary)
-## selection含原世界/轮次、固定槽0—3及角色数字身份；本切片不执行，后续接收方须复查角色。
+## selection含原世界/轮次、固定槽0—3、角色数字身份及冻结finisher_multiplier；接收方须复查角色和窗口身份。
+## 玩家输入在松开确认后的既有绿色反馈结束时通知；程序化try_select_slot保持直接确认。
 signal finisher_selected(selection: Dictionary)
 ## result为一次窗口的最终原因与原身份；每次最多一次，不储存资格。
 signal selection_closed(result: Dictionary)
 
+const Interaction = preload("res://UnitSystem/Components/Input/PressReleaseInputComponent.gd")
+const INTERACTION_SCENE: PackedScene = preload("res://UnitSystem/Components/Input/PressReleaseInputComponent.tscn")
 const OWNER: StringName = &"_finisher_selection_owner"
 const ENTER_SECONDS: float = 0.12
 const HOLD_SECONDS: float = 0.12
@@ -41,6 +44,13 @@ var _phase_elapsed: float = 0.0
 var _last_usec: int = 0
 var _clock_allowed: bool = false
 var _selected_slot: int = -1
+# 从本轮真实闭窗结果捕获；窗口内不重读后续评分，关闭即恢复1倍。
+var _finisher_multiplier: float = 1.0
+# 按住的原固定槽；仅表示输入反馈，尚未提交终结技。确认值只含原轮次/角色数字身份。
+var _interaction: Interaction
+var _pressed_slot: int:
+	get: return _interaction.get_pressed_slot() if is_instance_valid(_interaction) else -1
+var _pending_selection: Dictionary = {}
 var _slow_token: int = 0
 var _block_token: int = 0
 var _end_reason: StringName = &""
@@ -53,7 +63,18 @@ var _tail: Array[bool] = [false,false,false,false]
 func _ready() -> void:
 	if Engine.is_editor_hint(): return
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_interaction = get_node_or_null("PressReleaseInputComponent") as Interaction
+	# 场景与程序化new都使用同一模板；本控制器仍拥有InputMap归属和角色资格。
+	if _interaction == null:
+		_interaction = INTERACTION_SCENE.instantiate() as Interaction
+		add_child(_interaction)
 	_refresh_binding()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		_held.fill(false)
+		_tail.fill(false)
+		_clear_slot_press()
 
 func _input(event: InputEvent) -> void:
 	if Engine.is_editor_hint(): return
@@ -75,7 +96,9 @@ func _input(event: InputEvent) -> void:
 			if _held[index]: return
 			_held[index] = true
 			_tail[index] = true
-			try_select_slot(index)
+			_begin_slot_press(index)
+		elif event.is_action_released(action):
+			_end_slot_press(index)
 		return
 
 func _process(_delta: float) -> void:
@@ -88,36 +111,75 @@ func _process(_delta: float) -> void:
 	if _phase in [Phase.OPENING,Phase.SELECTING] and not _slots().any(func(slot: Dictionary): return slot.available):
 		_complete(&"no_available")
 		return
+	if _pressed_slot >= 0:
+		var slot := _slots()[_pressed_slot]
+		if not slot.available or not _interaction.matches_selection(_pressed_slot,slot.actor_instance_id): _clear_slot_press()
 	_publish()
 
 ## 返回只读深复制快照；查询不分配轮次、不改倒计时、不改变战斗。
+## pressed_slot为按住预选槽，selected_slot为已确认槽；两者使用固定0—3，-1表示无选择。
 func get_selection_status() -> Dictionary:
 	return {"phase":_phase,"scene_scope_id":_scene_id,"round_id":_round_id,
 		"remaining_seconds":maxf(_duration-_elapsed,0.0),"duration_seconds":_duration,
 		"progress_ratio":clampf((_duration-_elapsed)/_duration,0,1) if _duration > 0 else 0.0,
-		"selected_slot":_selected_slot,"presentation_elapsed_seconds":_phase_elapsed,
+		"selected_slot":_selected_slot,"pressed_slot":_pressed_slot,"finisher_multiplier":_finisher_multiplier,
+		"presentation_elapsed_seconds":_phase_elapsed,
 		"interaction_allowed":_can_interact(),"slots":_slots()}.duplicate(true)
 
-## slot_index为原固定0—3槽；成功仅锁定选择并通知一次，不施法或收费。
+## slot_index为原固定0—3槽；程序化确认接口，成功直接通知一次，不施法或收费。
+## 玩家InputMap按下只预选，按住不自动确认；松开同一键后，先完成绿色反馈再通知执行订阅者。
 func try_select_slot(slot_index: int) -> bool:
+	return _confirm_slot(slot_index, false)
+
+func _begin_slot_press(slot_index: int) -> void:
+	if not _can_interact() or _pressed_slot >= 0: return
+	var slot := _slots()[slot_index]
+	if not slot.available: return
+	if not _interaction.begin_press(slot_index,slot.actor_instance_id): return
+	_publish()
+
+func _end_slot_press(slot_index: int) -> void:
+	if _pressed_slot != slot_index: return
+	var same_actor := _interaction.end_press(slot_index,_slots()[slot_index].actor_instance_id)
+	if same_actor and _confirm_slot(slot_index, true): return
+	if is_instance_valid(self) and not is_queued_for_deletion() and is_inside_tree(): _publish()
+
+func _clear_slot_press() -> void:
+	if is_instance_valid(_interaction): _interaction.cancel_selection()
+
+
+func _confirm_slot(slot_index: int, wait_for_feedback: bool) -> bool:
 	_refresh_binding()
 	if not is_instance_valid(self) or is_queued_for_deletion() or not is_inside_tree(): return false
 	_sample_clock()
 	if not is_instance_valid(self) or is_queued_for_deletion() or not is_inside_tree(): return false
 	if not _can_interact() or slot_index < 0 or slot_index >= 4: return false
+	return _commit_slot_selection(slot_index, wait_for_feedback)
+
+func _commit_slot_selection(slot_index: int, wait_for_feedback: bool) -> bool:
+	if _phase not in [Phase.OPENING,Phase.SELECTING] or _elapsed >= _duration or slot_index < 0 or slot_index >= 4: return false
 	var slots := _slots()
 	if not slots[slot_index].available: return false
 	_phase = Phase.CONFIRMED
 	_phase_elapsed = 0.0
 	_selected_slot = slot_index
+	_clear_slot_press()
 	_end_reason = &"selected"
 	var selection := {"scene_scope_id":_scene_id,"round_id":_round_id,"slot_index":slot_index,
-		"actor_instance_id":slots[slot_index].actor_instance_id,"actor_name":slots[slot_index].actor_name}
-	print("[FinisherSelection] 选择终结技 slot=",slot_index+1," actor=",selection.actor_name," round=",_round_id)
+		"actor_instance_id":slots[slot_index].actor_instance_id,"actor_name":slots[slot_index].actor_name,
+		"finisher_multiplier":_finisher_multiplier}
+	if wait_for_feedback:
+		_pending_selection = selection
+		_publish()
+	else:
+		_dispatch_selection(selection)
+	return true
+
+func _dispatch_selection(selection: Dictionary) -> void:
+	print("[FinisherSelection] 选择终结技 slot=",selection.slot_index+1," actor=",selection.actor_name," round=",selection.round_id)
 	var generation := _generation
 	finisher_selected.emit(selection.duplicate(true))
 	if is_instance_valid(self) and not is_queued_for_deletion() and is_inside_tree() and generation == _generation: _publish()
-	return true
 
 ## reason为诊断键；立即幂等取消并释放本方慢速/输入，异常清理不等待UI。
 func cancel_selection(reason: StringName) -> void:
@@ -186,11 +248,14 @@ func _on_qualified(result: Dictionary) -> void:
 	if _phase != Phase.CLOSED: return
 	if not is_finite(selection_duration_seconds) or selection_duration_seconds <= 0 or not is_finite(selection_time_scale) or selection_time_scale <= 0 or selection_time_scale > 1: return
 	_round_id = id
+	_finisher_multiplier = float(last.get("finisher_multiplier",1.0))
 	_scene_id = scope.get_instance_id()
 	_duration = selection_duration_seconds
 	_elapsed = 0.0
 	_phase_elapsed = 0.0
 	_selected_slot = -1
+	_clear_slot_press()
+	_pending_selection.clear()
 	_end_reason = &""
 	_end_detail = &""
 	_phase = Phase.OPENING
@@ -238,19 +303,37 @@ func _advance(seconds: float) -> void:
 			_phase = Phase.CLOSING
 			_phase_elapsed = maxf(_elapsed-_duration,0)
 			_end_reason = &"timeout"
+			_clear_slot_press()
 			print("[FinisherSelection] 超时放弃 round=",_round_id)
 		elif _phase == Phase.OPENING and _phase_elapsed >= ENTER_SECONDS:
 			_phase = Phase.SELECTING
 			_phase_elapsed = 0
 	elif _phase == Phase.CONFIRMED and _phase_elapsed >= HOLD_SECONDS:
+		# 暂停通知会补算暂停前的合法间隔，但绝不能在当前已暂停时交接演出。
+		var pause := _pause()
+		if pause == null or not pause.is_presentation_allowed(): return
+		if not _pending_selection.is_empty():
+			var selection := _pending_selection
+			_pending_selection = {}
+			var slot := int(selection.slot_index)
+			var current := _slots()[slot]
+			if not current.available or current.actor_instance_id != selection.actor_instance_id:
+				_complete(&"cancelled",&"selected_unavailable")
+				return
+			var generation := _generation
+			_dispatch_selection(selection)
+			if not is_instance_valid(self) or is_queued_for_deletion() or not is_inside_tree(): return
+			if generation != _generation or _phase != Phase.CONFIRMED or _round_id != selection.round_id: return
 		_phase = Phase.CLOSING
 		_phase_elapsed -= HOLD_SECONDS
+	if not is_instance_valid(self) or is_queued_for_deletion() or not is_inside_tree(): return
 	if _phase == Phase.CLOSING and _phase_elapsed >= EXIT_SECONDS: _complete(_end_reason,_end_detail)
 
 func _on_pause_changed(_battle_paused: bool, presentation_allowed: bool) -> void:
 	_sample_clock()
 	if not is_instance_valid(self) or is_queued_for_deletion(): return
 	_clock_allowed = presentation_allowed
+	if not presentation_allowed: _clear_slot_press()
 
 func _slots() -> Array[Dictionary]:
 	var slots: Array[Dictionary] = []
@@ -275,11 +358,14 @@ func _complete(reason: StringName, detail: StringName = &"") -> void:
 	var result := {"scene_scope_id":_scene_id,"round_id":_round_id,"reason":reason,"detail":detail,"selected_slot":_selected_slot}
 	_phase = Phase.CLOSED
 	_round_id = 0
+	_finisher_multiplier = 1.0
 	_scene_id = 0
 	_elapsed = 0
 	_duration = 0
 	_phase_elapsed = 0
 	_selected_slot = -1
+	_clear_slot_press()
+	_pending_selection.clear()
 	_release_holds()
 	if not is_instance_valid(self) or is_queued_for_deletion() or not is_inside_tree(): return
 	if reason != &"selected" and reason != &"timeout": print("[FinisherSelection] 关闭 reason=",reason," detail=",detail)

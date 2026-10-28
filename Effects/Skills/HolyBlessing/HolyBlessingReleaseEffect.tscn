@@ -1,0 +1,592 @@
+[gd_scene format=3 uid="uid://fntgpgsywtxh"]
+
+[ext_resource type="Script" uid="uid://jqnsgmcj8wel" path="res://Effects/Combat/RadiusReleaseEffectPlayer.gd" id="1_x8whd"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_teu4k"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_818k4"]
+size = Vector3(0.65, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yaees"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ratwi"]
+size = Vector3(0.65, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sktr4"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2gury"]
+size = Vector3(0.65, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e6jio"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pstfn"]
+size = Vector3(0.65, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rvbbn"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.48, 1, 0.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_6pesk"]
+size = Vector3(0.13, 0.13, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bjbd1"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_kj86m"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cgjb8"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_cmt01"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bmbg2"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2pw71"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ead8v"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_q6dde"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ayar"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_26qsi"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oocyj"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_texc1"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wmebi"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_u2orl"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_asi84"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_r3e3a"]
+size = Vector3(0.035, 0.9, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x2bgj"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="TorusMesh" id="TorusMesh_62bme"]
+inner_radius = 0.955
+rings = 48
+ring_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i8dti"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.48, 1, 0.65)
+
+[sub_resource type="TorusMesh" id="TorusMesh_0inac"]
+inner_radius = 0.965
+rings = 48
+ring_segments = 8
+
+[sub_resource type="Animation" id="Animation_vlkop"]
+length = 0.55
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/RangeRoot/GoldWave:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.35, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.0125, 1, 0.0125), Vector3(1, 1, 1), Vector3(1, 1, 1)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/RangeRoot/PurpleWave:scale")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.1, 0.45, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.015625, 1, 0.015625), Vector3(0.0625, 1, 0.0625), Vector3(0.84375, 1, 0.84375), Vector3(0.9375, 1, 0.9375)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("VisualRoot/RangeRoot/GoldWave:transparency")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.15, 1.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("VisualRoot/RangeRoot/PurpleWave:transparency")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.25, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.15, 1.0]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("VisualRoot/FlashSeal:scale")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0.1, 0.1, 0.1), Vector3(1, 1, 1), Vector3(0.4, 0.4, 0.4)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("VisualRoot/FlashSeal:position")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.55),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector3(0, 0.2, 0), Vector3(0, 1.2, 0)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("VisualRoot/FlashSeal/Edge0:transparency")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("VisualRoot/FlashSeal/Edge1:transparency")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("VisualRoot/FlashSeal/Edge2:transparency")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("VisualRoot/FlashSeal/Edge3:transparency")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("VisualRoot/FlashSeal/Core:transparency")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.15, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("VisualRoot/Ray0:scale")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("VisualRoot/Ray0:transparency")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("VisualRoot/Ray1:scale")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("VisualRoot/Ray1:transparency")
+tracks/14/interp = 1
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/15/type = "value"
+tracks/15/imported = false
+tracks/15/enabled = true
+tracks/15/path = NodePath("VisualRoot/Ray2:scale")
+tracks/15/interp = 1
+tracks/15/loop_wrap = true
+tracks/15/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/16/type = "value"
+tracks/16/imported = false
+tracks/16/enabled = true
+tracks/16/path = NodePath("VisualRoot/Ray2:transparency")
+tracks/16/interp = 1
+tracks/16/loop_wrap = true
+tracks/16/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/17/type = "value"
+tracks/17/imported = false
+tracks/17/enabled = true
+tracks/17/path = NodePath("VisualRoot/Ray3:scale")
+tracks/17/interp = 1
+tracks/17/loop_wrap = true
+tracks/17/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/18/type = "value"
+tracks/18/imported = false
+tracks/18/enabled = true
+tracks/18/path = NodePath("VisualRoot/Ray3:transparency")
+tracks/18/interp = 1
+tracks/18/loop_wrap = true
+tracks/18/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/19/type = "value"
+tracks/19/imported = false
+tracks/19/enabled = true
+tracks/19/path = NodePath("VisualRoot/Ray4:scale")
+tracks/19/interp = 1
+tracks/19/loop_wrap = true
+tracks/19/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/20/type = "value"
+tracks/20/imported = false
+tracks/20/enabled = true
+tracks/20/path = NodePath("VisualRoot/Ray4:transparency")
+tracks/20/interp = 1
+tracks/20/loop_wrap = true
+tracks/20/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/21/type = "value"
+tracks/21/imported = false
+tracks/21/enabled = true
+tracks/21/path = NodePath("VisualRoot/Ray5:scale")
+tracks/21/interp = 1
+tracks/21/loop_wrap = true
+tracks/21/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/22/type = "value"
+tracks/22/imported = false
+tracks/22/enabled = true
+tracks/22/path = NodePath("VisualRoot/Ray5:transparency")
+tracks/22/interp = 1
+tracks/22/loop_wrap = true
+tracks/22/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/23/type = "value"
+tracks/23/imported = false
+tracks/23/enabled = true
+tracks/23/path = NodePath("VisualRoot/Ray6:scale")
+tracks/23/interp = 1
+tracks/23/loop_wrap = true
+tracks/23/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/24/type = "value"
+tracks/24/imported = false
+tracks/24/enabled = true
+tracks/24/path = NodePath("VisualRoot/Ray6:transparency")
+tracks/24/interp = 1
+tracks/24/loop_wrap = true
+tracks/24/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+tracks/25/type = "value"
+tracks/25/imported = false
+tracks/25/enabled = true
+tracks/25/path = NodePath("VisualRoot/Ray7:scale")
+tracks/25/interp = 1
+tracks/25/loop_wrap = true
+tracks/25/keys = {
+"times": PackedFloat32Array(0, 0.12, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 0.1, 1), Vector3(1, 1, 1), Vector3(0.2, 0.1, 0.2)]
+}
+tracks/26/type = "value"
+tracks/26/imported = false
+tracks/26/enabled = true
+tracks/26/path = NodePath("VisualRoot/Ray7:transparency")
+tracks/26/interp = 1
+tracks/26/loop_wrap = true
+tracks/26/keys = {
+"times": PackedFloat32Array(0, 0.18, 0.55),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.0]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_qdm8f"]
+_data = {
+&"effect": SubResource("Animation_vlkop")
+}
+
+[node name="HolyBlessingReleaseEffect" type="Node3D" unique_id=316648062]
+script = ExtResource("1_x8whd")
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1979465532]
+
+[node name="FlashSeal" type="Node3D" parent="VisualRoot" unique_id=1659234802]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+
+[node name="Edge0" type="MeshInstance3D" parent="VisualRoot/FlashSeal" unique_id=2096989007]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 0.325, 0, 0)
+material_override = SubResource("StandardMaterial3D_teu4k")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_818k4")
+
+[node name="Edge1" type="MeshInstance3D" parent="VisualRoot/FlashSeal" unique_id=303327245]
+transform = Transform3D(-0.70710677, -0.70710677, 0, 0.70710677, -0.70710677, 0, 0, 0, 1, 1.9899853e-17, 0.325, 0)
+material_override = SubResource("StandardMaterial3D_yaees")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_ratwi")
+
+[node name="Edge2" type="MeshInstance3D" parent="VisualRoot/FlashSeal" unique_id=1057105301]
+transform = Transform3D(-0.7071068, 0.7071067, 0, -0.7071067, -0.7071068, 0, 0, 0, 1, -0.325, 3.9799706e-17, 0)
+material_override = SubResource("StandardMaterial3D_sktr4")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_2gury")
+
+[node name="Edge3" type="MeshInstance3D" parent="VisualRoot/FlashSeal" unique_id=826264956]
+transform = Transform3D(0.70710665, 0.7071069, 0, -0.7071069, 0.70710665, 0, 0, 0, 1, -5.969956e-17, -0.325, 0)
+material_override = SubResource("StandardMaterial3D_e6jio")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_pstfn")
+
+[node name="Core" type="MeshInstance3D" parent="VisualRoot/FlashSeal" unique_id=1499766183]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_rvbbn")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_6pesk")
+
+[node name="Ray0" type="MeshInstance3D" parent="VisualRoot" unique_id=88438129]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, 0.7, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_bjbd1")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_kj86m")
+
+[node name="Ray1" type="MeshInstance3D" parent="VisualRoot" unique_id=1811570376]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, 0.49497473, 0.5, 0.49497473)
+material_override = SubResource("StandardMaterial3D_cgjb8")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_cmt01")
+
+[node name="Ray2" type="MeshInstance3D" parent="VisualRoot" unique_id=2060623006]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, 4.2861224e-17, 0.5, 0.7)
+material_override = SubResource("StandardMaterial3D_bmbg2")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_2pw71")
+
+[node name="Ray3" type="MeshInstance3D" parent="VisualRoot" unique_id=2048086324]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, -0.49497473, 0.5, 0.49497473)
+material_override = SubResource("StandardMaterial3D_ead8v")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_q6dde")
+
+[node name="Ray4" type="MeshInstance3D" parent="VisualRoot" unique_id=1366472115]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, -0.7, 0.5, 8.572245e-17)
+material_override = SubResource("StandardMaterial3D_6ayar")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_26qsi")
+
+[node name="Ray5" type="MeshInstance3D" parent="VisualRoot" unique_id=2035598319]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, -0.49497473, 0.5, -0.49497473)
+material_override = SubResource("StandardMaterial3D_oocyj")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_texc1")
+
+[node name="Ray6" type="MeshInstance3D" parent="VisualRoot" unique_id=1648243590]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, -1.2858366e-16, 0.5, -0.7)
+material_override = SubResource("StandardMaterial3D_wmebi")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_u2orl")
+
+[node name="Ray7" type="MeshInstance3D" parent="VisualRoot" unique_id=115772864]
+transform = Transform3D(0.9887711, -0.14943814, 0, 0.14943814, 0.9887711, 0, 0, 0, 1, 0.49497473, 0.5, -0.49497473)
+material_override = SubResource("StandardMaterial3D_asi84")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_r3e3a")
+
+[node name="RangeRoot" type="Node3D" parent="VisualRoot" unique_id=386422270]
+
+[node name="GoldWave" type="MeshInstance3D" parent="VisualRoot/RangeRoot" unique_id=553951780]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+material_override = SubResource("StandardMaterial3D_x2bgj")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_62bme")
+
+[node name="PurpleWave" type="MeshInstance3D" parent="VisualRoot/RangeRoot" unique_id=595458321]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+material_override = SubResource("StandardMaterial3D_i8dti")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_0inac")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=134140518]
+libraries/ = SubResource("AnimationLibrary_qdm8f")

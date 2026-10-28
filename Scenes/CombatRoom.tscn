@@ -9,6 +9,19 @@
 [ext_resource type="PackedScene" uid="uid://1w1ftyj1dedn" path="res://UnitSystem/Components/UI/SquadFinisherSelectionDisplay.tscn" id="7_fqtua"]
 [ext_resource type="PackedScene" uid="uid://tl1yhilxdejt" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherExecutionController.tscn" id="8_q3ym5"]
 [ext_resource type="PackedScene" uid="uid://b1lqh3r7sqxr8" path="res://UnitSystem/Components/UI/SquadChainRoundDisplay.tscn" id="9_50b8j"]
+[ext_resource type="PackedScene" uid="uid://dhgiqgsr4lo5u" path="res://UnitSystem/Components/UI/PlayerSkillBar.tscn" id="10_50b8j"]
+[ext_resource type="PackedScene" uid="uid://c8px70o6vu8ek" path="res://GameFlow/Components/CombatRunTimer.tscn" id="11_galwr"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_50b8j"]
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+bg_color = Color(0.025, 0.04, 0.06, 0.83)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="CombatRoom" unique_id=369100259 instance=ExtResource("1_22jl0")]
 
@@ -17,11 +30,34 @@ debug_enabled = false
 
 [node name="SquadFocusComponent" parent="." index="1" unique_id=1471205558]
 initial_focus = 100.0
-focus_gain_difficulty = 5.0
+focus_gain_difficulty = 2.0
+
+[node name="PlayerSpawn" parent="." index="7" unique_id=181217404]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10.241339)
+
+[node name="PartySpawn" parent="." index="8" unique_id=1297325965]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 11.514105)
+
+[node name="GoblinArcher" parent="EnemyContainer/Pack_B" parent_id_path=PackedInt32Array(1435788145) index="2" unique_id=95843393]
+attack_power = 5.0
+hit_movement_lock_duration = 0.35
+
+[node name="GoblinArcher2" parent="EnemyContainer/Pack_B" parent_id_path=PackedInt32Array(1435788145) index="3" unique_id=515074805]
+attack_power = 5.0
+hit_movement_lock_duration = 0.35
+
+[node name="GoblinArcher" parent="EnemyContainer/Pack_C" parent_id_path=PackedInt32Array(423947785) index="0" unique_id=1589762219]
+attack_power = 5.0
+hit_movement_lock_duration = 0.35
+
+[node name="GoblinArcher2" parent="EnemyContainer/Pack_C" parent_id_path=PackedInt32Array(423947785) index="1" unique_id=1062118579]
+attack_power = 5.0
+hit_movement_lock_duration = 0.35
 
 [node name="SquadChainCommandController" parent="." index="17" unique_id=1575406938 node_paths=PackedStringArray("companions", "focus_source") instance=ExtResource("2_318je")]
 companions = [NodePath("../Guardian"), NodePath("../Priest"), NodePath("../Caster"), NodePath("../Archer")]
 focus_source = NodePath("../SquadFocusComponent")
+wait_for_cast_cue = true
 
 [node name="SquadChainCommandDisplay" parent="." index="18" unique_id=1905817382 node_paths=PackedStringArray("command_source") instance=ExtResource("3_50b8j")]
 command_source = NodePath("../SquadChainCommandController")
@@ -50,4 +86,57 @@ camera_source = NodePath("../CameraRig")
 [node name="SquadChainRoundDisplay" parent="." index="24" unique_id=886165465 node_paths=PackedStringArray("round_source") instance=ExtResource("9_50b8j")]
 round_source = NodePath("../SquadChainRoundController")
 
+[node name="PlayerSkillBar" parent="." index="25" unique_id=1572766143 node_paths=PackedStringArray("skill_source") instance=ExtResource("10_50b8j")]
+skill_source = NodePath("../Hero/PlayerSkillController")
+
+[node name="Panel" parent="PlayerSkillBar" index="0" unique_id=590993390]
+offset_left = 350.0
+offset_top = -420.0
+offset_right = 574.0
+offset_bottom = -304.0
+
+[node name="ControlsGuide" type="CanvasLayer" parent="." index="26" unique_id=1963605704]
+
+[node name="Panel" type="PanelContainer" parent="ControlsGuide" index="0" unique_id=1067018571]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -386.0
+offset_top = -270.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_50b8j")
+
+[node name="Content" type="VBoxContainer" parent="ControlsGuide/Panel" index="0" unique_id=1172014089]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="Heading" type="Label" parent="ControlsGuide/Panel/Content" index="0" unique_id=250924737]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.56, 0.82, 0.94, 1)
+theme_override_font_sizes/font_size = 18
+text = "QUICK CONTROLS"
+
+[node name="Instructions" type="Label" parent="ControlsGuide/Panel/Content" index="1" unique_id=560140037]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.91, 0.94, 0.97, 1)
+theme_override_constants/line_spacing = 3
+theme_override_font_sizes/font_size = 20
+text = "WASD: Move   |   Shift: Dash
+Hold Left Click: Attack
+F / Middle Click: Lock target
+Q: Gather at target   |   E: Taunt
+1-4: Chain skills / Finishers
+Mouse Wheel: Zoom"
+
+[node name="CombatRunTimer" parent="." index="27" unique_id=803600642 node_paths=PackedStringArray("player") instance=ExtResource("11_galwr")]
+player = NodePath("../Hero")
+
 [editable path="EnemyContainer/Pack_C/GoblinWarrior"]
+[editable path="PlayerSkillBar"]

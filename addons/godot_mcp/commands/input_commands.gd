@@ -2,6 +2,11 @@
 extends "res://addons/godot_mcp/commands/base_command.gd"
 
 const COMMANDS_PATH := "user://mcp_input_commands"
+## How long to wait for the game to consume the previous payload.
+const COMMAND_CONSUME_TIMEOUT_SEC := 1.0
+## Extra time, beyond the hold itself, for a held key to reach the front of
+## the game's input queue and be released.
+const HOLD_ACK_GRACE_SEC := 30.0
 
 
 func get_commands() -> Dictionary:
@@ -33,8 +38,46 @@ func _simulate_key(params: Dictionary) -> Dictionary:
 		"ctrl": ctrl,
 		"alt": alt,
 	}
-	_write_commands([event])
-	return success({"sent": true, "event": event})
+	# hold_sec: the game releases the key itself this long after the press is
+	# actually dispatched. Timing it on the MCP side instead breaks when the
+	# press waits in the game's queue behind a running sequence: press and
+	# release would then land one frame apart.
+	var hold_sec: float = optional_float(params, "hold_sec", 0.0)
+	if hold_sec > 0.0:
+		if not pressed:
+			return error_invalid_params("hold_sec needs pressed=true")
+		if is_nan(hold_sec) or is_inf(hold_sec) or hold_sec > 600.0:
+			return error_invalid_params("hold_sec must be a finite number of seconds up to 600")
+		event["hold_sec"] = hold_sec
+		event["ack_id"] = "%d_%d" % [OS.get_process_id(), Time.get_ticks_usec()]
+	var write_result: Dictionary = await _write_payload([event])
+	if not write_result.is_empty():
+		return write_result
+	if event.has("ack_id"):
+		# Wait for the game to confirm the release. The press may sit in the
+		# game's queue behind a running sequence, so answering after
+		# hold_sec of wall time would report a key that has not even been
+		# pressed yet.
+		var ack_path := "user://mcp_input_ack_%s" % event["ack_id"]
+		var limit := hold_sec + HOLD_ACK_GRACE_SEC
+		# Monotonic deadline: counting timer ticks stretched this wait to
+		# minutes in a slow editor, far past the server's own timeout.
+		var deadline_ms := Time.get_ticks_msec() + int(limit * 1000.0)
+		while not FileAccess.file_exists(ack_path) and Time.get_ticks_msec() < deadline_ms:
+			if not get_editor().is_playing_scene():
+				break
+			await get_tree().create_timer(0.05).timeout
+		if not FileAccess.file_exists(ack_path):
+			return error(-32000, "The key press was sent, but the game did not confirm its release within %.1fs" % limit, {
+				"event": event,
+				"hold_supported": true,
+				"suggestion": "The game may have stopped, be paused, or still be busy with earlier input. The key may still be held; send simulate_key with pressed=false to release it.",
+			})
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(ack_path))
+		return success({"sent": true, "event": event, "hold_supported": true, "released": true})
+	# hold_supported tells the MCP server this addon releases held keys
+	# itself; an older addon lacks it, and the server then releases on a timer.
+	return success({"sent": true, "event": event, "hold_supported": true})
 
 
 func _simulate_mouse_click(params: Dictionary) -> Dictionary:
@@ -61,15 +104,14 @@ func _simulate_mouse_click(params: Dictionary) -> Dictionary:
 			"sequence_events": [press_event, release_event],
 			"frame_delay": 1,
 		}
-		var json := JSON.stringify(sequence_data)
-		var file := FileAccess.open(COMMANDS_PATH, FileAccess.WRITE)
-		if file == null:
-			return error_internal("Failed to write commands: %s" % error_string(FileAccess.get_open_error()))
-		file.store_string(json)
-		file.close()
+		var write_err: Dictionary = await _write_payload(sequence_data)
+		if not write_err.is_empty():
+			return write_err
 		return success({"sent": true, "event": press_event, "auto_release": true})
 
-	_write_commands([press_event])
+	var err: Dictionary = await _write_payload([press_event])
+	if not err.is_empty():
+		return err
 	return success({"sent": true, "event": press_event})
 
 
@@ -96,7 +138,9 @@ func _simulate_mouse_move(params: Dictionary) -> Dictionary:
 		event["unhandled"] = unhandled
 	elif button_mask > 0:
 		event["unhandled"] = true
-	_write_commands([event])
+	var write_result: Dictionary = await _write_payload([event])
+	if not write_result.is_empty():
+		return write_result
 	return success({"sent": true, "event": event})
 
 
@@ -115,7 +159,9 @@ func _simulate_action(params: Dictionary) -> Dictionary:
 		"pressed": pressed,
 		"strength": strength,
 	}
-	_write_commands([event])
+	var write_result: Dictionary = await _write_payload([event])
+	if not write_result.is_empty():
+		return write_result
 	return success({"sent": true, "event": event})
 
 
@@ -128,6 +174,18 @@ func _simulate_sequence(params: Dictionary) -> Dictionary:
 		return error_invalid_params("Events array is empty")
 
 	var frame_delay: int = optional_int(params, "frame_delay", 1)
+	# ack_id and hold_sec are internal fields the addon sets itself; one
+	# supplied by a caller would name a file the game then writes.
+	var clean_events: Array = []
+	for entry: Variant in events:
+		if entry is Dictionary:
+			var e: Dictionary = (entry as Dictionary).duplicate()
+			e.erase("ack_id")
+			e.erase("hold_sec")
+			clean_events.append(e)
+		else:
+			clean_events.append(entry)
+	events = clean_events
 
 	for entry: Variant in events:
 		# Typed iteration would raise on a non-Dictionary entry, and `as String`
@@ -140,28 +198,33 @@ func _simulate_sequence(params: Dictionary) -> Dictionary:
 
 	if frame_delay <= 0:
 		# All events in one frame - write as plain array
-		_write_commands(events)
+		var flat_err: Dictionary = await _write_payload(events)
+		if not flat_err.is_empty():
+			return flat_err
 	else:
 		# Sequence with frame delay - game side handles timing
 		var sequence_data := {
 			"sequence_events": events,
 			"frame_delay": frame_delay,
 		}
-		var json := JSON.stringify(sequence_data)
-		var file := FileAccess.open(COMMANDS_PATH, FileAccess.WRITE)
-		if file == null:
-			return error_internal("Failed to write commands: %s" % error_string(FileAccess.get_open_error()))
-		file.store_string(json)
-		file.close()
+		var seq_err: Dictionary = await _write_payload(sequence_data)
+		if not seq_err.is_empty():
+			return seq_err
 
 	return success({"sent": true, "event_count": events.size(), "frame_delay": frame_delay})
 
 
-func _write_commands(events: Array) -> void:
-	var json := JSON.stringify(events)
-	var file := FileAccess.open(COMMANDS_PATH, FileAccess.WRITE)
-	if file == null:
-		push_error("[MCP Input] Failed to write commands: %s" % error_string(FileAccess.get_open_error()))
-		return
-	file.store_string(json)
-	file.close()
+## Writes one command payload for the running game's MCPInputService.
+##
+## The game polls this single file once per frame, reads it and deletes it.
+## Two tool calls in quick succession (simulate_key then simulate_mouse_click)
+## used to overwrite the first payload before the game had read it, silently
+## dropping that input. Wait for the previous payload to be consumed first;
+## if it is still there after the grace period (game paused, not running, or
+## stalled), fail instead of overwriting it. A stale file left by a stopped
+## game is removed when the next play starts.
+func _write_payload(payload: Variant) -> Dictionary:
+	# If the game has not read the previous payload (paused, stalled, not
+	# running), overwriting it would silently drop that input, e.g. a key
+	# release, leaving the key held. Refuse instead.
+	return await write_input_payload(payload)

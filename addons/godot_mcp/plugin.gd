@@ -17,12 +17,34 @@ const _MCP_TEMP_FILES: Array[String] = [
 var websocket_server: Node
 var command_router: Node
 var status_panel: Control
+# EditorDock hosting status_panel on Godot 4.6+; null on 4.5, where the panel
+# goes through the legacy add_control_to_bottom_panel path instead.
+var _status_dock: Control
 var auto_dismiss_dialogs: bool = false
+# True inside a headless child editor started by MCP itself (export_patch_pck
+# runs `godot --headless --export-patch`, which loads editor plugins). There
+# the plugin must stay completely inert: connecting to the MCP server ports
+# would let it steal commands meant for the real editor, injecting/removing
+# autoloads would rewrite project.godot under the live editor, and cleaning
+# up temp files on exit would delete the live editor's in-flight IPC files,
+# which live in the same user:// directory.
+var _inert := false
+var _was_playing := false
 # Track which autoloads THIS session injected (vs project-owned)
 var _session_injected_autoloads: Array[String] = []
 
 func _enter_tree() -> void:
+	if _should_stay_inert():
+		_inert = true
+		# _process polls shared user:// files (debugger-continue requests);
+		# an export child must not consume the live editor's.
+		set_process(false)
+		return
 	_register_project_settings()
+	# Locks held by handlers of a previous plugin instance (disabled or
+	# reloaded mid-command) would otherwise stay held.
+	preload("res://addons/godot_mcp/commands/base_command.gd").reset_session_state()
+	preload("res://addons/godot_mcp/commands/export_commands.gd").reset_export_session_state()
 
 	# Create command router
 	command_router = preload("res://addons/godot_mcp/command_router.gd").new()
@@ -39,7 +61,7 @@ func _enter_tree() -> void:
 	# Create status panel
 	var panel_scene: PackedScene = preload("res://addons/godot_mcp/ui/status_panel.tscn")
 	status_panel = panel_scene.instantiate()
-	add_control_to_bottom_panel(status_panel, "MCP Pro")
+	_add_status_panel()
 	status_panel.call_deferred("setup", websocket_server, command_router)
 
 	# Inject MCP autoloads into project settings
@@ -53,7 +75,24 @@ func _enter_tree() -> void:
 	print("[MCP] Godot MCP Pro v%s started (ports 6505-6514)" % ver)
 
 
+## The plugin has nothing to do in a command-line export (the editor is only
+## loaded to pack the project) and must not touch shared state there; the same
+## applies to the headless child editors MCP starts, marked by an env var.
+func _should_stay_inert() -> bool:
+	if OS.has_environment("GODOT_MCP_HEADLESS_CHILD"):
+		return true
+	for arg in OS.get_cmdline_args():
+		if arg in ["--export-release", "--export-debug", "--export-pack", "--export-patch"]:
+			return true
+	return false
+
+
 func _exit_tree() -> void:
+	if _inert:
+		return
+	# A patch export in flight loses its handler with this plugin; stop its
+	# child process and remove its temp files instead of orphaning them.
+	preload("res://addons/godot_mcp/commands/export_commands.gd").abort_active_export()
 	# Remove MCP autoloads and clean up temp files
 	_remove_autoloads()
 	_cleanup_temp_files()
@@ -61,7 +100,14 @@ func _exit_tree() -> void:
 	if websocket_server:
 		websocket_server.stop_server()
 
-	if status_panel:
+	if _status_dock:
+		# remove_dock only detaches the dock; freeing it also frees the
+		# status panel inside it.
+		call("remove_dock", _status_dock)
+		_status_dock.queue_free()
+		_status_dock = null
+		status_panel = null
+	elif status_panel:
 		remove_control_from_bottom_panel(status_panel)
 		status_panel.queue_free()
 
@@ -72,6 +118,57 @@ func _exit_tree() -> void:
 		websocket_server.queue_free()
 
 	print("[MCP] Godot MCP Pro stopped")
+
+
+## Adds the status panel to the editor's bottom panel.
+## Godot 4.6+ has a real dock API: the panel is placed in an EditorDock whose
+## default slot is the bottom panel, which also gives it a proper tab icon
+## (shown when Editor Settings > Interface > Editor > Bottom Dock Tab Style
+## includes icons) and lets the user float it. EditorDock and add_dock are
+## reached by name through ClassDB/call(), so this file still parses on 4.5,
+## where neither exists; 4.5 keeps the legacy add_control_to_bottom_panel.
+func _add_status_panel() -> void:
+	if ClassDB.class_exists("EditorDock") and has_method("add_dock"):
+		_status_dock = ClassDB.instantiate("EditorDock")
+		_status_dock.name = "MCPProDock"
+		_status_dock.set("title", "MCP Pro")
+		_status_dock.set("default_slot", ClassDB.class_get_integer_constant("EditorDock", "DOCK_SLOT_BOTTOM"))
+		# Same layouts Godot gives a legacy bottom-panel control: the panel is
+		# laid out for a wide strip, not a narrow side column.
+		_status_dock.set("available_layouts",
+			ClassDB.class_get_integer_constant("EditorDock", "DOCK_LAYOUT_HORIZONTAL")
+			| ClassDB.class_get_integer_constant("EditorDock", "DOCK_LAYOUT_FLOATING"))
+		var icon := _load_panel_icon()
+		if icon != null:
+			_status_dock.set("dock_icon", icon)
+		_status_dock.add_child(status_panel)
+		call("add_dock", _status_dock)
+		return
+	var panel_button: Button = add_control_to_bottom_panel(status_panel, "MCP Pro")
+	_apply_panel_icon.call_deferred(panel_button)
+
+
+## Gives the legacy (Godot 4.5) bottom-panel tab button an icon (issue #38).
+## The SVG is rasterised at the editor scale instead of relying on the import
+## pipeline, so it also works on the very first enable before the file has
+## been imported.
+func _apply_panel_icon(button: Button) -> void:
+	var icon := _load_panel_icon()
+	if icon != null and button != null and is_instance_valid(button):
+		button.icon = icon
+
+
+func _load_panel_icon() -> Texture2D:
+	const ICON_PATH := "res://addons/godot_mcp/icons/mcp_pro.svg"
+	var file := FileAccess.open(ICON_PATH, FileAccess.READ)
+	if file == null:
+		return null
+	var svg := file.get_as_text()
+	file.close()
+	var img := Image.new()
+	if img.load_svg_from_string(svg, EditorInterface.get_editor_scale()) != OK:
+		return null
+	return ImageTexture.create_from_image(img)
 
 
 ## Declares the opt-in connection token setting so it is discoverable in
@@ -151,6 +248,16 @@ var _dialog_check_timer: float = 0.0
 const _DIALOG_CHECK_INTERVAL: float = 0.5  # Check every 0.5 seconds
 
 func _process(delta: float) -> void:
+	if _inert:
+		return
+	# When a game stops (MCP stop_scene, the editor's Stop button, a crash),
+	# anything it left unread belongs to that session: remove it so the next
+	# play session cannot pick it up.
+	var playing := EditorInterface.is_playing_scene()
+	if _was_playing and not playing:
+		preload("res://addons/godot_mcp/commands/base_command.gd").bump_play_session()
+		_clear_session_ipc_files()
+	_was_playing = playing
 	# Check if game inspector requested debugger continue
 	var flag_path := OS.get_user_data_dir() + "/mcp_debugger_continue"
 	if FileAccess.file_exists(flag_path):
@@ -232,12 +339,45 @@ func _find_and_dismiss_dialogs(node: Node) -> void:
 		_find_and_dismiss_dialogs(child)
 
 
+func _clear_session_ipc_files() -> void:
+	var dirs: Array = [OS.get_user_data_dir()]
+	var helper: Node = preload("res://addons/godot_mcp/commands/base_command.gd").new()
+	var game_dir: String = helper.call("get_game_user_dir")
+	helper.free()
+	if not dirs.has(game_dir):
+		dirs.append(game_dir)
+	var base_script := preload("res://addons/godot_mcp/commands/base_command.gd")
+	var own_tmp := ".tmp_%d_" % OS.get_process_id()
+	for d: String in dirs:
+		var dir := DirAccess.open(d)
+		if dir == null:
+			continue
+		for f in dir.get_files():
+			if f == "mcp_input_commands" or f == "mcp_game_request":
+				# Only this editor's own: another editor sharing user:// may
+				# have input pending for its still-running game.
+				base_script.remove_ipc_file_if_owned(d.path_join(f))
+			elif (f.begins_with("mcp_input_commands.tmp_") or f.begins_with("mcp_game_request.tmp_")) and f.contains(own_tmp):
+				dir.remove(f)
+
+
 func _cleanup_temp_files() -> void:
 	var user_dir := OS.get_user_data_dir()
+	var base_script := preload("res://addons/godot_mcp/commands/base_command.gd")
 	for filename: String in _MCP_TEMP_FILES:
-		var path := user_dir + "/" + filename
-		if FileAccess.file_exists(path):
-			DirAccess.remove_absolute(path)
+		# Only this editor's own (or unowned legacy) files: another editor
+		# sharing user:// may have input or a request pending right now.
+		base_script.remove_ipc_file_if_owned(user_dir + "/" + filename)
+	# Release acknowledgements the editor stopped waiting for (see
+	# input_commands.gd) are never read; drop any that are left.
+	# Only this editor's own: another editor sharing user:// may be waiting on
+	# its ack right now. Ack ids start with the waiting editor's process id.
+	var dir := DirAccess.open(user_dir)
+	if dir != null:
+		var own_prefix := "mcp_input_ack_%d_" % OS.get_process_id()
+		for f in dir.get_files():
+			if f.begins_with(own_prefix):
+				dir.remove(f)
 	# Also clean up screenshot image
 	var screenshot_path := user_dir + "/mcp_screenshot.png"
 	if FileAccess.file_exists(screenshot_path):

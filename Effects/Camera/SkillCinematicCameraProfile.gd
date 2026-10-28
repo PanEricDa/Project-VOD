@@ -7,6 +7,16 @@ extends CameraEffectProfile
 ## 特写观察高度，相对角色地面米数，默认0.55；只影响本次特写。
 @export_range(0.0, 5.0, 0.05) var look_height_m: float = 0.55
 
+@export_category("Closeup Occlusion")
+## 默认开启：仅在进入/停留角色特写时隐藏镜头通道内其他单位及独立遮挡模型；切出瞬间恢复，不影响碰撞或战斗。
+@export var hide_closeup_occluders: bool = true
+## 遮挡通道的完整宽度，单位米；默认1.6（两侧各0.8），长度直接读取最终特写镜头至施放者观察点的距离，仅影响本次特写。
+@export_range(0.1, 10.0, 0.1) var occlusion_corridor_width_m: float = 1.6
+
+## 返回有效完整宽度（米）；非法值回退1.6，范围限制0.1至10，不保存运行状态。
+func get_occlusion_corridor_width() -> float:
+	return clampf(occlusion_corridor_width_m,0.1,10.0) if is_finite(occlusion_corridor_width_m) else 1.6
+
 @export_category("Transition Timing")
 ## 进入角色特写的真实活动秒数，默认0.2；过渡中暂停战斗，完成后继续终结动画，0表示即时到位。
 @export_range(0.0, 3.0, 0.01) var closeup_transition_seconds: float = 0.2

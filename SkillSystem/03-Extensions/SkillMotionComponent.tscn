@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bj53adl5l6lve"]
+
+[ext_resource type="Script" uid="uid://c2p7m8j1v38pg" path="res://SkillSystem/03-Extensions/SkillMotionComponent.gd" id="1_sy5b0"]
+
+[node name="SkillMotionComponent" type="Node" unique_id=1289369726]
+script = ExtResource("1_sy5b0")

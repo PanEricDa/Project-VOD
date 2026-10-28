@@ -23,6 +23,7 @@ func show_failure() -> void:
 	_title_label.text = "战败"
 	_title_label.modulate = Color(1.0, 0.38, 0.38, 1.0)
 	_message_label.text = "队伍未能完成本次遭遇。"
+	$Backdrop/CenterContainer/Panel/Content/Timing.visible = false
 	_backdrop.visible = true
 
 
@@ -32,11 +33,23 @@ func show_success() -> void:
 	_title_label.text = "房间完成"
 	_title_label.modulate = Color(0.42, 1.0, 0.60, 1.0)
 	_message_label.text = "当前房间内的敌人已被清除。"
+	$Backdrop/CenterContainer/Panel/Content/Timing.visible = false
 	_backdrop.visible = true
 
 
-## 隐藏结算界面。
-## 用于切换或重载场景前复位显示状态，不改变任何房间或单位状态。
+## elapsed为本轮游戏秒，负数表示无计时组件；best为本次启动内最佳成功通关秒，负数表示暂无纪录。
+## completed区分成功与失败文案；本方法只显示，不自行计时、判断胜负或保存纪录。
+func set_run_times(elapsed: float, best: float, completed: bool) -> void:
+	var timing: Control = $Backdrop/CenterContainer/Panel/Content/Timing
+	timing.visible = elapsed >= 0.0
+	if not timing.visible:
+		return
+	var suffix: String = "" if completed else "（未通关）"
+	(timing.get_node(^"RunTime") as Label).text = "本轮时间：" + CombatRunTimer.format_time(elapsed) + suffix
+	(timing.get_node(^"BestTime") as Label).text = "最佳通关：" + CombatRunTimer.format_time(best)
+
+
+## 隐藏结算界面；用于切换或重载场景前复位，不改变任何房间或单位状态。
 func hide_result() -> void:
 	if is_instance_valid(_backdrop):
 		_backdrop.visible = false

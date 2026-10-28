@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://cae4jcunjp2vx"]
+
+[ext_resource type="Script" uid="uid://dwef3kiau8d3a" path="res://Effects/Skills/HolyBlessing/HolyBlessingEffectPreview.gd" id="1_cf2c4"]
+[ext_resource type="PackedScene" uid="uid://bnltv4w1d4jfk" path="res://UnitSystem/Visuals/Player/HeroVisual.tscn" id="2_ehnbu"]
+[ext_resource type="PackedScene" path="res://Item/Weapon/Staff/StaffVisual.tscn" id="3_f8w65"]
+[ext_resource type="Animation" uid="uid://c48jhxi71r0cv" path="res://SkillSystem/00-Skills/Finisher_HolyBlessing/HolyBlessingAction.tres" id="4_3fqi0"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_70c7j"]
+_data = {
+&"action": ExtResource("4_3fqi0")
+}
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_36dnf"]
+albedo_color = Color(0.07, 0.09, 0.13, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_40r6u"]
+size = Vector2(16, 16)
+
+[node name="HolyBlessingReleaseEffectPreview" type="Node3D" unique_id=355038151]
+script = ExtResource("1_cf2c4")
+preview_mode = 1
+
+[node name="Actor" type="Node3D" parent="." unique_id=1629942265]
+
+[node name="HeroVisual" parent="Actor" unique_id=1181584879 instance=ExtResource("2_ehnbu")]
+
+[node name="StaffVisual" parent="Actor/HeroVisual/CharacterRoot/WeaponSocket" parent_id_path=PackedInt32Array(1181584879, 2021864902) index="1" unique_id=869376504 instance=ExtResource("3_f8w65")]
+
+[node name="CharacterAnimationPlayer" parent="Actor/HeroVisual" index="1" unique_id=634680723]
+libraries/Finisher = SubResource("AnimationLibrary_70c7j")
+
+[node name="Transient" type="Node3D" parent="." unique_id=664586601]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1514279998]
+transform = Transform3D(0.8574929, -0.1237117, 0.49940097, 0, 0.97066104, 0.2404523, -0.5144958, -0.20618615, 0.83233494, 2.7, 2.1, 4.5)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1048814128]
+transform = Transform3D(0.90630776, 0.29883623, -0.29883623, 0, 0.70710677, 0.70710677, 0.42261827, -0.6408563, 0.6408563, 0, 0, 0)
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=456322928]
+material_override = SubResource("StandardMaterial3D_36dnf")
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_40r6u")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1293838124]
+
+[node name="Panel" type="PanelContainer" parent="UI" unique_id=1203481945]
+custom_minimum_size = Vector2(360, 100)
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 16.0
+offset_bottom = 16.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/Panel" unique_id=1842413319]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/Panel/VBox" unique_id=986858740]
+layout_mode = 2
+text = "圣辉祝福"
+
+[node name="Replay" type="Button" parent="UI/Panel/VBox" unique_id=725490473]
+layout_mode = 2
+text = "重播"
+
+[editable path="Actor/HeroVisual"]

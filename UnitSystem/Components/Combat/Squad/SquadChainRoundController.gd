@@ -229,7 +229,7 @@ func _close_expired() -> void:
 	if scope == null: return
 	var result := {"round_id":_round_id,"scene_scope_id":scope.get_instance_id(),
 		"hit_count":_hits,"total_damage":_damage,"score":_score,
-		"qualified":_score >= 100.0,"close_reason":&"damage_gap"}
+		"qualified":_score >= 100.0,"finisher_multiplier":calculate_finisher_multiplier(_score),"close_reason":&"damage_gap"}
 	var generation := _generation
 	_reset_round()
 	_last_result = result.duplicate(true)
@@ -267,6 +267,12 @@ func _on_damage_resolved(event: CombatDamageEvent, generation: int) -> void:
 	_interval = _interval_for_score(_score)
 	_deadline_usec = _clock_usec+roundi(_interval*1000000.0)
 	_publish()
+
+## score为本轮最终综合评分；100分起渐近增加最多50%威力，额外50分取得约63%的奖励上限。
+## 无效/低于资格线的输入返回1，不改变评分、资格或窗口；返回有限的1至1.5，只在闭窗结算时捕获。
+static func calculate_finisher_multiplier(score: float) -> float:
+	if not is_finite(score) or score <= 100.0: return 1.0
+	return 1.0 + 0.5*(1.0-exp(-(score-100.0)/50.0))
 
 # 只读本轮快照：100分连续衔接基础间隔，到指定分数精确落到下限；指数3为内部形状，不额外暴露调参。
 # 仅在有效伤害计分后重设deadline；等待期间不因查询/Inspector编辑再次压缩倒计时。

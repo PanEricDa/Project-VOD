@@ -1,0 +1,71 @@
+[gd_resource type="Animation" format=3 uid="uid://x2jgtqva75rr"]
+
+[resource]
+resource_name = "finish_attack_1"
+length = 1.7
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("CharacterRoot:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.36, 0.8, 0.86, 0.92, 1, 1.11, 1.24, 1.3699999, 1.46, 1.5999999, 1.6800001),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 0.02, 0), Vector3(0, 0.01, 0), Vector3(0, 0.01, 0), Vector3(0, 0.025, 0), Vector3(0, -0.07, 0), Vector3(0, 0.38, 0), Vector3(0, 0.65, 0), Vector3(0, 0.51, 0), Vector3(0, 0.08, 0), Vector3(0, -0.065, 0), Vector3(0, 0, 0), Vector3(0, 0, 0)]
+}
+tracks/1/type = "rotation_3d"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("CharacterRoot")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1, 0.2, 1, 0.08715574, 0, 0, 0.9961947, 0.36, 1, -0.043619387, 0, 0, 0.99904823, 0.8, 1, -0.043619387, 0, 0, 0.99904823, 0.86, 1, 0.0784591, 0, 0, 0.9969173, 0.92, 1, -0.104528464, 0, 0, 0.9945219, 1, 1, 0.6427876, 0, 0, 0.76604444, 1.11, 1, 1, 0, 0, -4.371139e-08, 1.24, 1, 0.6755902, 0, 0, -0.7372773, 1.3699999, 1, -8.742278e-08, 0, 0, -1, 1.46, 1, 0.104528494, 0, 0, -0.9945219, 1.5999999, 1, -8.742278e-08, 0, 0, -1, 1.6800001, 1, -8.742278e-08, 0, 0, -1)
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("CharacterRoot/WeaponSocket:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.36, 0.8, 0.86, 0.92, 1, 1.24, 1.3699999, 1.5999999, 1.6800001),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.3, 0.34, -0.2), Vector3(0.22, 0.72, -0.1), Vector3(0.15, 0.43, -0.32), Vector3(0.15, 0.43, -0.32), Vector3(0.15, 0.43, -0.22), Vector3(0.12, 0.35, -0.12), Vector3(0.08, 0.32, -0.1), Vector3(0.08, 0.32, -0.1), Vector3(0.16, 0.32, -0.15), Vector3(0.3, 0.34, -0.2), Vector3(0.3, 0.34, -0.2)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("CharacterRoot/WeaponSocket:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.36, 0.8, 0.86, 0.92, 1, 1.24, 1.3699999, 1.5999999, 1.6800001),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(1.3613569, 0, -0.13962634), Vector3(0.08726646, 0, 0), Vector3(0.08726646, 0, 0), Vector3(0.2443461, 0, 0), Vector3(0.5235988, 0, 0), Vector3(0.61086524, 0, 0), Vector3(0.61086524, 0, 0), Vector3(0.20943952, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0)]
+}
+tracks/4/type = "method"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("CharacterAnimationPlayer")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0.76666665, 0.92, 1.46, 1.68),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"values": [{
+"args": [],
+"method": &"release_action"
+}, {
+"args": [],
+"method": &"begin_skill_motion"
+}, {
+"args": [],
+"method": &"end_skill_motion"
+}, {
+"args": [],
+"method": &"finish_action"
+}]
+}

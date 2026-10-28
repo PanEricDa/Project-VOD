@@ -21,7 +21,7 @@ const REASONS = {
 	&"companion_missing": "未配置伙伴", &"skill_configuration_invalid": "技能未配置",
 	&"host_missing": "缺少技能宿主", &"focus_unbound": "尚未绑定战场",
 	&"input_disabled": "输入已停用", &"player_unavailable": "玩家不可操作",
-	&"pending_full": "等待槽已满", &"insufficient_focus": "专注不足",
+	&"chain_cue_pending": "等待施法提示", &"pending_full": "等待槽已满", &"insufficient_focus": "专注不足",
 	&"cast_unavailable": "当前无法施放", &"target_or_condition_invalid": "没有合法目标",
 	&"round_source_missing": "未连接连携批次", &"round_closed": "批次已关闭"
 }
@@ -118,6 +118,8 @@ func _on_accepted(request: SkillCommandRequest) -> void:
 		var actor = source.companions[slot]
 		if is_instance_valid(actor) and actor.get_instance_id() == request.caster_instance_id:
 			_request_slots[request.request_id] = slot
+			# 新的有效预约立即覆盖此前拒绝/失败提示，不让旧红框遮住已接收的绿框。
+			_failure[slot] = {}
 			if source.get_slot_status(slot).active_request_id > 0: _cached_confirmation_remaining[slot] = 0.3
 			_update_card(slot)
 			return
@@ -138,7 +140,10 @@ func _on_failed(slot: int, id: int, reason: StringName) -> void:
 	_request_slots.erase(id)
 	_show_failure(slot,id,reason)
 
-func _on_rejected(slot: int, reason: StringName) -> void: _show_failure(slot,0,reason)
+func _on_rejected(slot: int, reason: StringName) -> void:
+	# 提示前的按键只是未受理，不是原命令失败；保持原来的等待/施放边框。
+	if reason == &"chain_cue_pending": return
+	_show_failure(slot,0,reason)
 
 func _show_failure(slot: int, id: int, reason: StringName) -> void:
 	if slot < 0 or slot >= 4: return

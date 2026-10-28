@@ -77,6 +77,7 @@ func _run() -> void:
 	current_scene = null
 	await process_frame
 	await _test_card_state_transitions()
+	await _test_new_acceptance_clears_failure()
 	_finish()
 
 func _verify_controls(node: Node) -> void:
@@ -103,12 +104,14 @@ func _test_card_state_transitions() -> void:
 		f.world.free()
 		return
 	_expect(f.source.submit_slot(0),"UI probe admitted")
-	_expect(border.visible and border.theme_type_variation == &"ChainWaiting","accepted immediate yellow")
+	_expect(border.visible and border.theme_type_variation == &"ChainWaiting","accepted immediately uses waiting border")
+	_verify_green_feedback(border,false)
 	f.actor.get_behavior_state_machine().physics_tick(0.01)
-	_expect(border.visible and border.theme_type_variation == &"ChainCasting","actual start immediate green")
+	_expect(border.visible and border.theme_type_variation == &"ChainCasting","actual start uses full green fill")
+	_verify_green_feedback(border,true)
 	_expect(f.source.submit_slot(0),"one pending request while active")
 	_expect(border.theme_type_variation == &"ChainCasting","pending confirmation never steals casting green")
-	_expect(display.get_node_or_null("Panel/VBox/Cards/Card1/VBox/CachedConfirmation") != null and display.get_node("Panel/VBox/Cards/Card1/VBox/CachedConfirmation").visible,"cached request has separate native yellow confirmation text")
+	_expect(display.get_node_or_null("Panel/VBox/Cards/Card1/VBox/CachedConfirmation") != null and display.get_node("Panel/VBox/Cards/Card1/VBox/CachedConfirmation").visible,"cached request has separate confirmation text")
 	_expect(not f.source.submit_slot(0),"third request rejected")
 	_expect(border.theme_type_variation == &"ChainFailed","rejection immediate red")
 	await _presentation_wait(0.33)
@@ -127,6 +130,34 @@ func _test_card_state_transitions() -> void:
 	await _presentation_wait(0.33)
 	_expect(not border.visible,"success clears after 0.3 presentation seconds independent of action tail")
 	_expect(display.get_node("Panel/VBox/Cards/Card1").modulate == Color.WHITE,"availability grey never dims state border")
+	f.world.free()
+	await process_frame
+
+func _verify_green_feedback(border: Control, filled: bool) -> void:
+	var style := border.get_theme_stylebox("panel") as StyleBoxFlat
+	_expect(style != null,"state uses an editable StyleBoxFlat")
+	if style == null: return
+	for edge: Side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
+		_expect(style.get_border_width(edge) == 6,"state border is three times original 2px")
+	_expect(style.border_color.g > style.border_color.r and style.border_color.g > style.border_color.b,"accepted and casting borders are green")
+	_expect(style.bg_color.a >= 0.6 if filled else is_zero_approx(style.bg_color.a),"only actual casting fills button green")
+	_expect(border.get_index() < border.get_parent().get_node("VBox").get_index(),"state background renders behind labels and icon")
+	var card_style := (border.get_parent() as Control).get_theme_stylebox("panel")
+	_expect(card_style.get_margin(SIDE_TOP) >= 8 and card_style.get_margin(SIDE_BOTTOM) >= 8,"thick border keeps clear padding around text")
+
+func _test_new_acceptance_clears_failure() -> void:
+	var f = load("res://UnitSystem/Tests/ChainSkillPresentationControllerTest.gd").make_fixture(root)
+	var display = load(DISPLAY_SCENE).instantiate()
+	display.command_source = f.source
+	f.world.add_child(display)
+	await physics_frame
+	await physics_frame
+	var border := display.get_node("Panel/VBox/Cards/Card1/StateBorder") as Control
+	f.source.set_input_enabled(false)
+	_expect(not f.source.submit_slot(0) and border.theme_type_variation == &"ChainFailed","real rejection displays failure")
+	f.source.set_input_enabled(true)
+	_expect(f.source.submit_slot(0),"new valid press accepted after rejection")
+	_expect(border.theme_type_variation == &"ChainWaiting","new acceptance immediately replaces stale failure with reservation green")
 	f.world.free()
 	await process_frame
 

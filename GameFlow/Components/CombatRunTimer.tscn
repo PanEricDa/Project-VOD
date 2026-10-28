@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://c8px70o6vu8ek"]
+
+[ext_resource type="Script" uid="uid://ckkb80gyc602p" path="res://GameFlow/Components/CombatRunTimer.gd" id="1_8lm5w"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0dvbf"]
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+bg_color = Color(0.025, 0.04, 0.06, 0.83)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="CombatRunTimer" type="CanvasLayer" unique_id=803600642]
+layer = 12
+script = ExtResource("1_8lm5w")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=1273781624]
+custom_minimum_size = Vector2(248, 70)
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 24.0
+offset_bottom = 24.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_0dvbf")
+
+[node name="Time" type="Label" parent="Panel" unique_id=962383846]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 36
+text = "00:00:00"
+horizontal_alignment = 1

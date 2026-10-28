@@ -4,12 +4,12 @@ extends CharacterBody3D
 const STATUS_EFFECT_COMPONENT_PATH: NodePath = ^"StatusEffect"
 const STATUS_ATTACK_POWER: int = 0
 const STATUS_DEFENSE: int = 1
+const STATUS_OUTGOING_DAMAGE: int = 3
 
 ## 所有可行动单位共用的最小根类。
 ##
-## 本脚本只负责“单位是什么”的基础信息：生命值、阵营关系和能否成为目标。
-## 移动、AI、技能、动画和装备应由继承场景或独立组件提供，避免 UnitBase
-## 随项目发展逐渐变成难以维护的全能脚本。
+## 本脚本负责生命、阵营、目标资格及内置被动位移协议；不执行主动移动或AI。
+## 外力仅保存请求，实际物理移动仍由PlayerBase/AIUnitBase各自原循环完成。
 
 ## 生命值发生实际变化时发送。source 用于记录伤害或治疗的来源；没有来源时为 null。
 enum CombatState {
@@ -78,6 +78,15 @@ var threat_action_suppression_at_125: float = 0.7
 @export_range(0.0, 1.0, 0.01)
 var hit_movement_lock_duration: float = 0.07
 
+@export_category("Forced Movement")
+## 是否允许接收被动位移，默认true，影响全部外力请求，不限制自身移动/动画位移。
+## 关闭立即结束当前请求并恢复其新增单位碰撞例外；重新开启不恢复旧请求。
+@export var forced_movement_enabled: bool = true:
+	set(value):
+		forced_movement_enabled = value
+		if not value:
+			_finish_forced_movement(_forced_active_token, &"disabled")
+
 @export_category("Faction")
 ## 供编辑器、存档和调试使用的可读阵营标识。
 ## 当前关系判断只使用 team_id，因此更改显示标识不会意外改变敌我关系。
@@ -103,6 +112,8 @@ func _ready() -> void:
 	maximum_health = maxf(maximum_health, 1.0 if not can_die else 0.0)
 	starting_health_percentage = clampf(starting_health_percentage, 0.0, 100.0)
 	_current_health = maximum_health * starting_health_percentage / 100.0
+	if not died.is_connected(_on_forced_movement_owner_died):
+		died.connect(_on_forced_movement_owner_died)
 
 
 ## 对单位造成伤害并返回实际扣除量。
@@ -201,6 +212,18 @@ func revive(health_amount: float = 1.0, source: Node = null) -> bool:
 	return true
 
 
+## 返回单位稳定的世界水平朝向；优先直接Visual的-Z，忽略CharacterRoot/武器姿态动画。
+## 无Visual或轴退化时依次回退单位根-Z、Vector3.FORWARD；不修改转向或移动。
+func get_facing_direction() -> Vector3:
+	var visual := get_node_or_null(^"Visual") as Node3D
+	var forward := -visual.global_basis.z if is_instance_valid(visual) else Vector3.ZERO
+	forward.y = 0.0
+	if not forward.is_finite() or forward.length_squared() < 0.000001:
+		forward = -global_basis.z
+		forward.y = 0.0
+	return forward.normalized() if forward.is_finite() and forward.length_squared() >= 0.000001 else Vector3.FORWARD
+
+
 ## 返回当前运行时生命值。
 func get_current_health() -> float:
 	return _current_health
@@ -211,26 +234,22 @@ func get_maximum_health() -> float:
 	return maximum_health
 
 
+## 返回所有伤害共用的输出倍率；基础为1，状态可按百分比增减，不改变攻击力或治疗。
+func get_outgoing_damage_multiplier() -> float:
+	var status_effects := get_status_effect_component()
+	return float(status_effects.call(&"get_modified_value", STATUS_OUTGOING_DAMAGE, 1.0)) if is_instance_valid(status_effects) else 1.0
+
+
 ## 返回运行时安全的攻击力，负值统一钳制为零以保证战斗公式稳定。
 func get_attack_power() -> float:
 	var status_effects := get_status_effect_component()
-	var modifier_total: float = (
-		float(status_effects.call(&"get_modifier_total", STATUS_ATTACK_POWER))
-		if is_instance_valid(status_effects)
-		else 0.0
-	)
-	return maxf(attack_power + modifier_total, 0.0)
+	return float(status_effects.call(&"get_modified_value", STATUS_ATTACK_POWER, attack_power)) if is_instance_valid(status_effects) else maxf(attack_power, 0.0)
 
 
-## 返回运行时安全的防御力，负值统一钳制为零以保证减伤系数有效。
+## 由状态容器统一汇总固定修正与百分比倍率；防御不低于0，不改写基础配置。
 func get_defense() -> float:
 	var status_effects := get_status_effect_component()
-	var modifier_total: float = (
-		float(status_effects.call(&"get_modifier_total", STATUS_DEFENSE))
-		if is_instance_valid(status_effects)
-		else 0.0
-	)
-	return maxf(defense + modifier_total, 0.0)
+	return float(status_effects.call(&"get_modified_value", STATUS_DEFENSE, defense)) if is_instance_valid(status_effects) else maxf(defense, 0.0)
 
 
 ## 返回本单位作为挑战者时可用于敌方目标切换的安全仇恨倍率；运行时会限制为不低于 1.0，避免低于当前目标即可抢占的异常配置。
@@ -324,3 +343,187 @@ func is_neutral_to(other_value: Variant) -> bool:
 		return false
 	var other := other_value as UnitBase
 	return team_id == 0 or other.team_id == 0
+
+
+## 内置被动位移：只保存一个请求，由Player/AI原物理循环消费，不自行移动或计时。
+## token为本单位递增正身份。通知前提交状态，旧取消/同步回调不会清除新请求。
+signal forced_movement_started(token: int)
+## reason为arrived/elapsed/blocked/replaced/cancelled/source_invalid/owner_invalid/disabled；disabled表示根开关关闭。
+## 终态仅代表本次物理请求结束；阻挡时不保证已到达期望点。
+signal forced_movement_finished(token: int, reason: StringName)
+
+var _forced_next_token: int = 0
+var _forced_active_token: int = 0
+var _forced_source: WeakRef
+var _forced_start := Vector3.ZERO
+var _forced_destination := Vector3.ZERO
+var _forced_duration: float = 0.0
+var _forced_elapsed: float = 0.0
+var _forced_ignore_unit_collisions: bool = false
+var _forced_unit_exceptions: Dictionary[int, WeakRef] = {}
+var _forced_collision_tree: SceneTree
+var _forced_accepting_requests: bool = false
+
+func _enter_tree() -> void:
+	_forced_accepting_requests = true
+
+## 本单位必须在树内且未退出；source必须为在树内存活单位；destination为有限世界坐标，仅XZ生效。
+## duration_seconds为正的战斗秒；返回正token代表接受，0为拒绝且保留旧请求；适用于UnitBase，实际运动由Player/AI已有物理循环消费。
+## ignore_unit_collisions默认false保留通常碰撞；true在本次请求期间仅忽略UnitBase身体，所有终态恢复自身新增的例外。
+func request_forced_movement(source: UnitBase, destination: Vector3, duration_seconds: float, ignore_unit_collisions: bool = false) -> int:
+	var body: UnitBase = self
+	if not forced_movement_enabled or not _forced_accepting_requests or not is_inside_tree() or not _is_forced_unit_live(body) or not _is_forced_unit_live(source) or not destination.is_finite() or not is_finite(duration_seconds) or duration_seconds <= 0.0 or is_queued_for_deletion():
+		return 0
+	var previous := _forced_active_token
+	_forced_next_token += 1
+	var accepted := _forced_next_token
+	_forced_active_token = accepted
+	_forced_source = weakref(source)
+	_forced_start = body.global_position
+	_forced_destination = Vector3(destination.x, _forced_start.y, destination.z)
+	_forced_duration = duration_seconds
+	_forced_elapsed = 0.0
+	_set_forced_unit_collision_exclusion(ignore_unit_collisions)
+	# 新状态先建立；替换通知内再次请求时，新者自然胜出，不在回调后回写旧状态。
+	if previous > 0:
+		forced_movement_finished.emit(previous, &"replaced")
+	if _forced_active_token == accepted:
+		forced_movement_started.emit(accepted)
+	return accepted
+
+## 纯查询：是否有尚未结束的请求，不推进或隐式校验时间。
+func is_forced_movement_active() -> bool:
+	return _forced_active_token > 0
+
+## 返回当前正身份，无请求返回0；调用者回报/取消时必须携带捕获的身份。
+func get_forced_movement_token() -> int:
+	return _forced_active_token
+
+## 每Player/AI物理帧检查来源和目标生命周期；不推进计时，受击锁期间仍应调用。
+func _validate_forced_movement() -> void:
+	if not is_forced_movement_active():
+		return
+	if not _is_forced_unit_live(self):
+		_finish_forced_movement(_forced_active_token, &"owner_invalid")
+	elif _forced_source == null or not _is_forced_unit_live(_forced_source.get_ref() as UnitBase):
+		_finish_forced_movement(_forced_active_token, &"source_invalid")
+
+## delta为本物理帧战斗秒，只在外力分支消费一次；返回下一期望点到实际位置的XZ米数。
+## 不直接改位置，不另乘世界流速；末帧由_report_forced_movement_result结算。
+func _consume_forced_movement_step(delta: float) -> Vector3:
+	if not is_forced_movement_active() or not is_finite(delta) or delta <= 0.0:
+		return Vector3.ZERO
+	var body: UnitBase = self
+	if not _is_forced_unit_live(body):
+		return Vector3.ZERO
+	_forced_elapsed = minf(_forced_elapsed + delta, _forced_duration)
+	var point := _forced_start.lerp(_forced_destination, _forced_elapsed / _forced_duration)
+	var step := point - body.global_position
+	step.y = 0.0
+	return step
+
+## 唯一move_and_slide后回报原token、实际位移米数和水平碰撞；旧身份无效。
+## 被挡立即结束，到期不补瞬移；未抵达用elapsed区分，不伪报arrived。
+func _report_forced_movement_result(token: int, actual_displacement: Vector3, blocked: bool) -> void:
+	if token <= 0 or token != _forced_active_token:
+		return
+	_validate_forced_movement()
+	if token != _forced_active_token:
+		return
+	if not actual_displacement.is_finite() or blocked:
+		_finish_forced_movement(token, &"blocked")
+		return
+	var body: UnitBase = self
+	var remaining := _forced_destination - body.global_position
+	remaining.y = 0.0
+	if remaining.length_squared() <= 0.0001:
+		_finish_forced_movement(token, &"arrived")
+	elif _forced_elapsed >= _forced_duration:
+		_finish_forced_movement(token, &"elapsed")
+
+## 仅取消匹配的正token；重复/旧请求取消不影响当前请求。
+func cancel_forced_movement(token: int) -> void:
+	_finish_forced_movement(token, &"cancelled")
+
+## 仅收束匹配的当前token；reason为稳定终态分类，先清状态/新增例外/水平速度再通知，允许回调安全重入。
+func _finish_forced_movement(token: int, reason: StringName) -> void:
+	if token <= 0 or token != _forced_active_token:
+		return
+	_forced_active_token = 0
+	_forced_source = null
+	_forced_elapsed = 0.0
+	_forced_duration = 0.0
+	# 先恢复本请求临时忽略的单位碰撞，再发终态通知；回调重入可建立自己的新例外。
+	_set_forced_unit_collision_exclusion(false)
+	var body: UnitBase = self
+	if is_instance_valid(body):
+		body.velocity.x = 0.0
+		body.velocity.z = 0.0
+	forced_movement_finished.emit(token, reason)
+
+# 仅操作本请求新添加的按身体例外，不改collision_layer/mask，也不关闭Collider或技能命中Area。
+# 启动时扫描一次；之后只监听新增节点，不为每个被拉单位逐物理帧扫描整棵场景。
+func _set_forced_unit_collision_exclusion(enabled: bool) -> void:
+	if enabled == _forced_ignore_unit_collisions:
+		return
+	_forced_ignore_unit_collisions = enabled
+	if enabled:
+		_forced_collision_tree = get_tree()
+		if not _forced_collision_tree.node_added.is_connected(_on_forced_collision_node_added):
+			_forced_collision_tree.node_added.connect(_on_forced_collision_node_added)
+		if not _forced_collision_tree.node_removed.is_connected(_on_forced_collision_node_removed):
+			_forced_collision_tree.node_removed.connect(_on_forced_collision_node_removed)
+		_collect_forced_unit_collision_exceptions(_forced_collision_tree.root)
+		return
+	if is_instance_valid(_forced_collision_tree) and _forced_collision_tree.node_added.is_connected(_on_forced_collision_node_added):
+		_forced_collision_tree.node_added.disconnect(_on_forced_collision_node_added)
+	if is_instance_valid(_forced_collision_tree) and _forced_collision_tree.node_removed.is_connected(_on_forced_collision_node_removed):
+		_forced_collision_tree.node_removed.disconnect(_on_forced_collision_node_removed)
+	_forced_collision_tree = null
+	var body: UnitBase = self
+	if is_instance_valid(body):
+		for reference: WeakRef in _forced_unit_exceptions.values():
+			var other := reference.get_ref() as PhysicsBody3D
+			if is_instance_valid(other):
+				body.remove_collision_exception_with(other)
+	_forced_unit_exceptions.clear()
+
+func _collect_forced_unit_collision_exceptions(node: Node) -> void:
+	_on_forced_collision_node_added(node)
+	for child: Node in node.get_children():
+		_collect_forced_unit_collision_exceptions(child)
+
+func _on_forced_collision_node_added(node: Node) -> void:
+	if not _forced_ignore_unit_collisions or not node is UnitBase:
+		return
+	var body: UnitBase = self
+	var other := node as UnitBase
+	if not is_instance_valid(body) or other == body or other.is_queued_for_deletion() or not other.is_inside_tree() or body.get_world_3d() != other.get_world_3d():
+		return
+	var id := other.get_instance_id()
+	if _forced_unit_exceptions.has(id) or body.get_collision_exceptions().has(other):
+		return
+	body.add_collision_exception_with(other)
+	_forced_unit_exceptions[id] = weakref(other)
+
+# UnitBase离树时其物理RID尚存，立即撤销自己添加的例外；不能等弱引用失效后才处理，
+# 否则Jolt的例外列表会保留已销毁RID，后续查询get_collision_exceptions将报空body。
+func _on_forced_collision_node_removed(node: Node) -> void:
+	var id := node.get_instance_id()
+	if not _forced_unit_exceptions.has(id):
+		return
+	_forced_unit_exceptions.erase(id)
+	var body: UnitBase = self
+	if is_instance_valid(body) and node is PhysicsBody3D:
+		body.remove_collision_exception_with(node as PhysicsBody3D)
+
+func _is_forced_unit_live(unit: UnitBase) -> bool:
+	return is_instance_valid(unit) and unit.is_inside_tree() and not unit.is_queued_for_deletion() and not unit.is_dead()
+
+func _exit_tree() -> void:
+	# 在终态通知前关闭入口：父单位可能仍在树内，但离树回调不得重建碰撞例外。
+	_forced_accepting_requests = false
+	_finish_forced_movement(_forced_active_token, &"owner_invalid")
+
+func _on_forced_movement_owner_died(_source_unit: Node) -> void:
+	_finish_forced_movement(_forced_active_token, &"owner_invalid")

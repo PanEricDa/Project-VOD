@@ -1,8 +1,12 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://g8brcn3pbwyw"]
 
-[ext_resource type="Script" path="res://GameFlow/UI/RunResultOverlay.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://c640v8dpdw2rq" path="res://GameFlow/UI/RunResultOverlay.gd" id="1_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 42.0
+content_margin_top = 30.0
+content_margin_right = 42.0
+content_margin_bottom = 30.0
 bg_color = Color(0.06, 0.07, 0.09, 0.94)
 border_width_left = 2
 border_width_top = 2
@@ -13,25 +17,20 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
-content_margin_left = 42.0
-content_margin_top = 30.0
-content_margin_right = 42.0
-content_margin_bottom = 30.0
 
-[node name="RunResultOverlay" type="CanvasLayer"]
+[node name="RunResultOverlay" type="CanvasLayer" unique_id=1698841581]
 layer = 100
 script = ExtResource("1_script")
 
-[node name="Backdrop" type="Control" parent="."]
+[node name="Backdrop" type="Control" parent="." unique_id=355854985]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 
-[node name="Dim" type="ColorRect" parent="Backdrop"]
+[node name="Dim" type="ColorRect" parent="Backdrop" unique_id=358494070]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -41,7 +40,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0.5)
 
-[node name="CenterContainer" type="CenterContainer" parent="Backdrop"]
+[node name="CenterContainer" type="CenterContainer" parent="Backdrop" unique_id=1302070972]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -50,30 +49,49 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Panel" type="PanelContainer" parent="Backdrop/CenterContainer"]
+[node name="Panel" type="PanelContainer" parent="Backdrop/CenterContainer" unique_id=528575423]
 custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="Content" type="VBoxContainer" parent="Backdrop/CenterContainer/Panel"]
+[node name="Content" type="VBoxContainer" parent="Backdrop/CenterContainer/Panel" unique_id=1762931604]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Title" type="Label" parent="Backdrop/CenterContainer/Panel/Content"]
+[node name="Title" type="Label" parent="Backdrop/CenterContainer/Panel/Content" unique_id=1729437917]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 34
 text = "战败"
 horizontal_alignment = 1
 
-[node name="Message" type="Label" parent="Backdrop/CenterContainer/Panel/Content"]
+[node name="Message" type="Label" parent="Backdrop/CenterContainer/Panel/Content" unique_id=944341560]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.87, 0.91, 1)
 theme_override_font_sizes/font_size = 18
 text = "队伍未能完成本次遭遇。"
 horizontal_alignment = 1
 
-[node name="RestartButton" type="Button" parent="Backdrop/CenterContainer/Panel/Content"]
+[node name="Timing" type="VBoxContainer" parent="Backdrop/CenterContainer/Panel/Content" unique_id=2043744731]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="RunTime" type="Label" parent="Backdrop/CenterContainer/Panel/Content/Timing" unique_id=1479972695]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "本轮时间：00:00:00"
+horizontal_alignment = 1
+
+[node name="BestTime" type="Label" parent="Backdrop/CenterContainer/Panel/Content/Timing" unique_id=587952712]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.79, 0.42, 1)
+theme_override_font_sizes/font_size = 22
+text = "最佳通关：--:--:--"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="Backdrop/CenterContainer/Panel/Content" unique_id=1627993899]
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20

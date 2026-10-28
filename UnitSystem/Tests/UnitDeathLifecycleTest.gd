@@ -116,8 +116,14 @@ func _test_player_death_lifecycle() -> void:
 	if skill != null:
 		_expect(
 			skill_host.request_skill(skill.skill_id, target),
-			"living Hero starts a skill request"
+			"living Hero skill preempts ordinary attack"
 		)
+		_expect(controller.is_external_action_in_progress(), "preempting skill owns the player action")
+		# 本节仍验证普攻/攻击位移的死亡清理；技能死亡与续段清理由专门用例覆盖。
+		skill_host.cancel_active_skill(&"test_restore_attack_fixture")
+		controller.request_attack()
+		hero.request_attack_motion(Vector3.FORWARD, 1.0, 3.0)
+		_expect(controller.is_attacking() and hero.is_attack_motion_active(), "restore actual attack before death cleanup")
 
 	hero.velocity = Vector3(2.0, 0.0, -3.0)
 	var targetable_configuration: bool = hero.targetable
@@ -199,6 +205,14 @@ func _test_player_death_lifecycle() -> void:
 	controller.request_attack()
 	_expect(controller.is_attacking(), "revived Hero can start a new attack")
 	controller.cancel_combo()
+	hero.cancel_attack_motion()
+	# 正式Hero现在共享唯一动作执行者；另测真实技能死亡，不能用忙碌拒绝代替活动技能清理。
+	if skill != null:
+		skill.reset_skill()
+		_expect(skill_host.request_skill(skill.skill_id,target),"idle revived Hero starts actual skill through shared action adapter")
+		_expect(skill_host.get_active_skill()==skill and controller.is_action_in_progress(),"skill death fixture has a real active skill/action")
+		hero.apply_damage(hero.maximum_health)
+		_expect(hero.is_dead() and skill_host.get_active_skill()==null and not controller.is_action_in_progress(),"Hero death clears its real skill and shared action")
 
 
 func _test_ai_death_lifecycle() -> void:

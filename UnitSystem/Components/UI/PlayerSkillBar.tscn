@@ -1,0 +1,184 @@
+[gd_scene format=3 uid="uid://dhgiqgsr4lo5u"]
+
+[ext_resource type="Script" uid="uid://vg352oy1fk02" path="res://UnitSystem/Components/UI/PlayerSkillBar.gd" id="1_amcd1"]
+[ext_resource type="Theme" uid="uid://bjglve3uoehgt" path="res://UnitSystem/Components/UI/Themes/SkillInputFeedbackTheme.tres" id="2_2edib"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1tto5"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.035, 0.055, 0.08, 0.92)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8a57r"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.08, 0.12, 0.17, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fu2of"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sytsg"]
+bg_color = Color(0, 0, 0, 0.3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dd70c"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.08, 0.12, 0.17, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_npm76"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j7pxf"]
+bg_color = Color(0, 0, 0, 0.3)
+
+[node name="PlayerSkillBar" type="CanvasLayer" unique_id=1572766143]
+layer = 2
+script = ExtResource("1_amcd1")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=590993390]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -300.0
+offset_right = 240.0
+offset_bottom = -184.0
+mouse_filter = 2
+theme = ExtResource("2_2edib")
+theme_override_styles/panel = SubResource("StyleBoxFlat_1tto5")
+
+[node name="Cards" type="HBoxContainer" parent="Panel" unique_id=1635194956]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Card0" type="PanelContainer" parent="Panel/Cards" unique_id=538749834]
+custom_minimum_size = Vector2(104, 90)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_8a57r")
+
+[node name="Feedback" type="Panel" parent="Panel/Cards/Card0" unique_id=484759521]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Content" type="VBoxContainer" parent="Panel/Cards/Card0" unique_id=1113965132]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Key" type="Label" parent="Panel/Cards/Card0/Content" unique_id=1005416527]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.87, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Q"
+horizontal_alignment = 1
+
+[node name="Placeholder" type="Label" parent="Panel/Cards/Card0/Content" unique_id=2007017948]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "—"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Panel/Cards/Card0/Content" unique_id=235788016]
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="Panel/Cards/Card0/Content" unique_id=977878575]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "空槽"
+horizontal_alignment = 1
+
+[node name="State" type="Label" parent="Panel/Cards/Card0/Content" unique_id=2099881138]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="Cooldown" type="ProgressBar" parent="Panel/Cards/Card0" unique_id=1529946941]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxEmpty_fu2of")
+theme_override_styles/fill = SubResource("StyleBoxFlat_sytsg")
+max_value = 1.0
+step = 0.001
+fill_mode = 3
+show_percentage = false
+
+[node name="Card1" type="PanelContainer" parent="Panel/Cards" unique_id=801365184]
+custom_minimum_size = Vector2(104, 90)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_dd70c")
+
+[node name="Feedback" type="Panel" parent="Panel/Cards/Card1" unique_id=1626546012]
+visible = false
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Content" type="VBoxContainer" parent="Panel/Cards/Card1" unique_id=549847686]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Key" type="Label" parent="Panel/Cards/Card1/Content" unique_id=804920339]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.87, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "E"
+horizontal_alignment = 1
+
+[node name="Placeholder" type="Label" parent="Panel/Cards/Card1/Content" unique_id=1463299662]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "—"
+horizontal_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="Panel/Cards/Card1/Content" unique_id=1798927563]
+visible = false
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Name" type="Label" parent="Panel/Cards/Card1/Content" unique_id=1311921547]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "空槽"
+horizontal_alignment = 1
+
+[node name="State" type="Label" parent="Panel/Cards/Card1/Content" unique_id=706368220]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="Cooldown" type="ProgressBar" parent="Panel/Cards/Card1" unique_id=1210121567]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxEmpty_npm76")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j7pxf")
+max_value = 1.0
+step = 0.001
+fill_mode = 3
+show_percentage = false

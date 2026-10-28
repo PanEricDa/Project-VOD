@@ -67,6 +67,12 @@ func _run() -> void:
 		_expect(combo.cast_effect_anchor == SkillBase.PresentationAnchor.CASTER_FEET and is_equal_approx(combo.cast_effect_start_ratio,0.5),"formal flash uses caster feet and half-cast timing "+names[index])
 		if index == 2:
 			_expect(host.get_finisher_skill() != null and host.get_finisher_skill().cinematic_profile.cinematic_mode == 1,"Caster equips accepted B finisher")
+		elif index == 0:
+			_expect(host.get_finisher_skill() != null and host.get_finisher_skill().skill_id == &"guardian_armor_break_finisher","Guardian equips self-centered armor break finisher")
+		elif index == 3:
+			_expect(host.get_finisher_skill() != null and host.get_finisher_skill().skill_id == &"archer_power_shot_finisher","Archer equips single-target power shot finisher")
+		elif names[index] == "Priest":
+			_expect(host.get_finisher_skill() != null and host.get_finisher_skill().skill_id == &"holy_blessing_finisher","Priest equips friendly damage blessing finisher")
 		else:
 			_expect(host.get_finisher_skill() == null,"no invented finisher for "+names[index])
 	_expect(evaluation.get_round_status().bound and evaluation.peek_current_round() == 0,"real round provider bound without artificial round")

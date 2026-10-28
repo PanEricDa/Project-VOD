@@ -118,7 +118,7 @@ func _on_arc_failed(context: SkillContext, reason: StringName, session: ArcProje
 
 
 ## 按配置的目标收集模式执行瞬发交付：逐目标、逐 Effect 应用，任一 Effect 失败即
-## 沿用既有 fail-fast 契约终止；每个目标的全部 Effect 成功后才计入 affected_targets 一次。
+## 沿用既有 fail-fast 契约终止；不适用项单独跳过，至少一个Effect成功才计入affected_targets一次。
 
 
 func _execute_tracking_projectile(config: TrackingProjectileDeliveryConfig, context: SkillContext, launch_transform: Transform3D, effects: Array[SkillEffectBase]) -> bool:
@@ -150,33 +150,62 @@ func _execute_instant_target(
 	var effect_targets := _collect_instant_effect_targets(config, context)
 	if effect_targets.is_empty() or effects.is_empty() or effects.any(func(effect): return not is_instance_valid(effect)):
 		return false
-	var reference_target: Node3D = effect_targets[0]
-	_begin_delivery(
-		context,
-		launch_transform.origin,
-		reference_target.global_position
-	)
-	var result := _make_success_result(reference_target.global_position)
+	# 通知可能同步删除首目标，先冻结位置；每次Effect调用前重新检查对象生命周期。
+	var reference_position: Vector3 = effect_targets[0].global_position
+	_arm_delivery(context, launch_transform.origin, reference_position)
+	var result := _make_success_result(reference_position)
+	# 范围收集沿用存活要求；SINGLE保留SkillBase的尸体/复活类技能配置。
+	var require_alive: bool = config.target_collection_mode != InstantTargetDeliveryConfig.TargetCollectionMode.SINGLE or context.require_alive_on_delivery
+	# 适用性为无副作用查询：先确认至少一项可应用，再宣布接受；实际执行时仍逐项复查。
+	var any_applicable := false
 	for target: Node3D in effect_targets:
+		if not _is_instant_target_valid(target, require_alive):
+			continue
 		result.current_hit = _make_hit_outcome(target, target.global_position)
 		for effect: SkillEffectBase in effects:
-			if not is_instance_valid(effect) or not effect.apply(
-				context,
-				result,
-				target
-			):
+			if effect.can_apply_to(context, result, target):
+				any_applicable = true
+				break
+		if any_applicable: break
+	if not any_applicable:
+		_clear_runtime_state()
+		return false
+	delivery_started.emit(context)
+	for target: Node3D in effect_targets:
+		if not _is_instant_target_valid(target, require_alive):
+			continue
+		result.current_hit = _make_hit_outcome(target, target.global_position)
+		var applied := false
+		for effect: SkillEffectBase in effects:
+			if not _is_instant_target_valid(target, require_alive):
+				break
+			if not is_instance_valid(effect):
 				_finish_failure(&"instant_effect_failed")
 				return true
-		result.affected_targets.append(target)
+			if not effect.can_apply_to(context, result, target):
+				continue
+			if not _is_instant_target_valid(target, require_alive):
+				break
+			if not effect.apply(context, result, target):
+				_finish_failure(&"instant_effect_failed")
+				return true
+			applied = true
+		if applied and is_instance_valid(target):
+			result.affected_targets.append(target)
 	var finished_context: SkillContext = _current_context
 	_clear_runtime_state()
 	delivery_finished.emit(finished_context, result)
 	return true
 
 
+# target允许已失效引用，先检查实例；require_alive沿本次交付策略，不覆盖尸体技能的合法配置。
+func _is_instant_target_valid(target: Variant, require_alive: bool) -> bool:
+	return is_instance_valid(target) and target.is_inside_tree() and not target.is_queued_for_deletion() and (not require_alive or not target.has_method(&"is_dead") or not target.call(&"is_dead"))
+
+
 ## 收集一次瞬发交付的效果目标集合。
-## SINGLE 只返回有效已解析目标；CASTER_RADIUS 以施法者为圆心，从 context.candidate_targets
-## 的请求快照（并在触发目标被意外遗漏时合并它）筛选关系、存活、可选取与水平半径内的单位，
+## SINGLE只返回有效已解析目标；范围模式根据Candidate Source使用请求快照或释放时场景单位；TARGET_RADIUS只以技能目标位置为中心。
+## 然后以释放位置加朝向偏移为圆心筛选关系、存活、可选取与水平半径内的单位，
 ## 按实例 ID 去重；不修改 context.candidate_targets 原数组。
 
 func _collect_instant_effect_targets(
@@ -193,8 +222,29 @@ func _collect_instant_effect_targets(
 		return collected
 
 	var caster := context.caster
+	var center: Vector3 = context.release_caster_position
+	if not center.is_finite():
+		center = caster.global_position
+	if config.target_collection_mode == InstantTargetDeliveryConfig.TargetCollectionMode.TARGET_RADIUS:
+		# SkillBase在release_action冻结target_position；直接交付工具未提供快照时仅回退合法目标当前位置。
+		if context.target_position.is_finite():
+			center = context.target_position
+		elif is_instance_valid(context.resolved_target) and context.resolved_target.is_inside_tree():
+			center = context.resolved_target.global_position
+		else:
+			return collected
+	elif config.center_forward_offset_m > 0.0:
+		var forward: Vector3 = context.release_facing_direction
+		if not forward.is_finite() or forward.length_squared() < 0.000001:
+			forward = (caster as UnitBase).get_facing_direction() if caster is UnitBase else -caster.global_basis.z
+		forward.y = 0.0
+		if forward.length_squared() > 0.000001:
+			center += forward.normalized() * config.center_forward_offset_m
 	var candidates: Array[Node3D] = []
-	candidates.append_array(context.candidate_targets)
+	if config.candidate_source == InstantTargetDeliveryConfig.CandidateSource.WORLD_SCOPE:
+		_collect_instant_scope_units(context.delivery_parent,candidates)
+	else:
+		candidates.append_array(context.candidate_targets)
 	if (
 		is_instance_valid(context.resolved_target)
 		and not candidates.has(context.resolved_target)
@@ -213,7 +263,7 @@ func _collect_instant_effect_targets(
 		):
 			continue
 		var horizontal_offset: Vector3 = (
-			candidate.global_position - caster.global_position
+			candidate.global_position - center
 		)
 		horizontal_offset.y = 0.0
 		if horizontal_offset.length() > config.effect_radius + 0.05:
@@ -332,3 +382,14 @@ func _exit_tree() -> void:
 	_arc_sessions.clear()
 	_tracking_sessions.clear()
 	_clear_runtime_state()
+
+
+
+# 只在真实释放时收集当前技能世界下单位，不修改感知半径或保存跨帧候选缓存。
+func _collect_instant_scope_units(node: Node, units: Array[Node3D]) -> void:
+	if not is_instance_valid(node) or node.is_queued_for_deletion(): return
+	if node is UnitBase:
+		units.append(node as Node3D)
+		return
+	for child: Node in node.get_children():
+		_collect_instant_scope_units(child,units)

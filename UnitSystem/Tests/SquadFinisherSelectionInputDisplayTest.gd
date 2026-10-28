@@ -16,6 +16,9 @@ func _run() -> void:
 		return
 	await _test_fixed_cross_and_readonly_display()
 	await _test_each_slot_input()
+	await _test_release_feedback_and_handoff()
+	await _test_hold_timeout_and_pause()
+	await _test_pause_on_confirmation_boundary()
 	await _test_held_repeat_multikey_no_leak()
 	await _test_input_map_rebinding()
 	await _test_closing_event_owned_and_unbound_release()
@@ -87,9 +90,12 @@ func _test_each_slot_input() -> void:
 		F.qualify(f)
 		f.commander.command_accepted.connect(func(request): accepted.append(request))
 		_event(index,true)
-		_expect(chosen.size() == 1 and chosen[0].slot_index == index,"physical intent routes exact slot "+str(index))
+		_expect(chosen.is_empty() and f.selection.get_selection_status().get("pressed_slot",-1) == index,"key down only arms exact slot "+str(index))
 		_expect(accepted.is_empty(),"choice never becomes chain")
 		_event(index,false)
+		_expect(chosen.is_empty() and f.selection.get_selection_status().phase == SquadFinisherSelectionController.Phase.CONFIRMED,"key up confirms visual feedback before execution")
+		await _wait(0.14)
+		_expect(chosen.size() == 1 and chosen[0].slot_index == index,"release eventually dispatches exact slot once "+str(index))
 		await _wait(0.26)
 		_expect(is_equal_approx(Engine.time_scale,1),"close restores after input")
 		f.world.free()
@@ -111,10 +117,12 @@ func _test_held_repeat_multikey_no_leak() -> void:
 	_event(0,false)
 	_event(0,true)
 	_event(1,true)
-	_expect(chosen.size() == 1,"same frame multikey one choice")
+	_expect(chosen.is_empty(),"multiple downs do not execute before release")
+	_event(0,false)
 	await _wait(0.27)
-	_event(0,true)
-	_expect(accepted.is_empty(),"held tail after close cannot leak to chain")
+	_expect(chosen.size() == 1 and chosen[0].slot_index == 0,"first valid held option confirms only once")
+	_event(1,true)
+	_expect(accepted.is_empty(),"other held tail after close cannot leak to chain")
 	_event(0,false)
 	_event(1,false)
 	f.animation.finish_action()
@@ -147,11 +155,13 @@ func _test_input_map_rebinding() -> void:
 	event.echo = false
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
-	_expect(chosen.size() == 1,"InputMap remap works without hardcoded1")
+	_expect(chosen.is_empty(),"remapped key down does not execute")
 	event = event.duplicate()
 	event.pressed = false
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
+	await _wait(0.14)
+	_expect(chosen.size() == 1,"InputMap remapped key release confirms without hardcoded1")
 	Input.action_release(&"squad_chain_1")
 	InputMap.action_erase_events(&"squad_chain_1")
 	for original: InputEvent in saved: InputMap.action_add_event(&"squad_chain_1",original)
@@ -191,6 +201,92 @@ func _test_closing_event_owned_and_unbound_release() -> void:
 	_event(0,true)
 	_expect(resumed.size() == 1,"release while unbound does not swallow next fresh press")
 	_event(0,false)
+	f.world.free()
+	await process_frame
+
+func _test_release_feedback_and_handoff() -> void:
+	var f := F.make_selection_fixture(root)
+	await physics_frame
+	var display := load(DISPLAY).instantiate() as SquadFinisherSelectionDisplay
+	display.selection_source = f.selection
+	root.add_child(display)
+	var chosen: Array = []
+	f.selection.finisher_selected.connect(func(result):
+		chosen.append(result)
+		f.selection.complete_execution_handoff())
+	F.qualify(f)
+	_event(0,true)
+	var card := display.get_node("Root/Cross/Slot1") as Control
+	_expect(chosen.is_empty() and card.theme_type_variation == &"FinisherSelected","key down highlights without starting real execution")
+	_expect(card.scale.x > 1.0 and card.scale.x <= 1.1 and card.scale.x == card.scale.y,"pressed option slightly enlarges uniformly")
+	var style := card.get_theme_stylebox("panel") as StyleBoxFlat
+	_expect(style.border_color.g > style.border_color.r and style.border_width_left == 6,"pressed option has clear green border")
+	await _wait(0.60)
+	_expect(chosen.is_empty() and card.theme_type_variation == &"FinisherSelected","held key never auto-confirms beyond former hold threshold")
+	_expect(card.get_node_or_null("VBox/HoldProgress") == null,"obsolete long-hold progress is removed")
+	_event(0,false)
+	_expect(chosen.is_empty() and card.theme_type_variation == &"FinisherConfirmed" and display.get_node("Root").visible,"release exposes full green confirmation before synchronous handoff")
+	style = card.get_theme_stylebox("panel") as StyleBoxFlat
+	_expect(style.bg_color.g > style.bg_color.r and style.bg_color.a >= 0.6,"release fills the entire selected option green")
+	await _wait(0.06)
+	_expect(chosen.is_empty() and display.get_node("Root").visible,"confirmation is not eaten by immediate execution handoff")
+	await _wait(0.09)
+	_expect(chosen.size() == 1 and f.selection.get_selection_status().phase == 0,"after existing confirmation hold dispatches once and closes")
+	_event(0,false)
+	display.free()
+	f.world.free()
+	await process_frame
+
+func _test_hold_timeout_and_pause() -> void:
+	var f := F.make_selection_fixture(root,0.15)
+	await physics_frame
+	var chosen: Array = []
+	f.selection.finisher_selected.connect(func(result): chosen.append(result))
+	F.qualify(f)
+	_event(0,true)
+	await _wait(0.28)
+	_event(0,false)
+	_expect(chosen.is_empty() and f.selection.get_selection_status().phase == 0,"holding cannot extend deadline or cast after timeout")
+	f.world.free()
+	await process_frame
+	f = F.make_selection_fixture(root)
+	await physics_frame
+	chosen = []
+	f.selection.finisher_selected.connect(func(result): chosen.append(result))
+	F.qualify(f)
+	_event(0,true)
+	var token: int = f.pause.acquire_pause(f.world,&"test_menu")
+	_event(0,false)
+	f.pause.release_pause(token)
+	await _wait(0.14)
+	_expect(chosen.is_empty() and f.selection.get_selection_status().get("pressed_slot",-1) == -1,"release during pause cancels press instead of casting on resume")
+	_event(0,true)
+	_event(0,false)
+	f.selection.cancel_selection(&"cancel_during_confirmation")
+	await _wait(0.15)
+	_expect(chosen.is_empty(),"cancelled confirmation never dispatches late")
+	f.world.free()
+	await process_frame
+
+func _test_pause_on_confirmation_boundary() -> void:
+	var f := F.make_selection_fixture(root)
+	await physics_frame
+	var chosen: Array = []
+	f.selection.finisher_selected.connect(func(result): chosen.append(result))
+	F.qualify(f)
+	_event(0,true)
+	_event(0,false)
+	f.selection.set_process(false)
+	f.selection.set("_phase_elapsed",0.11)
+	f.selection.set("_last_usec",Time.get_ticks_usec()-15000)
+	var token: int = f.pause.acquire_pause(f.world,&"boundary_menu")
+	_expect(chosen.is_empty() and f.selection.get_selection_status().phase == SquadFinisherSelectionController.Phase.CONFIRMED,"pause boundary cannot dispatch while presentation is disabled")
+	await _wait(0.14)
+	_expect(chosen.is_empty(),"release-confirmed finisher never executes inside external pause")
+	f.pause.release_pause(token)
+	f.selection.set_process(true)
+	await _wait(0.04)
+	_expect(chosen.size() == 1,"paused release confirmation resumes exactly once")
 	f.world.free()
 	await process_frame
 

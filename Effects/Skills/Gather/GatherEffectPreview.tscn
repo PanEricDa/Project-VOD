@@ -1,0 +1,65 @@
+[gd_scene format=3 uid="uid://dm8mn3oek8mda"]
+
+[ext_resource type="Script" uid="uid://vfoyw7crb5io" path="res://Effects/Skills/Gather/GatherEffectPreview.gd" id="1_u2kdn"]
+[ext_resource type="PackedScene" uid="uid://bnltv4w1d4jfk" path="res://UnitSystem/Visuals/Player/HeroVisual.tscn" id="2_rf6co"]
+
+[sub_resource type="Environment" id="Environment_4lui1"]
+background_mode = 1
+background_color = Color(0.025, 0.04, 0.065, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.7, 0.85, 1)
+ambient_light_energy = 0.65
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2tn5s"]
+albedo_color = Color(0.055, 0.08, 0.11, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_pyamf"]
+size = Vector2(24, 24)
+
+[node name="GatherEffectPreview" type="Node3D" unique_id=847525744]
+script = ExtResource("1_u2kdn")
+
+[node name="Actor" type="Node3D" parent="." unique_id=675986282]
+
+[node name="HeroVisual" type="Node3D" parent="Actor" unique_id=1266180818 instance=ExtResource("2_rf6co")]
+
+[node name="Focus" type="Node3D" parent="Actor" unique_id=874829376]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1, -0.35)
+
+[node name="Transient" type="Node3D" parent="." unique_id=1448898126]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=484078474]
+transform = Transform3D(0.83205026, -0.29699734, 0.46849212, 0, 0.8445862, 0.5354196, -0.5547002, -0.445496, 0.70273817, 7, 8, 8)
+current = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=580087977]
+environment = SubResource("Environment_4lui1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1029436635]
+transform = Transform3D(0.90630776, 0.34618863, -0.24240388, 0, 0.57357645, 0.81915206, 0.42261827, -0.74240386, 0.5198368, 0, 0, 0)
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=962572257]
+material_override = SubResource("StandardMaterial3D_2tn5s")
+mesh = SubResource("PlaneMesh_pyamf")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=2075250506]
+
+[node name="Panel" type="PanelContainer" parent="UI" unique_id=346520080]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 16.0
+offset_bottom = 16.0
+
+[node name="VBox" type="VBoxContainer" parent="UI/Panel" unique_id=633586783]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="UI/Panel/VBox" unique_id=1320037174]
+layout_mode = 2
+text = "GATHER · Wind Convergence"
+
+[node name="Status" type="Label" parent="UI/Panel/VBox" unique_id=1082763134]
+layout_mode = 2
+
+[node name="Replay" type="Button" parent="UI/Panel/VBox" unique_id=1775679183]
+layout_mode = 2
+text = "Replay"

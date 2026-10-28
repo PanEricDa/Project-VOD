@@ -5,6 +5,8 @@ extends CanvasLayer
 ## 本关卡已有连携评价源，默认空则隐藏；队伍、世界与暂停状态均沿用此源，不重复配置。
 @export var round_source: SquadChainRoundController
 
+# 结算后保留2个真实秒；沿用本UI既有暂停/演出挂起规则，不受战斗慢放倍率拉长。
+const SUMMARY_HOLD_SECONDS: float = 2.0
 const PULSE_GROW_SECONDS: float = 0.12
 const PULSE_SETTLE_SECONDS: float = 0.10
 const READY_COLOR := Color(1.0, 0.78, 0.28, 1.0)
@@ -12,6 +14,7 @@ var _bound_round: WeakRef
 var _signature: Array = []
 var _snapshot: Dictionary = {}
 var _summary: Dictionary = {}
+var _summary_remaining: float = 0.0
 var _shown_round_id: int = 0
 var _shown_hits: int = 0
 var _pulse_elapsed: float = PULSE_GROW_SECONDS+PULSE_SETTLE_SECONDS
@@ -34,6 +37,9 @@ func _process(_delta: float) -> void:
 	var source := evaluator.command_source if evaluator != null else null
 	if get_tree().paused or (is_instance_valid(source) and source.is_feedback_suspended()): return
 	_advance_pulse(elapsed)
+	if _summary_remaining > 0.0:
+		_summary_remaining = maxf(_summary_remaining-elapsed,0.0)
+		if _summary_remaining == 0.0: _render()
 
 func _refresh_binding() -> void:
 	var candidate := round_source if is_instance_valid(round_source) and round_source.is_inside_tree() else null
@@ -52,11 +58,15 @@ func _refresh_binding() -> void:
 
 func _on_round_state(snapshot: Dictionary) -> void:
 	_snapshot = snapshot.duplicate(true)
+	if _snapshot.get("phase",0) == SquadChainRoundController.Phase.ACTIVE:
+		_summary_remaining = 0.0
 	_summary = snapshot.get("last_result",{}).duplicate(true)
 	_render()
 
 func _on_round_finished(result: Dictionary) -> void:
 	_summary = result.duplicate(true)
+	_summary_remaining = SUMMARY_HOLD_SECONDS
+	_last_usec = Time.get_ticks_usec()
 	# 结算信号在IDLE状态发布前发出；立即清除旧ACTIVE显示，不延长业务窗口。
 	var evaluator := _evaluator()
 	_snapshot = evaluator.get_round_status() if evaluator != null else {}
@@ -67,7 +77,7 @@ func _render() -> void:
 	if panel == null: return
 	var active: bool = _snapshot.get("phase",0) == SquadChainRoundController.Phase.ACTIVE
 	var shown: Dictionary = _snapshot if active else _summary
-	var valid: bool = _evaluator() != null and _snapshot.get("bound",false) and not shown.is_empty()
+	var valid: bool = _evaluator() != null and _snapshot.get("bound",false) and not shown.is_empty() and (active or _summary_remaining > 0.0)
 	panel.visible = valid
 	if not valid: return
 	var number := panel.get_node("VBox/ComboRow/Number") as Label
@@ -119,6 +129,7 @@ func _detach() -> void:
 	_signature.clear()
 	_snapshot.clear()
 	_summary.clear()
+	_summary_remaining = 0.0
 	_shown_round_id = 0
 	_shown_hits = 0
 	_pulse_elapsed = PULSE_GROW_SECONDS+PULSE_SETTLE_SECONDS

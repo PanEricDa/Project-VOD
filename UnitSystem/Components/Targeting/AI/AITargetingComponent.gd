@@ -298,6 +298,28 @@ func has_locked_target() -> bool:
 	return is_instance_valid(_locked_target)
 
 
+## 一次性采用外部指定的战斗目标；target 须满足当前策略、保留距离及存活/可选取要求。
+## 成功时解除旧保护持有并发出正常锁敌通知，不建立新持有；随后仍受原索敌/保护规则管理。
+## 未配置、持有者死亡、感知关闭/暂停或目标非法时返回 false，保留原目标与持有状态。
+func adopt_target(target: UnitBase) -> bool:
+	if (
+		not _configured
+		or not is_instance_valid(_owner_unit)
+		or _owner_unit.is_dead()
+		or not detection_enabled
+		or is_detection_suspended()
+		or selection_policy == null
+		or not is_instance_valid(target)
+		or target.is_dead()
+		or not target.is_targetable()
+		or not selection_policy.is_candidate_valid(_owner_unit, target, _retention_radius)
+	):
+		return false
+	_hold_active = false
+	_set_locked_target(target)
+	return true
+
+
 ## 行为层锁定保护目标：设置当前锁定并暂停重新选目标，直到 release_target_hold()。
 func hold_target(target: UnitBase) -> bool:
 	if (

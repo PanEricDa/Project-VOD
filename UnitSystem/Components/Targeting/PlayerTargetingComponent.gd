@@ -3,7 +3,7 @@ extends Node3D
 
 ## 玩家主动索敌与锁敌的可拆装组件。
 ##
-## 组件只负责读取锁定 InputMap、维护锁定目标、执行目标合法性检查并输出水平朝向。
+## 组件只读取锁定 InputMap 与可选普攻命中事实，维护锁定目标、执行合法性检查并输出水平朝向。
 ## 它同时驱动两个互相独立的显示层：玩家脚下的 Debug 范围圆环（开发工具，正式配置默认
 ## 关闭，仅可视化最大锁定距离）与目标脚下的正式锁定特效 TargetLockIndicator（单实例
 ## 三状态表现，只呈现锁定结果，不参与任何锁定判定）。
@@ -22,6 +22,8 @@ signal locked_target_changed(target: UnitBase)
 ## 锁定可以维持的最大三维世界距离；目标超出该距离后会自动解除。
 @export_range(0.5, 50.0, 0.1, "or_greater")
 var maximum_lock_distance: float = 5.0
+## 开启后，无有效锁定时以玩家普攻首次命中的合法存活敌人为目标；默认关闭。保留手动锁定，受统一输入许可、阵营与锁定距离约束；不监听技能或AI伤害。
+@export var auto_lock_on_hit_enabled: bool = false
 ## 鼠标摄像机射线参与检测的物理层。默认同时包含地面层和敌人层。
 @export_flags_3d_physics var selection_collision_mask: int = 5
 ## 鼠标摄像机射线的最大长度；该值不改变实际允许锁定的距离。
@@ -60,6 +62,8 @@ var formal_indicator_height: float = 0.03
 	get_node_or_null(^"TargetLockRangeIndicator") as MeshInstance3D
 )
 
+## 只监听持有者已有的普攻事实信号，不修改控制器或依赖武器数据。
+var _attack_source: PlayerAttackController
 var _owner_unit: UnitBase
 var _locked_target: UnitBase
 ## 是否持有需要管理的锁定引用。目标被直接释放后其引用与 null 比较结果相同，
@@ -87,6 +91,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	# 离开场景树时不再广播状态变化；这里只释放运行时引用，避免接收者正在销毁时
 	# 收到无意义的回调。
+	_disconnect_attack_source()
 	_dispose_formal_indicator()
 	_locked_target = null
 	_lock_held = false
@@ -98,6 +103,7 @@ func _exit_tree() -> void:
 ## 返回 false 表示传入对象为空、已失效或不是场景树中的 UnitBase。配置失败会清理
 ## 现有锁定并停止输入处理，但不会阻断持有者自身的物理处理。
 func configure(owner_unit: UnitBase) -> bool:
+	_disconnect_attack_source()
 	if (
 		not is_instance_valid(owner_unit)
 		or not owner_unit.is_inside_tree()
@@ -110,6 +116,7 @@ func configure(owner_unit: UnitBase) -> bool:
 	if _owner_unit != owner_unit:
 		clear_locked_target()
 	_owner_unit = owner_unit
+	_bind_attack_source()
 	set_process_unhandled_input(_input_enabled)
 	return true
 
@@ -305,6 +312,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	select_target_at_screen_position(mouse_event.position)
 	get_viewport().set_input_as_handled()
+
+
+## 使用持有者标准 AttackController 的普攻命中事件；不存在时保留所有原有手动锁定能力。
+func _bind_attack_source() -> void:
+	_attack_source = _owner_unit.get_node_or_null(^"AttackController") as PlayerAttackController
+	if is_instance_valid(_attack_source):
+		_attack_source.attack_hit.connect(_on_basic_attack_hit)
+
+
+func _disconnect_attack_source() -> void:
+	if is_instance_valid(_attack_source) and _attack_source.attack_hit.is_connected(_on_basic_attack_hit):
+		_attack_source.attack_hit.disconnect(_on_basic_attack_hit)
+	_attack_source = null
+
+
+## target为普攻结算后的命中单位，可能已被本次攻击击杀；其他参数沿原命中事实信号，仅作签名匹配。
+func _on_basic_attack_hit(target: UnitBase, _hit_position: Vector3, _hit_direction: Vector3, _combo_index: int) -> void:
+	if not auto_lock_on_hit_enabled or not _input_enabled or not _has_valid_owner():
+		return
+	if is_instance_valid(_locked_target) and is_valid_lock_target(_locked_target):
+		return
+	# 先检查候选，非法命中不会通过 request_lock 的清空分支影响旧锁定。
+	if not is_valid_lock_target(target):
+		return
+	if _lock_held:
+		clear_locked_target()
+	request_lock(target)
 
 
 func _has_valid_owner() -> bool:

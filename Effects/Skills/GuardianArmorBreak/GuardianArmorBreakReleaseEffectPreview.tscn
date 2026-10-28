@@ -1,0 +1,101 @@
+[gd_scene format=3 uid="uid://nsn7jt4274gg"]
+
+[ext_resource type="Script" uid="uid://dbqn5qk4564nm" path="res://Scenes/Previews/SkillReleasePresentationPreview.gd" id="1_h2lvr"]
+[ext_resource type="PackedScene" uid="uid://b7vgkp4u0amls" path="res://Effects/Skills/GuardianArmorBreak/GuardianArmorBreakReleaseEffect.tscn" id="2_e28nh"]
+[ext_resource type="Script" uid="uid://cd2wib31ryicx" path="res://SkillSystem/01-Core/SkillReleasePresentationPlayer.gd" id="3_65l8d"]
+[ext_resource type="Material" uid="uid://c40gw7vteanxu" path="res://Materials/MatGridDark.tres" id="4_32c0n"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2luve"]
+shading_mode = 0
+albedo_color = Color(0.15, 0.65, 1, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_r3pgt"]
+size = Vector3(0.5, 1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4bo7l"]
+shading_mode = 0
+albedo_color = Color(1, 0.3, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_vetvl"]
+size = Vector3(0.5, 1, 0.5)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_qf8vd"]
+size = Vector2(20, 20)
+
+[node name="GuardianArmorBreakReleaseEffectPreview" type="Node3D" unique_id=1883666227]
+script = ExtResource("1_h2lvr")
+visual_scene = ExtResource("2_e28nh")
+anchor = 3
+
+[node name="SourceMarker" type="Marker3D" parent="." unique_id=436021544]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 0)
+
+[node name="MarkerVisual" type="MeshInstance3D" parent="SourceMarker" unique_id=896397697]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_2luve")
+mesh = SubResource("BoxMesh_r3pgt")
+
+[node name="TargetMarker" type="Marker3D" parent="." unique_id=267535784]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+
+[node name="MarkerVisual" type="MeshInstance3D" parent="TargetMarker" unique_id=42741275]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_4bo7l")
+mesh = SubResource("BoxMesh_vetvl")
+
+[node name="WorldPlayback" type="Node3D" parent="." unique_id=1523449222]
+
+[node name="RuntimeEffects" type="Node" parent="." unique_id=128928667]
+script = ExtResource("3_65l8d")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=23912922]
+transform = Transform3D(1, 0, 0, 0, 0.81915206, 0.57357645, 0, -0.57357645, 0.81915206, 0, 9, 12)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1625302736]
+transform = Transform3D(0.90630776, 0.36599818, -0.21130912, 0, 0.49999997, 0.86602545, 0.42261827, -0.7848856, 0.45315385, 0, 0, 0)
+
+[node name="Floor" type="MeshInstance3D" parent="." unique_id=999330089]
+material_override = ExtResource("4_32c0n")
+mesh = SubResource("PlaneMesh_qf8vd")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1447147763]
+
+[node name="Panel" type="PanelContainer" parent="CanvasLayer" unique_id=1505209152]
+custom_minimum_size = Vector2(660, 240)
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 24.0
+offset_bottom = 24.0
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/Panel" unique_id=838747937]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="CanvasLayer/Panel/VBox" unique_id=1505647271]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "技能释放表现 · 独立预览"
+autowrap_mode = 3
+
+[node name="StatusLabel" type="Label" parent="CanvasLayer/Panel/VBox" unique_id=1339939825]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "在根节点选择资产，再按播放；蓝方是源，红方是目标。"
+autowrap_mode = 3
+
+[node name="PlayButton" type="Button" parent="CanvasLayer/Panel/VBox" unique_id=1776024267]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "播放所选资产"
+
+[node name="TestChannelsButton" type="Button" parent="CanvasLayer/Panel/VBox" unique_id=494632995]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "测试音/镜头请求（非正式内容）"
+
+[node name="RequestCountLabel" type="Label" parent="CanvasLayer/Panel/VBox" unique_id=1389381195]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "镜头请求：0（仅接口，无镜头移动）"
+autowrap_mode = 3

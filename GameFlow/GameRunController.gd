@@ -17,6 +17,8 @@ var _result_overlay: CanvasLayer
 var _combat_hud: CombatHUD
 var _observed_scene: Node
 var _room_controller: CombatRoomController
+## 仅本次游戏进程内按场景保存成功通关的最短游戏秒；重玩保留，退出即清空，不写入磁盘。
+var _best_run_times: Dictionary[String, float] = {}
 
 
 func _ready() -> void:
@@ -143,12 +145,47 @@ func _on_room_failed() -> void:
 	_set_current_player_input_enabled(false)
 	if is_instance_valid(_result_overlay):
 		_result_overlay.call(&"show_failure")
+	_present_run_times(false)
 
 
 func _on_room_completed() -> void:
 	_set_current_player_input_enabled(false)
 	if is_instance_valid(_result_overlay):
 		_result_overlay.call(&"show_success")
+	_present_run_times(true)
+
+
+## completed只表示房间胜负；计时组件只停止与读数，最佳成绩保留在本控制器内存中。
+func _present_run_times(completed: bool) -> void:
+	var scene: Node = get_tree().current_scene
+	var timer := _find_run_timer(scene)
+	if not is_instance_valid(timer):
+		if is_instance_valid(_result_overlay):
+			_result_overlay.call(&"set_run_times", -1.0, -1.0, completed)
+		return
+	var elapsed: float = timer.stop()
+	var record_key: String = scene.scene_file_path
+	if record_key.is_empty():
+		record_key = str(scene.name)
+	var best: float = _best_run_times.get(record_key, -1.0)
+	if completed and timer.has_started() and elapsed > 0.0 and (best < 0.0 or elapsed < best):
+		best = elapsed
+		_best_run_times[record_key] = best
+	if is_instance_valid(_result_overlay):
+		_result_overlay.call(&"set_run_times", elapsed, best, completed)
+
+
+## 从当前房间寻找可选计时组件；未装配的旧场景仍沿原胜负流程运行。
+func _find_run_timer(node: Node) -> CombatRunTimer:
+	if node == null:
+		return null
+	if node is CombatRunTimer:
+		return node as CombatRunTimer
+	for child: Node in node.get_children():
+		var found := _find_run_timer(child)
+		if is_instance_valid(found):
+			return found
+	return null
 
 
 func _on_restart_requested() -> void:

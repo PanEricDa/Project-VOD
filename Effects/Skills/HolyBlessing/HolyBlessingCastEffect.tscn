@@ -1,0 +1,277 @@
+[gd_scene format=3 uid="uid://deo2f3er4c4dm"]
+
+[ext_resource type="Script" uid="uid://cenxleu53am2p" path="res://Effects/Combat/WeaponSocketCastEffect.gd" id="1_g484x"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xx26d"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_4ue0x"]
+size = Vector3(0.28, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wb0i3"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ai5t8"]
+size = Vector3(0.28, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4vdmt"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1xidn"]
+size = Vector3(0.28, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w7oy5"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_w1diu"]
+size = Vector3(0.28, 0.022, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dsshh"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.48, 1, 0.65)
+
+[sub_resource type="BoxMesh" id="BoxMesh_fwndv"]
+size = Vector3(0.056, 0.056, 0.025)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lc3vb"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="TorusMesh" id="TorusMesh_483qo"]
+inner_radius = 0.565
+outer_radius = 0.6
+rings = 48
+ring_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wv5ft"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.72, 0.48, 1, 0.65)
+
+[sub_resource type="TorusMesh" id="TorusMesh_3kqca"]
+inner_radius = 0.375
+outer_radius = 0.4
+rings = 48
+ring_segments = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_02j2r"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xfa3d"]
+size = Vector3(0.035, 0.18, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t6emk"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_s70ba"]
+size = Vector3(0.035, 0.18, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bm0wb"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_2dttq"]
+size = Vector3(0.035, 0.18, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r0fh8"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_tk28h"]
+size = Vector3(0.035, 0.18, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glv37"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nfkmm"]
+size = Vector3(0.035, 0.18, 0.035)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k8ocq"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(1, 0.76, 0.25, 0.85)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ex2il"]
+size = Vector3(0.035, 0.18, 0.035)
+
+[sub_resource type="Animation" id="Animation_54b0p"]
+length = 1.15
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("VisualRoot/Orbit:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.65, 0.9, 1.15),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.01, 0.01, 0.01), Vector3(1, 1, 1), Vector3(1, 1, 1), Vector3(0.8, 0.8, 0.8), Vector3(0.1, 0.1, 0.1)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("VisualRoot/Orbit:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.65, 0.9, 1.15),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 12.566371, 0), Vector3(0, 12.566371, 0), Vector3(0, 12.566371, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("VisualRoot/Focus/StaffTip:scale")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.65, 0.9, 1.15),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.1, 0.1, 0.1), Vector3(0.6, 0.6, 0.6), Vector3(1, 1, 1), Vector3(1.3, 1.3, 1.3), Vector3(0.8, 0.8, 0.8)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_20s0r"]
+_data = {
+&"effect": SubResource("Animation_54b0p")
+}
+
+[node name="HolyBlessingCastEffect" type="Node3D" unique_id=1922357873]
+script = ExtResource("1_g484x")
+auto_free_on_finished = true
+
+[node name="VisualRoot" type="Node3D" parent="." unique_id=1889550793]
+
+[node name="Focus" type="Node3D" parent="VisualRoot" unique_id=1435757687]
+
+[node name="StaffTip" type="Node3D" parent="VisualRoot/Focus" unique_id=1647460942]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.52, 0)
+
+[node name="Edge0" type="MeshInstance3D" parent="VisualRoot/Focus/StaffTip" unique_id=1740798650]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 0.14, 0, 0)
+material_override = SubResource("StandardMaterial3D_xx26d")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_4ue0x")
+
+[node name="Edge1" type="MeshInstance3D" parent="VisualRoot/Focus/StaffTip" unique_id=22874510]
+transform = Transform3D(-0.70710677, -0.70710677, 0, 0.70710677, -0.70710677, 0, 0, 0, 1, 8.572245e-18, 0.14, 0)
+material_override = SubResource("StandardMaterial3D_wb0i3")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_ai5t8")
+
+[node name="Edge2" type="MeshInstance3D" parent="VisualRoot/Focus/StaffTip" unique_id=424437273]
+transform = Transform3D(-0.7071068, 0.7071067, 0, -0.7071067, -0.7071068, 0, 0, 0, 1, -0.14, 1.714449e-17, 0)
+material_override = SubResource("StandardMaterial3D_4vdmt")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_1xidn")
+
+[node name="Edge3" type="MeshInstance3D" parent="VisualRoot/Focus/StaffTip" unique_id=755112684]
+transform = Transform3D(0.70710665, 0.7071069, 0, -0.7071069, 0.70710665, 0, 0, 0, 1, -2.5716734e-17, -0.14, 0)
+material_override = SubResource("StandardMaterial3D_w7oy5")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_w1diu")
+
+[node name="Core" type="MeshInstance3D" parent="VisualRoot/Focus/StaffTip" unique_id=2054578992]
+transform = Transform3D(0.70710677, -0.70710677, 0, 0.70710677, 0.70710677, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_dsshh")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_fwndv")
+
+[node name="Orbit" type="Node3D" parent="VisualRoot" unique_id=1882966470]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, -0.05)
+
+[node name="GoldArc" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=1072749636]
+material_override = SubResource("StandardMaterial3D_lc3vb")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_483qo")
+
+[node name="PurpleArc" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=485573299]
+transform = Transform3D(1, 0, 0, 0, 0.9393727, -0.3428978, 0, 0.3428978, 0.9393727, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_wv5ft")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_3kqca")
+
+[node name="Mote0" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=2116595291]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0, 0)
+material_override = SubResource("StandardMaterial3D_02j2r")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_xfa3d")
+
+[node name="Mote1" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=567361367]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.275, 0, 0.47631398)
+material_override = SubResource("StandardMaterial3D_t6emk")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_s70ba")
+
+[node name="Mote2" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=2033156380]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.275, 0, 0.47631398)
+material_override = SubResource("StandardMaterial3D_bm0wb")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_2dttq")
+
+[node name="Mote3" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=1296073309]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0, 6.735335e-17)
+material_override = SubResource("StandardMaterial3D_r0fh8")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_tk28h")
+
+[node name="Mote4" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=1144282512]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.275, 0, -0.47631398)
+material_override = SubResource("StandardMaterial3D_glv37")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_nfkmm")
+
+[node name="Mote5" type="MeshInstance3D" parent="VisualRoot/Orbit" unique_id=1888490047]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.275, 0, -0.47631398)
+material_override = SubResource("StandardMaterial3D_k8ocq")
+cast_shadow = 0
+mesh = SubResource("BoxMesh_ex2il")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=454399902]
+libraries/ = SubResource("AnimationLibrary_20s0r")

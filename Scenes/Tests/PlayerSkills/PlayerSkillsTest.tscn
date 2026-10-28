@@ -1,0 +1,405 @@
+[gd_scene format=3 uid="uid://304rpya6o643"]
+
+[ext_resource type="Script" uid="uid://dhno378mm6bld" path="res://Scenes/Tests/PlayerSkills/PlayerSkillsTestHarness.gd" id="1_qklx4"]
+[ext_resource type="PackedScene" uid="uid://hhb1ptr0vdc6" path="res://UnitSystem/Player/Hero/Hero.tscn" id="2_f6yp6"]
+[ext_resource type="PackedScene" uid="uid://cqp35eaph02gm" path="res://UnitSystem/AI/Enemy/Units/GoblinWarrior.tscn" id="5_87p02"]
+[ext_resource type="PackedScene" uid="uid://cxm75mad5h74p" path="res://UnitSystem/AI/Enemy/Units/GoblinArcher.tscn" id="6_x8akn"]
+[ext_resource type="Script" uid="uid://4c7vii5flost" path="res://UnitSystem/Components/Camera/CameraFollowController.gd" id="7_x81uw"]
+[ext_resource type="PackedScene" uid="uid://df6vr63dn4ehx" path="res://UnitSystem/AI/Ally/Units/Guardian.tscn" id="11_x8akn"]
+[ext_resource type="PackedScene" uid="uid://dgp6yqvmotjlt" path="res://UnitSystem/AI/Ally/Units/Priest.tscn" id="12_rvf2f"]
+[ext_resource type="PackedScene" uid="uid://dhgiqgsr4lo5u" path="res://UnitSystem/Components/UI/PlayerSkillBar.tscn" id="12_x81uw"]
+[ext_resource type="PackedScene" uid="uid://cnrpfwsspnim8" path="res://UnitSystem/AI/Ally/Units/Caster.tscn" id="16_xrxbq"]
+[ext_resource type="PackedScene" uid="uid://dhorinny074d3" path="res://UnitSystem/AI/Ally/Units/Archer.tscn" id="19_uduve"]
+[ext_resource type="PackedScene" uid="uid://blkrjyi4or5gr" path="res://UnitSystem/Components/Combat/Squad/SquadFocusComponent.tscn" id="23_ri3ap"]
+[ext_resource type="PackedScene" uid="uid://bicf8lfkrvq47" path="res://UnitSystem/Components/Combat/Squad/SquadChainCommandController.tscn" id="25_oa634"]
+[ext_resource type="PackedScene" uid="uid://2w3hno0nmrld" path="res://UnitSystem/Components/Combat/Squad/ChainSkillPresentationController.tscn" id="27_6yar8"]
+[ext_resource type="PackedScene" uid="uid://dyah7h2ck4vyw" path="res://UnitSystem/Components/Combat/Squad/SquadChainRoundController.tscn" id="29_jqi6g"]
+[ext_resource type="PackedScene" uid="uid://dju4phgtqafqo" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherSelectionController.tscn" id="31_div5i"]
+[ext_resource type="PackedScene" uid="uid://tl1yhilxdejt" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherExecutionController.tscn" id="33_18q7m"]
+[ext_resource type="PackedScene" uid="uid://w13q6dviajxb" path="res://UnitSystem/Components/UI/SquadChainCommandDisplay.tscn" id="35_nyas1"]
+[ext_resource type="PackedScene" uid="uid://b1lqh3r7sqxr8" path="res://UnitSystem/Components/UI/SquadChainRoundDisplay.tscn" id="37_yy8ex"]
+[ext_resource type="PackedScene" uid="uid://1w1ftyj1dedn" path="res://UnitSystem/Components/UI/SquadFinisherSelectionDisplay.tscn" id="39_1dro8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f6yp6"]
+albedo_color = Color(0.13, 0.17, 0.22, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_dcc4q"]
+size = Vector3(24, 0.5, 24)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_s1lmp"]
+size = Vector3(24, 0.5, 24)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_87p02"]
+albedo_color = Color(0.27, 0.34, 0.42, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_x8akn"]
+size = Vector3(1, 2, 5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_x81uw"]
+size = Vector3(1, 2, 5)
+
+[sub_resource type="Environment" id="Environment_468dk"]
+background_mode = 1
+background_color = Color(0.035, 0.05, 0.075, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.7, 0.78, 0.9, 1)
+ambient_light_energy = 0.65
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s1lmp"]
+shading_mode = 0
+albedo_color = Color(0.18, 0.8, 1, 1)
+
+[sub_resource type="TorusMesh" id="TorusMesh_87p02"]
+inner_radius = 1.975
+outer_radius = 2.025
+rings = 96
+ring_segments = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e0ev1"]
+bg_color = Color(0.035, 0.06, 0.09, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.22, 0.5, 0.65, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_8ik8i"]
+vertices = PackedVector3Array(1, 0.20000002, -2.8000002, 2, 0.20000002, -3, 2, 0.20000002, -11.6, -11.6, 0.20000002, -11.6, -11.6, 0.20000002, -1.8000002, 1, 0.20000002, -1.5999994, 3, 0.20000002, -2.8000002, 3, 0.20000002, -1.5999994, 11.6, 0.20000002, -1.8000002, 11.6, 0.20000002, -11.6, 1.8000002, 2.2, -2.1999998, 1.8000002, 2.2, 2.1999998, 2.1999998, 2.2, 2.1999998, 2.1999998, 2.2, -2.1999998, -11.6, 0.20000002, 1.8000002, 1, 0.20000002, 1.6000004, 3, 0.20000002, 1.6000004, 11.6, 0.20000002, 1.8000002, 2, 0.20000002, 11.6, 2, 0.20000002, 3, 1, 0.20000002, 2.8000002, -11.6, 0.20000002, 11.6, 3, 0.20000002, 2.8000002, 11.6, 0.20000002, 11.6)
+polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(3, 0, 4), PackedInt32Array(0, 5, 4), PackedInt32Array(8, 7, 6), PackedInt32Array(1, 2, 6), PackedInt32Array(6, 2, 9), PackedInt32Array(6, 9, 8), PackedInt32Array(13, 12, 10), PackedInt32Array(10, 12, 11), PackedInt32Array(15, 14, 5), PackedInt32Array(5, 14, 4), PackedInt32Array(7, 8, 16), PackedInt32Array(16, 8, 17), PackedInt32Array(19, 18, 20), PackedInt32Array(20, 18, 21), PackedInt32Array(20, 21, 14), PackedInt32Array(14, 15, 20), PackedInt32Array(22, 16, 17), PackedInt32Array(19, 22, 18), PackedInt32Array(18, 22, 23), PackedInt32Array(23, 22, 17)]
+geometry_parsed_geometry_type = 1
+geometry_collision_mask = 1
+cell_size = 0.2
+cell_height = 0.1
+agent_height = 1.0
+agent_radius = 0.4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1tto5"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.035, 0.055, 0.08, 0.92)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_8a57r"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.08, 0.12, 0.17, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_fu2of"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sytsg"]
+bg_color = Color(0, 0, 0, 0.3)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dd70c"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.08, 0.12, 0.17, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_npm76"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j7pxf"]
+bg_color = Color(0, 0, 0, 0.3)
+
+[node name="PlayerSkillsTest" type="Node3D" unique_id=618224776]
+script = ExtResource("1_qklx4")
+
+[node name="Environment" type="Node3D" parent="." unique_id=68693307]
+
+[node name="Floor" type="StaticBody3D" parent="Environment" unique_id=1454238604]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+
+[node name="Visual" type="MeshInstance3D" parent="Environment/Floor" unique_id=2047831804]
+material_override = SubResource("StandardMaterial3D_f6yp6")
+mesh = SubResource("BoxMesh_dcc4q")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor" unique_id=1084309951]
+shape = SubResource("BoxShape3D_s1lmp")
+
+[node name="Wall" type="StaticBody3D" parent="Environment" unique_id=2048709482]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 0)
+
+[node name="Visual" type="MeshInstance3D" parent="Environment/Wall" unique_id=1245313772]
+material_override = SubResource("StandardMaterial3D_87p02")
+mesh = SubResource("BoxMesh_x8akn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Wall" unique_id=675205761]
+shape = SubResource("BoxShape3D_x81uw")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1137543534]
+environment = SubResource("Environment_468dk")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=669425814]
+transform = Transform3D(0.8660254, 0.40957603, -0.28678823, 0, 0.57357645, 0.81915206, 0.5, -0.7094065, 0.49673176, 0, 0, 0)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Hero" parent="." unique_id=1528668348 instance=ExtResource("2_f6yp6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+
+[node name="Gather" parent="Hero/SkillHost/SkillSocket" index="0" unique_id=253215794]
+skill_cooldown = 2.0
+
+[node name="ThreatMark" parent="Hero/SkillHost/SkillSocket" index="1" unique_id=537632632]
+skill_cooldown = 2.0
+
+[node name="EnemyContainer" type="Node3D" parent="." unique_id=2067139907]
+
+[node name="TrainingMelee" parent="EnemyContainer" unique_id=1948486579 instance=ExtResource("5_87p02")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 1)
+collision_mask = 5
+
+[node name="AITargetingComponent" parent="EnemyContainer/TrainingMelee" index="3" unique_id=91411252]
+detection_enabled = false
+debug_range_visible = false
+
+[node name="BehaviorStateMachine" parent="EnemyContainer/TrainingMelee" index="6" unique_id=1962546501]
+idle_behavior = 0
+
+[node name="TrainingRanged" parent="EnemyContainer" unique_id=355923195 instance=ExtResource("6_x8akn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 2)
+collision_mask = 5
+
+[node name="AITargetingComponent" parent="EnemyContainer/TrainingRanged" index="3" unique_id=91411252]
+detection_enabled = false
+debug_range_visible = false
+
+[node name="BehaviorStateMachine" parent="EnemyContainer/TrainingRanged" index="6" unique_id=1962546501]
+idle_behavior = 0
+
+[node name="WallBlocked" parent="EnemyContainer" unique_id=576539922 instance=ExtResource("5_87p02")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7, 0, 1.4)
+collision_mask = 5
+
+[node name="AITargetingComponent" parent="EnemyContainer/WallBlocked" index="3" unique_id=91411252]
+detection_enabled = false
+debug_range_visible = false
+
+[node name="BehaviorStateMachine" parent="EnemyContainer/WallBlocked" index="6" unique_id=1962546501]
+idle_behavior = 0
+
+[node name="OutsideRadius" parent="EnemyContainer" unique_id=1286001833 instance=ExtResource("5_87p02")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.4, 0, 4)
+collision_mask = 5
+
+[node name="AITargetingComponent" parent="EnemyContainer/OutsideRadius" index="3" unique_id=91411252]
+detection_enabled = false
+debug_range_visible = false
+
+[node name="BehaviorStateMachine" parent="EnemyContainer/OutsideRadius" index="6" unique_id=1962546501]
+idle_behavior = 0
+
+[node name="Unsupported" parent="EnemyContainer" unique_id=773687526 instance=ExtResource("5_87p02")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0, 0)
+collision_mask = 5
+forced_movement_enabled = false
+
+[node name="AITargetingComponent" parent="EnemyContainer/Unsupported" index="3" unique_id=91411252]
+detection_enabled = false
+debug_range_visible = false
+
+[node name="BehaviorStateMachine" parent="EnemyContainer/Unsupported" index="6" unique_id=1962546501]
+idle_behavior = 0
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=1683704522]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9, 10.8)
+script = ExtResource("7_x81uw")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=2092970299]
+transform = Transform3D(1, 0, 0, 0, 0.64278764, 0.76604444, 0, -0.76604444, 0.64278764, 0, 0, 0)
+current = true
+fov = 45.0
+far = 200.0
+
+[node name="GatherRangeDebug" type="MeshInstance3D" parent="." unique_id=722596593]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 3.2)
+material_override = SubResource("StandardMaterial3D_s1lmp")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_87p02")
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1353838636]
+
+[node name="DebugPanel" type="PanelContainer" parent="HUD" unique_id=1646663563]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 336.0
+offset_bottom = 400.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_e0ev1")
+
+[node name="Margin" type="MarginContainer" parent="HUD/DebugPanel" unique_id=1960998955]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Rows" type="VBoxContainer" parent="HUD/DebugPanel/Margin" unique_id=466893456]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Heading" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=1753179732]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "PLAYER SKILLS / STAGE 4"
+clip_text = true
+
+[node name="Hint" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=776452070]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 12
+text = "Q / E: skills   WASD: move   Wheel: zoom"
+clip_text = true
+
+[node name="Slot0" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=2025061115]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Q | Gather"
+clip_text = true
+
+[node name="Slot1" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=574998576]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "E | Threat Probe"
+clip_text = true
+
+[node name="Feedback" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=1738475763]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.43, 1)
+theme_override_font_sizes/font_size = 12
+text = "Ready"
+clip_text = true
+
+[node name="Boundary" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=1257714259]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.63, 0.73, 0.8, 1)
+theme_override_font_sizes/font_size = 12
+text = "Cyan circle: Q only. E circle hidden.
+Training → Threat → Squad Combat."
+clip_text = true
+
+[node name="ThreatReadout" type="Label" parent="HUD/DebugPanel/Margin/Rows" unique_id=908734787]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Threat: waiting"
+clip_text = true
+
+[node name="ToggleCombat" type="Button" parent="HUD/DebugPanel/Margin/Rows" unique_id=610645747]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Switch to Threat Combat"
+
+[node name="Reload" type="Button" parent="HUD/DebugPanel/Margin/Rows" unique_id=488044199]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Reset Test Scene"
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1368224423]
+navigation_mesh = SubResource("NavigationMesh_8ik8i")
+
+[node name="ValidationActors" type="Node3D" parent="." unique_id=603451729]
+
+[node name="ValidationGuardian" parent="ValidationActors" unique_id=1491736132 instance=ExtResource("11_x8akn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0, 5.5)
+
+[node name="ValidationPriest" parent="ValidationActors" unique_id=926032218 instance=ExtResource("12_rvf2f")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 7.5)
+
+[node name="ValidationCaster" parent="ValidationActors" unique_id=1350314539 instance=ExtResource("16_xrxbq")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 6.5)
+
+[node name="ValidationArcher" parent="ValidationActors" unique_id=1042595378 instance=ExtResource("19_uduve")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 6.5)
+
+[node name="PlayerSkillBar" parent="." unique_id=1572766143 node_paths=PackedStringArray("skill_source") instance=ExtResource("12_x81uw")]
+skill_source = NodePath("../Hero/PlayerSkillController")
+
+[node name="Panel" parent="PlayerSkillBar" index="0" unique_id=590993390]
+offset_left = 350.0
+offset_top = -420.0
+offset_right = 574.0
+offset_bottom = -304.0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_1tto5")
+
+[node name="Card0" parent="PlayerSkillBar/Panel/Cards" parent_id_path=PackedInt32Array(1572766143, 1635194956) index="0" unique_id=538749834]
+theme_override_styles/panel = SubResource("StyleBoxFlat_8a57r")
+
+[node name="Cooldown" parent="PlayerSkillBar/Panel/Cards/Card0" index="2" unique_id=1529946941]
+theme_override_styles/background = SubResource("StyleBoxEmpty_fu2of")
+theme_override_styles/fill = SubResource("StyleBoxFlat_sytsg")
+
+[node name="Card1" parent="PlayerSkillBar/Panel/Cards" parent_id_path=PackedInt32Array(1572766143, 1635194956) index="1" unique_id=801365184]
+theme_override_styles/panel = SubResource("StyleBoxFlat_dd70c")
+
+[node name="Cooldown" parent="PlayerSkillBar/Panel/Cards/Card1" index="2" unique_id=1210121567]
+theme_override_styles/background = SubResource("StyleBoxEmpty_npm76")
+theme_override_styles/fill = SubResource("StyleBoxFlat_j7pxf")
+
+[node name="SquadFocusComponent" parent="." unique_id=1471205558 instance=ExtResource("23_ri3ap")]
+initial_focus = 100.0
+focus_gain_difficulty = 2.0
+
+[node name="SquadChainCommandController" parent="." unique_id=1575406938 node_paths=PackedStringArray("companions", "focus_source") instance=ExtResource("25_oa634")]
+companions = [NodePath("../ValidationActors/ValidationGuardian"), NodePath("../ValidationActors/ValidationPriest"), NodePath("../ValidationActors/ValidationCaster"), NodePath("../ValidationActors/ValidationArcher")]
+focus_source = NodePath("../SquadFocusComponent")
+
+[node name="ChainSkillPresentationController" parent="." unique_id=1084723942 node_paths=PackedStringArray("command_source", "camera_source") instance=ExtResource("27_6yar8")]
+command_source = NodePath("../SquadChainCommandController")
+camera_source = NodePath("../CameraRig")
+
+[node name="SquadChainRoundController" parent="." unique_id=41611880 node_paths=PackedStringArray("command_source") instance=ExtResource("29_jqi6g")]
+command_source = NodePath("../SquadChainCommandController")
+score_difficulty = 2.0
+hit_score_scale = 15
+damage_score_scale = 1000.01
+
+[node name="SquadFinisherSelectionController" parent="." unique_id=23158010 node_paths=PackedStringArray("round_source", "pause_source") instance=ExtResource("31_div5i")]
+round_source = NodePath("../SquadChainRoundController")
+pause_source = NodePath("../ChainSkillPresentationController/PauseCoordinator")
+
+[node name="SquadFinisherExecutionController" parent="." unique_id=1589923198 node_paths=PackedStringArray("selection_source", "camera_source") instance=ExtResource("33_18q7m")]
+selection_source = NodePath("../SquadFinisherSelectionController")
+camera_source = NodePath("../CameraRig")
+
+[node name="SquadChainCommandDisplay" parent="." unique_id=1905817382 node_paths=PackedStringArray("command_source") instance=ExtResource("35_nyas1")]
+command_source = NodePath("../SquadChainCommandController")
+
+[node name="SquadChainRoundDisplay" parent="." unique_id=886165465 node_paths=PackedStringArray("round_source") instance=ExtResource("37_yy8ex")]
+round_source = NodePath("../SquadChainRoundController")
+
+[node name="SquadFinisherSelectionDisplay" parent="." unique_id=1487045130 node_paths=PackedStringArray("selection_source") instance=ExtResource("39_1dro8")]
+selection_source = NodePath("../SquadFinisherSelectionController")
+
+[editable path="Hero"]
+[editable path="Hero/SkillHost"]
+[editable path="Hero/Visual/HeroVisual"]
+[editable path="EnemyContainer/TrainingMelee"]
+[editable path="EnemyContainer/TrainingRanged"]
+[editable path="EnemyContainer/WallBlocked"]
+[editable path="EnemyContainer/OutsideRadius"]
+[editable path="EnemyContainer/Unsupported"]
+[editable path="PlayerSkillBar"]

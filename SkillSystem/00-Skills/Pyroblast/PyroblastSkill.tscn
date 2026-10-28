@@ -24,7 +24,6 @@ target_expansion = SubResource("Resource_8i22q")
 skill_id = &"pyroblast"
 display_name = "Pyroblast"
 ai_priority = 20
-cast_range = 6.0
 base_cast_time = 1.2
 cast_effect_scene = ExtResource("2_8i22q")
 delivery = SubResource("Resource_xaf3l")

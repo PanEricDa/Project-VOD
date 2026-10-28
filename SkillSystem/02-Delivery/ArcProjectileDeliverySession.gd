@@ -240,6 +240,8 @@ func _finish_hit(target: UnitBase, position: Vector3, direction: Vector3, projec
 			return
 	_result.affected_targets.append(target)
 	_result.hit_outcomes.append(hit)
+	# 单位目标与地面模式统一报告本箭已结算，供终结演出记录完成事实。
+	projectile_landed.emit(_context, index, position)
 	_check_finished()
 
 

@@ -753,5 +753,44 @@ func _get_collision_info(params: Dictionary) -> Dictionary:
 
 	info["collision_shapes"] = shapes
 	info["raycasts"] = raycasts
+	info["physics_engine"] = _get_physics_engine_info(_detect_dimension(node))
 
 	return success(info)
+
+
+## Reports which physics engine the project runs. Verified against the engine
+## source for 4.5.1, 4.6.2 and 4.7.2: "DEFAULT" resolves to the server
+## registered with the highest default priority, which is GodotPhysics3D /
+## GodotPhysics2D in all three versions. What changed in 4.6 is that the editor
+## writes physics/3d/physics_engine="Jolt Physics" into the project.godot of
+## newly created projects (EditorNode::get_initial_settings), so a 4.6+
+## project usually carries the explicit Jolt value, while "DEFAULT" still
+## means Godot Physics. Only the raw setting and this mapping are reported;
+## the engine exposes no API naming the server instance that is running.
+func _get_physics_engine_info(dim: String) -> Dictionary:
+	var version: Dictionary = Engine.get_version_info()
+	var raw_3d := str(ProjectSettings.get_setting("physics/3d/physics_engine", "DEFAULT"))
+	var raw_2d := str(ProjectSettings.get_setting("physics/2d/physics_engine", "DEFAULT"))
+	# get_setting() ignores feature overrides such as physics_engine.windows;
+	# the engine picks the value with overrides applied for this platform.
+	var over_3d := str(ProjectSettings.get_setting_with_override("physics/3d/physics_engine"))
+	var over_2d := str(ProjectSettings.get_setting_with_override("physics/2d/physics_engine"))
+	var effective_3d := over_3d
+	if over_3d == "DEFAULT" or over_3d.is_empty() or over_3d == "<null>":
+		effective_3d = "GodotPhysics3D"
+	var effective_2d := over_2d
+	if over_2d == "DEFAULT" or over_2d.is_empty() or over_2d == "<null>":
+		effective_2d = "GodotPhysics2D"
+	var info := {
+		"godot_version": version.get("string", ""),
+		"3d_setting": raw_3d,
+		"3d_effective": effective_3d,
+		"2d_setting": raw_2d,
+		"2d_effective": effective_2d,
+		"platform": OS.get_name(),
+		"note": "Changing physics/*/physics_engine only takes effect after restarting the editor and the game. DEFAULT resolves to Godot Physics on 4.5-4.7; projects created by the 4.6+ editor store 'Jolt Physics' explicitly. *_effective applies feature overrides (e.g. physics_engine.windows) for the platform the editor runs on; an export for another platform may differ.",
+	}
+	if not dim.is_empty():
+		info["node_dimension"] = dim
+		info["node_engine"] = effective_3d if dim == "3d" else effective_2d
+	return info

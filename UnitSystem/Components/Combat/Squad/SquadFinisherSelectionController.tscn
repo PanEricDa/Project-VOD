@@ -1,6 +1,9 @@
 [gd_scene format=3 uid="uid://dju4phgtqafqo"]
 
-[ext_resource type="Script" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherSelectionController.gd" id="1_dv1qv"]
+[ext_resource type="Script" uid="uid://cv856as3fmeex" path="res://UnitSystem/Components/Combat/Squad/SquadFinisherSelectionController.gd" id="1_dv1qv"]
+[ext_resource type="PackedScene" uid="uid://cuvdfwk3cji26" path="res://UnitSystem/Components/Input/PressReleaseInputComponent.tscn" id="2_wg8yl"]
 
 [node name="SquadFinisherSelectionController" type="Node" unique_id=23158010]
 script = ExtResource("1_dv1qv")
+
+[node name="PressReleaseInputComponent" parent="." unique_id=875623275 instance=ExtResource("2_wg8yl")]
